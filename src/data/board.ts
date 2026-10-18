@@ -11,6 +11,10 @@ export const START_SALARY = v(200); // 2tr
 export const TRANSPORT_RENT = [v(25), v(50), v(100), v(200)] as const;
 /** Utility rent = dice total × this (index: number of utilities owned - 1). */
 export const UTILITY_MULTIPLIER = [v(4), v(10)] as const;
+/** The "Mất điện" card: dice total × this, whoever owns the utility. */
+export const UTILITY_CARD_MULTIPLIER = v(10);
+export const JAIL_SPACE = 10;
+export const JAIL_FINE = v(50); // 500k
 
 export type ColorGroup =
   | 'brown'

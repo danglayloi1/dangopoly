@@ -1,3 +1,4 @@
+import type { CardDeck } from '../data/cards';
 import type { TokenId } from '../data/tokens';
 
 export interface Player {
@@ -7,6 +8,9 @@ export interface Player {
   cash: number; // đồng
   position: number; // board index 0..39
   bankrupt: boolean;
+  inJail: boolean;
+  jailAttempts: number; // failed rolls for doubles while in jail (max 3)
+  jailCards: CardDeck[]; // "Ra tù miễn phí" cards held, and which deck each came from
 }
 
 export interface Ownership {
@@ -16,7 +20,12 @@ export interface Ownership {
 }
 
 /** Why a player has to pay; used for the log once the debt is paid. */
-export type PaymentReason = { kind: 'rent'; space: number } | { kind: 'tax'; space: number };
+export type PaymentReason =
+  | { kind: 'rent'; space: number }
+  | { kind: 'tax'; space: number }
+  | { kind: 'card' } // a card that says "pay" (incl. repairs)
+  | { kind: 'payEach'; each: number } // a card: pay every other player `each`
+  | { kind: 'jailFine' }; // third failed attempt to roll out of jail
 
 /** What the game is waiting for. Each phase allows only certain actions (see legalActions). */
 export type Phase =
@@ -26,7 +35,7 @@ export type Phase =
   | {
       kind: 'inDebt';
       debtor: number;
-      creditor: number | null; // null = the bank
+      creditor: number | null; // null = the bank (or, for payEach, the other players)
       amount: number;
       reason: PaymentReason;
     }
@@ -41,6 +50,7 @@ export type TradablePhase = Extract<Phase, { kind: 'awaitRoll' | 'awaitEndTurn' 
 export interface TradeSide {
   spaces: number[]; // board indices
   cash: number; // đồng
+  jailCards: number; // how many "Ra tù miễn phí" cards
 }
 
 /** `from` (the current player) offers `give` to `to`, and asks for `take` in return. */
@@ -60,6 +70,9 @@ export type Action =
   | { type: 'PAY_DEBT' }
   | { type: 'DECLARE_BANKRUPTCY' }
   | { type: 'END_TURN' }
+  // Getting out of jail before rolling
+  | { type: 'PAY_JAIL_FINE' }
+  | { type: 'USE_JAIL_CARD' }
   // Managing your properties (see buildings.ts for when each is allowed)
   | { type: 'BUILD_HOUSE'; space: number }
   | { type: 'SELL_HOUSE'; space: number }
@@ -74,6 +87,9 @@ export type ActionType = Action['type'];
 export type PropertyAction = Extract<Action, { space: number }>;
 /** Actions that need no extra details: one button each. Excludes property actions and proposing a trade. */
 export type TurnActionType = Exclude<ActionType, PropertyAction['type'] | 'PROPOSE_TRADE'>;
+
+export type JailReason = 'space' | 'doubles' | 'card';
+export type JailExit = 'doubles' | 'fine' | 'card' | 'forcedFine';
 
 /** Structured history, so the UI can show it in either language. */
 export type LogEntry =
@@ -93,6 +109,14 @@ export type LogEntry =
   | { type: 'tradeProposed'; offer: TradeOffer }
   | { type: 'tradeAccepted'; offer: TradeOffer }
   | { type: 'tradeRejected'; offer: TradeOffer }
+  | { type: 'drewCard'; player: number; deck: CardDeck; card: number }
+  | { type: 'cardCollected'; player: number; amount: number }
+  | { type: 'cardPaid'; player: number; amount: number }
+  | { type: 'paidEach'; player: number; each: number }
+  | { type: 'collectedFromEach'; player: number; total: number }
+  | { type: 'wentToJail'; player: number; reason: JailReason }
+  | { type: 'stayedInJail'; player: number; attempt: number }
+  | { type: 'leftJail'; player: number; how: JailExit }
   | { type: 'bankrupt'; player: number; creditor: number | null }
   | { type: 'won'; player: number };
 
@@ -103,6 +127,9 @@ export interface GameState {
   phase: Phase;
   dice: Dice | null; // last roll this turn
   doublesCount: number; // doubles rolled in a row this turn
+  extraRoll: boolean; // the last roll earns another one (doubles, not from jail, not sent to jail)
+  decks: Record<CardDeck, number[]>; // card indices into CARDS, top of the deck first
+  lastCard: { deck: CardDeck; card: number } | null; // the card drawn this turn, to show it
   rngState: number;
   log: LogEntry[];
 }

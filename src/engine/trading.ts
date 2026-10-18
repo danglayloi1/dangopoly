@@ -27,6 +27,8 @@ export function canTradeSpace(state: GameState, space: number): boolean {
 function sideProblem(state: GameState, player: number, side: TradeSide): TradeProblem | null {
   if (!Number.isInteger(side.cash) || side.cash < 0) return 'badCash';
   if (side.cash > state.players[player].cash) return 'notEnoughCash';
+  const cards = side.jailCards ?? 0;
+  if (!Number.isInteger(cards) || cards < 0 || cards > state.players[player].jailCards.length) return 'notOwned';
   if (new Set(side.spaces).size !== side.spaces.length) return 'notOwned';
   for (const space of side.spaces) {
     if (state.ownership[space]?.owner !== player) return 'notOwned';
@@ -40,7 +42,8 @@ export function offerProblem(state: GameState, offer: TradeOffer): TradeProblem 
   const partner = state.players[offer.to];
   if (!partner || partner.bankrupt || offer.to === offer.from) return 'badPartner';
   const { give, take } = offer;
-  if (give.spaces.length + take.spaces.length === 0 && give.cash === 0 && take.cash === 0) return 'empty';
+  const isEmpty = (side: TradeSide) => side.spaces.length === 0 && side.cash === 0 && !side.jailCards;
+  if (isEmpty(give) && isEmpty(take)) return 'empty';
   return sideProblem(state, offer.from, give) ?? sideProblem(state, offer.to, take);
 }
 
@@ -61,6 +64,10 @@ export function canStartTrade(state: GameState): boolean {
 
 /** A tidy private copy of an offer: spaces sorted, so the stored offer can't be changed later by the caller. */
 export function normalizeOffer(offer: TradeOffer): TradeOffer {
-  const side = (s: TradeSide): TradeSide => ({ spaces: [...s.spaces].sort((a, b) => a - b), cash: s.cash });
+  const side = (s: TradeSide): TradeSide => ({
+    spaces: [...s.spaces].sort((a, b) => a - b),
+    cash: s.cash,
+    jailCards: s.jailCards ?? 0,
+  });
   return { from: offer.from, to: offer.to, give: side(offer.give), take: side(offer.take) };
 }
