@@ -2,23 +2,26 @@ import { BOARD, isOwnable } from '../data/board';
 import { actingPlayer } from '../engine/buildings';
 import { legalActions } from '../engine/game';
 import { formatMoney } from '../engine/money';
+import { canStartTrade } from '../engine/trading';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { Dice } from './Dice';
 import { describeLog } from './logText';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
+import { TradeOfferPanel } from './TradeOfferPanel';
 
 interface Props {
   game: GameState;
   dispatch: (action: Action) => void;
   onShowSpace: (index: number) => void;
   onManage: () => void;
+  onTrade: () => void;
   onNewGame: () => void;
 }
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
-export function ActionPanel({ game, dispatch, onShowSpace, onManage, onNewGame }: Props) {
+export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, onNewGame }: Props) {
   const { t, lang } = useLang();
   const { phase } = game;
   const player = game.players[game.current];
@@ -32,6 +35,10 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onNewGame }
 
   const offerSpace = phase.kind === 'awaitBuy' ? BOARD[phase.space] : null;
   const offer = offerSpace && isOwnable(offerSpace) ? offerSpace : null;
+
+  if (phase.kind === 'tradeOffer') {
+    return <TradeOfferPanel game={game} offer={phase.offer} dispatch={dispatch} onShowSpace={onShowSpace} />;
+  }
 
   if (phase.kind === 'gameOver') {
     const winner = game.players[phase.winner];
@@ -126,13 +133,22 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onNewGame }
         )}
       </div>
 
-      {actorOwnsSomething && (
-        <button
-          className={phase.kind === 'inDebt' && !allowed.includes('PAY_DEBT') ? 'primary' : 'secondary small'}
-          onClick={onManage}
-        >
-          🏠 {t.manage}
-        </button>
+      {(actorOwnsSomething || canStartTrade(game)) && (
+        <div className="side-actions">
+          {actorOwnsSomething && (
+            <button
+              className={phase.kind === 'inDebt' && !allowed.includes('PAY_DEBT') ? 'primary' : 'secondary small'}
+              onClick={onManage}
+            >
+              🏠 {t.manage}
+            </button>
+          )}
+          {canStartTrade(game) && (
+            <button className="secondary small" onClick={onTrade}>
+              🤝 {t.trade}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
