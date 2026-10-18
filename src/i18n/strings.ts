@@ -14,6 +14,9 @@ const vi = {
   removePlayer: 'Bỏ người chơi',
   startGame: 'Bắt đầu chơi',
   startingMoney: 'Vốn khởi đầu',
+  startingMoneyCustom: 'Hoặc nhập số khác',
+  millionUnit: 'triệu',
+  startingMoneyInvalid: 'Nhập số từ 1 đến 100 (triệu), ví dụ 12 hoặc 7,5',
   startingMoneyHint: (salary: string) => `Bản gốc: 15tr. Mỗi lần qua Xuất phát nhận thêm ${salary}.`,
   needNames: 'Hãy nhập tên cho mọi người chơi',
 
@@ -104,6 +107,9 @@ const en: Strings = {
   removePlayer: 'Remove player',
   startGame: 'Start game',
   startingMoney: 'Starting money',
+  startingMoneyCustom: 'Or type an amount',
+  millionUnit: 'million',
+  startingMoneyInvalid: 'Enter a number from 1 to 100 (million), e.g. 12 or 7.5',
   startingMoneyHint: (salary) => `Classic: 15tr. Everyone also collects ${salary} each time they pass Start.`,
   needNames: 'Enter a name for every player',
 

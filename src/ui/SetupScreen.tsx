@@ -6,6 +6,7 @@ import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import { LangSwitch } from './Header';
 import { GROUP_COLORS, PLAYER_COLORS } from './look';
+import { millionsText, parseMillions } from './startingCash';
 import { TokenIcon } from './TokenIcon';
 
 const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
@@ -24,7 +25,9 @@ export function SetupScreen({ onStart }: Props) {
     { name: '', token: 'nonLa' },
     { name: '', token: 'conTrau' },
   ]);
-  const [startingCash, setStartingCash] = useState(STARTING_CASH);
+  // The starting money is whatever is typed in the box; the preset buttons just fill it in.
+  const [cashText, setCashText] = useState(() => millionsText(STARTING_CASH, lang));
+  const startingCash = parseMillions(cashText);
   const [showErrors, setShowErrors] = useState(false);
 
   const update = (i: number, change: Partial<NewPlayer>) =>
@@ -37,7 +40,7 @@ export function SetupScreen({ onStart }: Props) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (players.some((p) => p.name.trim() === '')) {
+    if (players.some((p) => p.name.trim() === '') || startingCash === null) {
       setShowErrors(true);
       return;
     }
@@ -137,13 +140,31 @@ export function SetupScreen({ onStart }: Props) {
                 role="radio"
                 aria-checked={amount === startingCash}
                 className={amount === startingCash ? 'selected' : ''}
-                onClick={() => setStartingCash(amount)}
+                onClick={() => setCashText(millionsText(amount, lang))}
               >
                 {formatMoney(amount)}
               </button>
             ))}
           </div>
-          <p className="muted">{t.startingMoneyHint(formatMoney(START_SALARY))}</p>
+          <label className="cash-input">
+            <span>{t.startingMoneyCustom}</span>
+            <span className="cash-field">
+              <input
+                className={startingCash === null ? 'invalid' : ''}
+                value={cashText}
+                inputMode="decimal"
+                maxLength={6}
+                aria-invalid={startingCash === null}
+                aria-describedby="starting-cash-help"
+                onChange={(e) => setCashText(e.target.value)}
+              />
+              <span className="unit">{t.millionUnit}</span>
+            </span>
+            {startingCash !== null && <span className="cash-preview">= {formatMoney(startingCash)}</span>}
+          </label>
+          <p id="starting-cash-help" className={startingCash === null ? 'form-error' : 'muted'}>
+            {startingCash === null ? t.startingMoneyInvalid : t.startingMoneyHint(formatMoney(START_SALARY))}
+          </p>
         </div>
 
         {showErrors && players.some((p) => p.name.trim() === '') && (
