@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useLang } from '../i18n/LangContext';
+import { isMuted, setMuted } from './sound';
 
 export function LangSwitch() {
   const { lang, setLang } = useLang();
@@ -14,6 +15,22 @@ export function LangSwitch() {
   );
 }
 
+/** Turns sound effects on or off; the choice is remembered. */
+export function MuteButton() {
+  const { t } = useLang();
+  const [muted, setMutedState] = useState(isMuted);
+  const toggle = () => {
+    setMuted(!muted);
+    setMutedState(!muted);
+  };
+  const label = muted ? t.soundOn : t.soundOff;
+  return (
+    <button className="secondary small icon-only" onClick={toggle} aria-label={label} title={label} aria-pressed={muted}>
+      {muted ? '🔇' : '🔊'}
+    </button>
+  );
+}
+
 /** Top bar used during a game: small logo, extra buttons, language switch. */
 export function GameHeader({ children }: { children?: ReactNode }) {
   const { t } = useLang();
@@ -25,6 +42,7 @@ export function GameHeader({ children }: { children?: ReactNode }) {
       </div>
       <div className="header-actions">
         {children}
+        <MuteButton />
         <LangSwitch />
       </div>
     </header>

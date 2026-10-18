@@ -10,20 +10,22 @@ import { TokenIcon } from './TokenIcon';
 
 interface Props {
   game: GameState;
+  positions: number[]; // where to draw each token (it lags behind the game while hopping)
+  busy: boolean; // a move is being animated
   onSelectSpace: (index: number) => void;
   children: ReactNode; // shown in the middle of the board
 }
 
-export function Board({ game, onSelectSpace, children }: Props) {
+export function Board({ game, positions, busy, onSelectSpace, children }: Props) {
   const { lang, t } = useLang();
 
   return (
-    <div className="board">
+    <div className="board" data-busy={busy}>
       {BOARD.map((space, index) => {
         const { row, col, side } = cellPosition(index);
         const own = game.ownership[index];
         const icon = spaceIcon(index);
-        const here = game.players.filter((p) => !p.bankrupt && p.position === index);
+        const here = game.players.filter((p) => !p.bankrupt && positions[p.id] === index);
         const name = space.name[lang];
         const ownerName = own ? game.players[own.owner].name : null;
 

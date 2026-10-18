@@ -13,6 +13,7 @@ import { PlayerList } from './PlayerList';
 import { clearSavedGame, saveGame } from './savedGame';
 import { SpaceCard } from './SpaceCard';
 import { TradeDialog } from './TradeDialog';
+import { usePresentation } from './usePresentation';
 
 interface Props {
   initialGame: GameState;
@@ -27,6 +28,10 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   const [trading, setTrading] = useState(false);
   const [saving, setSaving] = useState(true); // false if this browser won't let us store the game
   const actor = actingPlayer(game);
+  const { positions, rolling, busy } = usePresentation(game);
+  // While a move plays out, the side panel keeps showing money as it was until the token arrives.
+  const settled = useRef(game);
+  if (!busy) settled.current = game;
 
   // Auto-save after every change; a finished game is removed so it isn't offered again.
   useEffect(() => {
@@ -83,7 +88,7 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
       </GameHeader>
 
       <div className="game-layout">
-        <Board game={game} onSelectSpace={setShownSpace}>
+        <Board game={game} positions={positions} busy={busy} onSelectSpace={setShownSpace}>
           <ActionPanel
             game={game}
             dispatch={dispatch}
@@ -91,12 +96,14 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
             onManage={() => setManaging(true)}
             onTrade={() => setTrading(true)}
             onNewGame={onNewGame}
+            busy={busy}
+            rolling={rolling}
           />
         </Board>
 
         <aside className="sidebar">
-          <PlayerList game={game} onShowSpace={setShownSpace} />
-          <GameLog game={game} />
+          <PlayerList game={busy ? settled.current : game} onShowSpace={setShownSpace} />
+          <GameLog game={busy ? settled.current : game} />
         </aside>
       </div>
 
