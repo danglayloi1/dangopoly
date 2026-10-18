@@ -8,7 +8,7 @@ const TEXT = {
     edition: 'Phiên bản Nghệ Tĩnh',
     tagline: 'Từ quê nhà Hà Tĩnh, qua cầu Bến Thủy, đến thành Vinh.',
     status: 'Đang xây dựng',
-    progress: 'Cột mốc 1/10: dựng dự án',
+    progress: 'Cột mốc 2/10: luật chơi cơ bản',
     startMoney: 'Vốn khởi đầu',
     players: 'Người chơi',
     playersValue: '2–4, chung một máy',
@@ -19,7 +19,7 @@ const TEXT = {
     edition: 'Nghệ Tĩnh Edition',
     tagline: 'From hometown Hà Tĩnh, across Bến Thủy bridge, to Vinh city.',
     status: 'Under construction',
-    progress: 'Milestone 1/10: project setup',
+    progress: 'Milestone 2/10: core game rules',
     startMoney: 'Starting money',
     players: 'Players',
     playersValue: '2–4, one shared device',
@@ -75,7 +75,7 @@ export default function App() {
         <span className="badge">{t.status}</span>
         <p>{t.progress}</p>
         <div className="bar">
-          <div className="fill" style={{ width: '10%' }} />
+          <div className="fill" style={{ width: '20%' }} />
         </div>
       </section>
 
