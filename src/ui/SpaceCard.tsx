@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { BOARD, START_SALARY, TRANSPORT_RENT } from '../data/board';
+import { BOARD, JAIL_FINE, START_SALARY, TRANSPORT_RENT } from '../data/board';
+import { DECK_NAMES } from '../data/cards';
 import { mortgageValue } from '../engine/buildings';
 import { formatMoney } from '../engine/money';
 import { ownsWholeGroup } from '../engine/rent';
@@ -96,7 +97,7 @@ export function SpaceCard({ index, game, dispatch, onClose }: Props) {
       body = <p>{t.startInfo(formatMoney(START_SALARY))}</p>;
       break;
     case 'jail':
-      body = <p>{t.jailInfo}</p>;
+      body = <p>{t.jailInfo(formatMoney(JAIL_FINE))}</p>;
       break;
     case 'rest':
       body = <p>{t.restInfo}</p>;
@@ -105,7 +106,7 @@ export function SpaceCard({ index, game, dispatch, onClose }: Props) {
       body = <p>{t.goToJailInfo}</p>;
       break;
     case 'card':
-      body = <p>{t.cardInfo}</p>;
+      body = <p>{t.cardInfo(DECK_NAMES[space.deck][lang])}</p>;
       break;
   }
 

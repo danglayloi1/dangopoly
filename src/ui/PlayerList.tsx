@@ -44,7 +44,19 @@ export function PlayerList({ game, onShowSpace }: Props) {
           >
             <TokenIcon token={p.token} color={PLAYER_COLORS[p.id]} size={36} />
             <div className="player-info">
-              <span className="player-name">{p.name}</span>
+              <span className="player-name">
+                {p.name}
+                {p.inJail && (
+                  <span className="badge-jail" title={t.inJailBadge}>
+                    🔒 {t.inJailBadge}
+                  </span>
+                )}
+                {p.jailCards.length > 0 && (
+                  <span className="badge-card" title={t.jailCards(p.jailCards.length)}>
+                    🎫×{p.jailCards.length}
+                  </span>
+                )}
+              </span>
               <span className="player-cash">{p.bankrupt ? t.bankrupt : formatMoney(p.cash)}</span>
             </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CARDS } from '../data/cards';
 import { actingPlayer } from '../engine/buildings';
 import { applyAction, GameError } from '../engine/game';
 import type { Action, GameState } from '../engine/types';
@@ -32,7 +33,13 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const w = window as unknown as { __dangopoly?: unknown };
-    w.__dangopoly = { getGame: () => gameRef.current, setGame };
+    w.__dangopoly = {
+      getGame: () => gameRef.current,
+      setGame,
+      // e.g. { type: 'ROLL', dice: [2, 3] } to land on an exact space
+      dispatch: (action: Action) => setGame((current) => applyAction(current, action)),
+      cards: CARDS,
+    };
     return () => {
       delete w.__dangopoly;
     };
