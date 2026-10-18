@@ -1,8 +1,15 @@
 import { BOARD } from '../data/board';
 import type { Lang } from '../data/text';
 import { formatMoney } from '../engine/money';
-import type { GameState, LogEntry } from '../engine/types';
+import type { GameState, LogEntry, TradeSide } from '../engine/types';
 import { STRINGS } from '../i18n/strings';
+
+/** One side of a trade as text: "Hồ Kẻ Gỗ + Kỳ Anh + 500k", or "nothing". */
+export function describeTradeSide(side: TradeSide, lang: Lang): string {
+  const parts = side.spaces.map((i) => BOARD[i].name[lang]);
+  if (side.cash > 0) parts.push(formatMoney(side.cash));
+  return parts.length > 0 ? parts.join(' + ') : STRINGS[lang].log.nothing;
+}
 
 /** One log entry as a sentence in the chosen language. */
 export function describeLog(entry: LogEntry, state: GameState, lang: Lang): string {
@@ -37,6 +44,14 @@ export function describeLog(entry: LogEntry, state: GameState, lang: Lang): stri
       return t.mortgaged(name(entry.player), space(entry.space), formatMoney(entry.amount));
     case 'unmortgaged':
       return t.unmortgaged(name(entry.player), space(entry.space), formatMoney(entry.amount));
+    case 'tradeProposed':
+    case 'tradeAccepted': {
+      const { from, to, give, take } = entry.offer;
+      const describe = entry.type === 'tradeProposed' ? t.tradeProposed : t.tradeAccepted;
+      return describe(name(from), name(to), describeTradeSide(give, lang), describeTradeSide(take, lang));
+    }
+    case 'tradeRejected':
+      return t.tradeRejected(name(entry.offer.from), name(entry.offer.to));
     case 'bankrupt':
       return entry.creditor === null
         ? t.bankruptToBank(name(entry.player))

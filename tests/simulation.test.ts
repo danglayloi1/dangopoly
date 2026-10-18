@@ -4,7 +4,8 @@ import { HOTEL, propertyActions } from '../src/engine/buildings';
 import { applyAction, createGame, legalActions, LOG_LIMIT } from '../src/engine/game';
 import { ownsWholeGroup } from '../src/engine/rent';
 import { nextUint32 } from '../src/engine/rng';
-import type { Action, GameState } from '../src/engine/types';
+import { canStartTrade, canTradeSpace, tradeProblem } from '../src/engine/trading';
+import type { Action, GameState, TradeOffer } from '../src/engine/types';
 
 // Stress test: play many random games and check that the rules never break basic invariants.
 
@@ -41,9 +42,34 @@ function invariantError(s: GameState): string | null {
   return null;
 }
 
+/** A random offer from the current player: up to 2 tradable spaces and some cash each way. */
+function randomOffer(s: GameState, seed: number): TradeOffer {
+  let r = seed;
+  const next = (n: number) => {
+    [r] = nextUint32(r);
+    return r % n;
+  };
+  const others = s.players.filter((p) => p.id !== s.current && !p.bankrupt);
+  const to = others[next(others.length)].id;
+  const pick = (owner: number) => {
+    const mine = Object.entries(s.ownership)
+      .filter(([space, own]) => own.owner === owner && canTradeSpace(s, Number(space)))
+      .map(([space]) => Number(space));
+    return mine.filter(() => next(3) === 0).slice(0, 2);
+  };
+  const cash = (owner: number) => (next(2) === 0 ? 0 : Math.min(s.players[owner].cash, next(20) * 100_000));
+  return {
+    from: s.current,
+    to,
+    give: { spaces: pick(s.current), cash: cash(s.current) },
+    take: { spaces: pick(to), cash: cash(to) },
+  };
+}
+
 describe('random games', () => {
   it('keep every invariant for 200 games', () => {
     let finished = 0;
+    let trades = 0;
     for (let seed = 1; seed <= 200; seed++) {
       let s = createGame({
         players: PLAYERS.slice(0, 2 + (seed % 3)).map((p) => ({ ...p })),
@@ -57,12 +83,17 @@ describe('random games', () => {
         const property = propertyActions(s);
         if (turn.length === 0) throw new Error(`seed ${seed}: no legal action in ${s.phase.kind}`);
         [choice] = nextUint32(choice);
-        // Mostly play the turn; sometimes build, sell or mortgage.
-        const action: Action =
+        // Mostly play the turn; sometimes build, sell or mortgage; now and then offer a trade.
+        let action: Action =
           property.length > 0 && choice % 10 < 3
             ? property[(choice >>> 4) % property.length]
             : { type: turn[(choice >>> 4) % turn.length] };
+        if (canStartTrade(s) && choice % 20 === 7) {
+          const offer = randomOffer(s, choice);
+          if (tradeProblem(s, offer) === null) action = { type: 'PROPOSE_TRADE', offer };
+        }
         s = applyAction(s, action);
+        if (action.type === 'ACCEPT_TRADE') trades++;
         const error = invariantError(s);
         if (error) throw new Error(`seed ${seed}, step ${step}, ${action.type}: ${error}`);
       }
@@ -72,5 +103,6 @@ describe('random games', () => {
       }
     }
     expect(finished).toBeGreaterThan(50);
+    expect(trades).toBeGreaterThan(100); // trades really happen in these games
   }, 30_000); // a few seconds of random play
 });

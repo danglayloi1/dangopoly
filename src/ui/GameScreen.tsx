@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { actingPlayer } from '../engine/buildings';
 import { applyAction, GameError } from '../engine/game';
 import type { Action, GameState } from '../engine/types';
@@ -10,6 +10,7 @@ import { GameHeader } from './Header';
 import { ManageDialog } from './ManageDialog';
 import { PlayerList } from './PlayerList';
 import { SpaceCard } from './SpaceCard';
+import { TradeDialog } from './TradeDialog';
 
 interface Props {
   initialGame: GameState;
@@ -21,7 +22,21 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   const [game, setGame] = useState(initialGame);
   const [shownSpace, setShownSpace] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
+  const [trading, setTrading] = useState(false);
   const actor = actingPlayer(game);
+
+  // Development only (removed from the published build): lets scripts/screenshots.mjs read the
+  // game and jump straight to a situation, e.g. "Đăng owns these properties".
+  const gameRef = useRef(game);
+  gameRef.current = game;
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const w = window as unknown as { __dangopoly?: unknown };
+    w.__dangopoly = { getGame: () => gameRef.current, setGame };
+    return () => {
+      delete w.__dangopoly;
+    };
+  }, []);
 
   const dispatch = (action: Action) => {
     setGame((current) => {
@@ -54,6 +69,7 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
             dispatch={dispatch}
             onShowSpace={setShownSpace}
             onManage={() => setManaging(true)}
+            onTrade={() => setTrading(true)}
             onNewGame={onNewGame}
           />
         </Board>
@@ -73,6 +89,7 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
           onClose={() => setManaging(false)}
         />
       )}
+      {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
       {shownSpace !== null && (
         <SpaceCard index={shownSpace} game={game} dispatch={dispatch} onClose={() => setShownSpace(null)} />
       )}

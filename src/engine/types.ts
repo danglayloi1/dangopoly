@@ -30,7 +30,26 @@ export type Phase =
       amount: number;
       reason: PaymentReason;
     }
-  | { kind: 'gameOver'; winner: number };
+  | { kind: 'gameOver'; winner: number }
+  // A trade offer waits for the other player's answer, then the turn carries on where it was.
+  | { kind: 'tradeOffer'; offer: TradeOffer; resume: TradablePhase };
+
+/** The phases in which the current player may propose a trade. */
+export type TradablePhase = Extract<Phase, { kind: 'awaitRoll' | 'awaitEndTurn' }>;
+
+/** What one side of a trade hands over. */
+export interface TradeSide {
+  spaces: number[]; // board indices
+  cash: number; // đồng
+}
+
+/** `from` (the current player) offers `give` to `to`, and asks for `take` in return. */
+export interface TradeOffer {
+  from: number;
+  to: number;
+  give: TradeSide;
+  take: TradeSide;
+}
 
 export type Dice = [number, number];
 
@@ -45,12 +64,16 @@ export type Action =
   | { type: 'BUILD_HOUSE'; space: number }
   | { type: 'SELL_HOUSE'; space: number }
   | { type: 'MORTGAGE'; space: number }
-  | { type: 'UNMORTGAGE'; space: number };
+  | { type: 'UNMORTGAGE'; space: number }
+  // Trading (see trading.ts)
+  | { type: 'PROPOSE_TRADE'; offer: TradeOffer }
+  | { type: 'ACCEPT_TRADE' }
+  | { type: 'REJECT_TRADE' };
 
 export type ActionType = Action['type'];
 export type PropertyAction = Extract<Action, { space: number }>;
-/** Turn-flow actions: everything except managing a particular property. */
-export type TurnActionType = Exclude<ActionType, PropertyAction['type']>;
+/** Actions that need no extra details: one button each. Excludes property actions and proposing a trade. */
+export type TurnActionType = Exclude<ActionType, PropertyAction['type'] | 'PROPOSE_TRADE'>;
 
 /** Structured history, so the UI can show it in either language. */
 export type LogEntry =
@@ -67,6 +90,9 @@ export type LogEntry =
   | { type: 'soldHouse'; player: number; space: number; houses: number; refund: number }
   | { type: 'mortgaged'; player: number; space: number; amount: number }
   | { type: 'unmortgaged'; player: number; space: number; amount: number }
+  | { type: 'tradeProposed'; offer: TradeOffer }
+  | { type: 'tradeAccepted'; offer: TradeOffer }
+  | { type: 'tradeRejected'; offer: TradeOffer }
   | { type: 'bankrupt'; player: number; creditor: number | null }
   | { type: 'won'; player: number };
 
