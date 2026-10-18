@@ -976,6 +976,89 @@ footer {
   font-weight: 800;
 }
 
+/* ===== Saved game ===== */
+.saved-card {
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.saved-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.saved-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.saved-head .muted {
+  font-size: 0.85rem;
+}
+
+.saved-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.saved-players li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.saved-players li.bankrupt {
+  opacity: 0.5;
+}
+
+.saved-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.saved-turn {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.saved-cash {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.saved-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.autosave {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .autosave-text {
+    display: none;
+  }
+}
+
 /* ===== Jail and cards ===== */
 .drawn-card {
   width: min(100%, 300px);

@@ -17,6 +17,40 @@ const mobile = flags.includes('--mobile');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}`);
 
 const scenes = {
+  /** Play a little, close and reopen the page, continue; then a damaged save is ignored. */
+  async save({ page, shot, startGame, act, click }) {
+    await startGame(['Đăng', 'Lan', 'Minh']);
+    await act({ type: 'ROLL', dice: [1, 2] }); // Đăng → Lò kẹo cu đơ
+    await click(/^Mua/);
+    await click(/Kết thúc lượt/);
+    await act({ type: 'ROLL', dice: [2, 4] }); // Lan → Suối nước nóng Sơn Kim
+    await click(/^Mua/);
+    await shot('playing');
+    const before = await page.evaluate(() => JSON.stringify(window.__dangopoly.getGame()));
+
+    await page.reload(); // like closing the tab and opening the game again
+    await page.waitForSelector('.saved-card');
+    await shot('reopened-shows-saved-game');
+
+    await click(/Chơi tiếp/);
+    await page.waitForSelector('.board');
+    await shot('continued');
+    const after = await page.evaluate(() => JSON.stringify(window.__dangopoly.getGame()));
+    console.log(after === before ? 'CHECK OK: the continued game is identical' : 'CHECK FAILED: game differs');
+
+    await click(/Ván mới/); // confirm is accepted automatically
+    await page.waitForSelector('.setup-card');
+    const cardAfterNew = await page.locator('.saved-card').count();
+    console.log(cardAfterNew === 0 ? 'CHECK OK: no saved game after "Ván mới"' : 'CHECK FAILED: save still offered');
+
+    await page.evaluate(() => localStorage.setItem('dangopoly.savedGame', '{"version":1,"game":{"players":"broken"'));
+    await page.reload();
+    await page.waitForSelector('.setup-card');
+    const ignored = (await page.locator('.saved-card').count()) === 0;
+    console.log(ignored ? 'CHECK OK: damaged save ignored, setup works' : 'CHECK FAILED: damaged save shown');
+    await shot('damaged-save-ignored');
+  },
+
   /** Cards (a move card, a jail card), going to jail, the jail options, and trading a jail card. */
   async jail({ page, shot, startGame, setup, act, click }) {
     await startGame(['Đăng', 'Lan']);
@@ -144,6 +178,7 @@ async function main() {
   );
   const page = await context.newPage();
   page.on('pageerror', (error) => console.error('Page error:', error.message));
+  page.on('dialog', (dialog) => dialog.accept()); // answer "OK" to confirm() prompts
 
   let count = 0;
   const shot = async (name) => {

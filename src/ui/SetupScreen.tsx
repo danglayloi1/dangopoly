@@ -4,8 +4,10 @@ import { TOKENS, type TokenId } from '../data/tokens';
 import { MAX_PLAYERS, MIN_PLAYERS, type NewPlayer } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
+import type { SaveFile } from '../engine/save';
 import { LangSwitch } from './Header';
 import { GROUP_COLORS, PLAYER_COLORS } from './look';
+import { SavedGameCard } from './SavedGameCard';
 import { millionsText, parseMillions } from './startingCash';
 import { TokenIcon } from './TokenIcon';
 
@@ -13,13 +15,16 @@ const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
 interface Props {
   onStart: (players: NewPlayer[], startingCash: number) => void;
+  saved: SaveFile | null;
+  onContinue: () => void;
+  onDiscard: () => void;
 }
 
 function firstFreeToken(used: TokenId[]): TokenId {
   return TOKENS.find((tok) => !used.includes(tok.id))!.id;
 }
 
-export function SetupScreen({ onStart }: Props) {
+export function SetupScreen({ onStart, saved, onContinue, onDiscard }: Props) {
   const { t, lang } = useLang();
   const [players, setPlayers] = useState<NewPlayer[]>([
     { name: '', token: 'nonLa' },
@@ -44,6 +49,7 @@ export function SetupScreen({ onStart }: Props) {
       setShowErrors(true);
       return;
     }
+    if (saved && !window.confirm(t.newGameReplaces)) return;
     onStart(
       players.map((p) => ({ ...p, name: p.name.trim() })),
       startingCash,
@@ -66,6 +72,8 @@ export function SetupScreen({ onStart }: Props) {
         <p className="edition">{t.edition}</p>
         <p className="tagline">{t.tagline}</p>
       </section>
+
+      {saved && <SavedGameCard saved={saved} onContinue={onContinue} onDiscard={onDiscard} />}
 
       <form className="setup-card" onSubmit={submit} noValidate>
         <h2>{t.players}</h2>
@@ -176,6 +184,7 @@ export function SetupScreen({ onStart }: Props) {
         <button type="submit" className="primary big">
           {t.startGame}
         </button>
+        {saved && <p className="muted center small-note">{t.newGameReplaces}</p>}
       </form>
 
       <footer>{t.footer}</footer>

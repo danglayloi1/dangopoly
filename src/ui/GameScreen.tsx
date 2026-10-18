@@ -10,6 +10,7 @@ import { GameLog } from './GameLog';
 import { GameHeader } from './Header';
 import { ManageDialog } from './ManageDialog';
 import { PlayerList } from './PlayerList';
+import { clearSavedGame, saveGame } from './savedGame';
 import { SpaceCard } from './SpaceCard';
 import { TradeDialog } from './TradeDialog';
 
@@ -24,7 +25,14 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   const [shownSpace, setShownSpace] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
   const [trading, setTrading] = useState(false);
+  const [saving, setSaving] = useState(true); // false if this browser won't let us store the game
   const actor = actingPlayer(game);
+
+  // Auto-save after every change; a finished game is removed so it isn't offered again.
+  useEffect(() => {
+    if (game.phase.kind === 'gameOver') clearSavedGame();
+    else setSaving(saveGame(game));
+  }, [game]);
 
   // Development only (removed from the published build): lets scripts/screenshots.mjs read the
   // game and jump straight to a situation, e.g. "Đăng owns these properties".
@@ -64,6 +72,11 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   return (
     <div className="game">
       <GameHeader>
+        {saving && game.phase.kind !== 'gameOver' && (
+          <span className="autosave muted" title={t.autoSaved}>
+            💾 <span className="autosave-text">{t.autoSaved}</span>
+          </span>
+        )}
         <button className="secondary small" onClick={confirmNewGame}>
           {t.newGame}
         </button>
