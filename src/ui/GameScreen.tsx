@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { actingPlayer } from '../engine/buildings';
 import { applyAction, GameError } from '../engine/game';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
@@ -6,6 +7,7 @@ import { ActionPanel } from './ActionPanel';
 import { Board } from './Board';
 import { GameLog } from './GameLog';
 import { GameHeader } from './Header';
+import { ManageDialog } from './ManageDialog';
 import { PlayerList } from './PlayerList';
 import { SpaceCard } from './SpaceCard';
 
@@ -18,6 +20,8 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   const { t } = useLang();
   const [game, setGame] = useState(initialGame);
   const [shownSpace, setShownSpace] = useState<number | null>(null);
+  const [managing, setManaging] = useState(false);
+  const actor = actingPlayer(game);
 
   const dispatch = (action: Action) => {
     setGame((current) => {
@@ -45,7 +49,13 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
 
       <div className="game-layout">
         <Board game={game} onSelectSpace={setShownSpace}>
-          <ActionPanel game={game} dispatch={dispatch} onShowSpace={setShownSpace} onNewGame={onNewGame} />
+          <ActionPanel
+            game={game}
+            dispatch={dispatch}
+            onShowSpace={setShownSpace}
+            onManage={() => setManaging(true)}
+            onNewGame={onNewGame}
+          />
         </Board>
 
         <aside className="sidebar">
@@ -54,7 +64,18 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
         </aside>
       </div>
 
-      {shownSpace !== null && <SpaceCard index={shownSpace} game={game} onClose={() => setShownSpace(null)} />}
+      {managing && actor !== null && (
+        <ManageDialog
+          game={game}
+          player={actor}
+          dispatch={dispatch}
+          onShowSpace={setShownSpace}
+          onClose={() => setManaging(false)}
+        />
+      )}
+      {shownSpace !== null && (
+        <SpaceCard index={shownSpace} game={game} dispatch={dispatch} onClose={() => setShownSpace(null)} />
+      )}
     </div>
   );
 }

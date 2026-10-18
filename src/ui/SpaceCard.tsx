@@ -1,39 +1,50 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { BOARD, START_SALARY, TRANSPORT_RENT } from '../data/board';
+import { mortgageValue } from '../engine/buildings';
 import { formatMoney } from '../engine/money';
-import type { GameState } from '../engine/types';
+import { ownsWholeGroup } from '../engine/rent';
+import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { Buildings, PropertyButtons } from './PropertyButtons';
+import { useModalDialog } from './useModalDialog';
 
 interface Props {
   index: number;
   game: GameState;
+  dispatch: (action: Action) => void;
   onClose: () => void;
 }
 
-function Row({ label, value }: { label: ReactNode; value: string }) {
+function Row({ label, value, current = false }: { label: ReactNode; value: string; current?: boolean }) {
   return (
-    <tr>
+    <tr className={current ? 'current' : undefined}>
       <td>{label}</td>
       <td className="num">{value}</td>
     </tr>
   );
 }
 
-/** A pop-up "title deed" with everything about one space. */
-export function SpaceCard({ index, game, onClose }: Props) {
+/** A pop-up "title deed" with everything about one space, and buttons to manage it if it's yours. */
+export function SpaceCard({ index, game, dispatch, onClose }: Props) {
   const { t, lang } = useLang();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const { dialogProps, close } = useModalDialog(onClose);
   const space = BOARD[index];
   const own = game.ownership[index];
   const otherLang = lang === 'vi' ? 'en' : 'vi';
 
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
-
   const headerColor = space.kind === 'property' ? GROUP_COLORS[space.group] : 'var(--surface-2)';
   const icon = spaceIcon(index);
+
+  // Which rent row applies right now: base, full set, 1–4 houses, or hotel (-1: none / mortgaged).
+  let currentRentRow = -1;
+  if (own && !own.mortgaged) {
+    if (space.kind === 'property') {
+      currentRentRow = own.houses > 0 ? own.houses + 1 : ownsWholeGroup(game, own.owner, index) ? 1 : 0;
+    } else if (space.kind === 'transport') {
+      currentRentRow = BOARD.filter((s, i) => s.kind === 'transport' && game.ownership[i]?.owner === own.owner).length - 1;
+    }
+  }
 
   let body: ReactNode;
   switch (space.kind) {
@@ -41,14 +52,14 @@ export function SpaceCard({ index, game, onClose }: Props) {
       body = (
         <table className="deed-table">
           <tbody>
-            <Row label={t.rent} value={formatMoney(space.rent[0])} />
-            <Row label={t.rentFullSet} value={formatMoney(space.rent[0] * 2)} />
+            <Row label={t.rent} value={formatMoney(space.rent[0])} current={currentRentRow === 0} />
+            <Row label={t.rentFullSet} value={formatMoney(space.rent[0] * 2)} current={currentRentRow === 1} />
             {[1, 2, 3, 4].map((n) => (
-              <Row key={n} label={t.rentHouses(n)} value={formatMoney(space.rent[n])} />
+              <Row key={n} label={t.rentHouses(n)} value={formatMoney(space.rent[n])} current={currentRentRow === n + 1} />
             ))}
-            <Row label={t.rentHotel} value={formatMoney(space.rent[5])} />
+            <Row label={t.rentHotel} value={formatMoney(space.rent[5])} current={currentRentRow === 6} />
             <Row label={t.houseCost} value={formatMoney(space.houseCost)} />
-            <Row label={t.mortgageValue} value={formatMoney(space.price / 2)} />
+            <Row label={t.mortgageValue} value={formatMoney(mortgageValue(index))} />
           </tbody>
         </table>
       );
@@ -58,9 +69,9 @@ export function SpaceCard({ index, game, onClose }: Props) {
         <table className="deed-table">
           <tbody>
             {TRANSPORT_RENT.map((rent, i) => (
-              <Row key={i} label={t.transportRent(i + 1)} value={formatMoney(rent)} />
+              <Row key={i} label={t.transportRent(i + 1)} value={formatMoney(rent)} current={currentRentRow === i} />
             ))}
-            <Row label={t.mortgageValue} value={formatMoney(space.price / 2)} />
+            <Row label={t.mortgageValue} value={formatMoney(mortgageValue(index))} />
           </tbody>
         </table>
       );
@@ -72,7 +83,7 @@ export function SpaceCard({ index, game, onClose }: Props) {
           <p>{t.utilityRent2}</p>
           <table className="deed-table">
             <tbody>
-              <Row label={t.mortgageValue} value={formatMoney(space.price / 2)} />
+              <Row label={t.mortgageValue} value={formatMoney(mortgageValue(index))} />
             </tbody>
           </table>
         </>
@@ -101,15 +112,7 @@ export function SpaceCard({ index, game, onClose }: Props) {
   const ownable = space.kind === 'property' || space.kind === 'transport' || space.kind === 'utility';
 
   return (
-    <dialog
-      ref={dialog}
-      className="space-card"
-      onClose={onClose}
-      onClick={(e) => {
-        if (e.target === dialog.current) dialog.current.close(); // click on the backdrop
-      }}
-      aria-labelledby="space-card-title"
-    >
+    <dialog {...dialogProps} className="space-card" aria-labelledby="space-card-title">
       <div className="deed-header" style={{ borderTopColor: headerColor }}>
         {icon && <span className="deed-icon">{icon}</span>}
         <h2 id="space-card-title">{space.name[lang]}</h2>
@@ -123,18 +126,25 @@ export function SpaceCard({ index, game, onClose }: Props) {
         )}
         {body}
         {ownable && (
-          <p className="deed-owner">
+          <div className="deed-owner">
             {own ? (
               <>
                 <span className="owner-dot" style={{ background: PLAYER_COLORS[own.owner] }} />
                 {t.ownedBy(game.players[own.owner].name)}
+                {own.mortgaged && <span className="mortgaged-tag">{t.mortgaged}</span>}
+                {own.houses > 0 && (
+                  <span className="buildings-inline" title={t.buildings(own.houses)}>
+                    <Buildings houses={own.houses} />
+                  </span>
+                )}
               </>
             ) : (
               t.unowned
             )}
-          </p>
+          </div>
         )}
-        <button className="secondary" onClick={() => dialog.current?.close()} autoFocus>
+        <PropertyButtons game={game} space={index} dispatch={dispatch} />
+        <button className="secondary" onClick={close} autoFocus>
           {t.close}
         </button>
       </div>

@@ -5,6 +5,7 @@ import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { cellPosition } from './geometry';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
 
 interface Props {
@@ -36,16 +37,22 @@ export function Board({ game, onSelectSpace, children }: Props) {
         return (
           <button
             key={index}
-            className={`cell side-${side} kind-${space.kind}${own ? ' owned' : ''}`}
+            className={`cell side-${side} kind-${space.kind}${own ? ' owned' : ''}${own?.mortgaged ? ' mortgaged' : ''}`}
             style={style}
             onClick={() => onSelectSpace(index)}
             aria-label={ownerName ? `${name}, ${t.ownedBy(ownerName)}` : name}
           >
-            {space.kind === 'property' && <span className="strip" aria-hidden="true" />}
+            {space.kind === 'property' && (
+              <span className="strip" aria-hidden="true">
+                <Buildings houses={own?.houses ?? 0} />
+              </span>
+            )}
             <span className="cell-body">
               {icon && <span className="cell-icon">{icon}</span>}
               <span className="cell-name">{name}</span>
-              {isOwnable(space) && <span className="cell-price">{formatMoney(space.price)}</span>}
+              {isOwnable(space) && (
+                <span className="cell-price">{own?.mortgaged ? t.mortgaged : formatMoney(space.price)}</span>
+              )}
             </span>
             {own && <span className="owner-mark" aria-hidden="true" />}
             {here.length > 0 && (

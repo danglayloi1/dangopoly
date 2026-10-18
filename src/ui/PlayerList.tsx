@@ -5,6 +5,7 @@ import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { holdingsOf, type Holding } from './holdings';
 import { GROUP_COLORS, PLAYER_COLORS } from './look';
+import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
 
 interface Props {
@@ -66,11 +67,24 @@ export function PlayerList({ game, onShowSpace }: Props) {
                       )}
                     </span>
                     <span className="holding-names">
-                      {h.owned.map((index) => (
-                        <button key={index} className="link" onClick={() => onShowSpace(index)}>
-                          {BOARD[index].name[lang]}
-                        </button>
-                      ))}
+                      {h.owned.map((index) => {
+                        const own = game.ownership[index];
+                        return (
+                          <button
+                            key={index}
+                            className={`link${own.mortgaged ? ' is-mortgaged' : ''}`}
+                            title={own.mortgaged ? t.mortgaged : own.houses > 0 ? t.buildings(own.houses) : undefined}
+                            onClick={() => onShowSpace(index)}
+                          >
+                            {BOARD[index].name[lang]}
+                            {own.houses > 0 && (
+                              <span className="buildings-inline">
+                                <Buildings houses={own.houses} />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </span>
                   </li>
                 ))}

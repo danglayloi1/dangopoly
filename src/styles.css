@@ -517,6 +517,209 @@ footer {
 .strip {
   flex: 0 0 22%;
   background: var(--group);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35cqw;
+}
+
+.side-left .strip,
+.side-right .strip {
+  flex-direction: column;
+}
+
+/* Buildings: small green houses, or one red hotel. */
+.building {
+  display: inline-block;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+}
+
+.building.house {
+  background: #2e9d5b;
+}
+
+.building.hotel {
+  background: #d64545;
+}
+
+.strip .building.house {
+  width: 1.15cqw;
+  height: 1.15cqw;
+}
+
+.strip .building.hotel {
+  width: 2.6cqw;
+  height: 1.4cqw;
+}
+
+.side-left .strip .building.hotel,
+.side-right .strip .building.hotel {
+  width: 1.4cqw;
+  height: 2.6cqw;
+}
+
+.buildings-inline {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.buildings-inline .building.house {
+  width: 8px;
+  height: 8px;
+}
+
+.buildings-inline .building.hotel {
+  width: 16px;
+  height: 9px;
+}
+
+.cell.mortgaged .cell-body {
+  opacity: 0.55;
+}
+
+.cell.mortgaged .cell-price {
+  font-style: italic;
+}
+
+.cell.mortgaged {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 6px,
+    color-mix(in srgb, var(--text) 8%, transparent) 6px 8px
+  );
+}
+
+.mortgaged-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
+  color: var(--text);
+}
+
+.link.is-mortgaged {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* ===== Manage properties dialog ===== */
+.manage-dialog {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.manage-dialog::backdrop {
+  background: rgba(10, 12, 16, 0.55);
+}
+
+.manage-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px 12px;
+  background: var(--surface);
+  border-top: 8px solid;
+  border-bottom: 1px solid var(--border);
+}
+
+.manage-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.manage-cash strong {
+  font-size: 1.15rem;
+}
+
+.manage-body {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.manage-hint {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.manage-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.manage-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manage-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.manage-row.mortgaged {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 8px,
+    color-mix(in srgb, var(--text) 5%, transparent) 8px 10px
+  );
+}
+
+.manage-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.manage-status {
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.property-buttons {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.property-buttons button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.deed-table tr.current td {
+  font-weight: 800;
+  color: var(--accent);
 }
 
 .cell-body {
