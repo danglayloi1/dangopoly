@@ -19,6 +19,13 @@ const vi = {
   startingMoneyInvalid: 'Nhập số từ 1 đến 100 (triệu), ví dụ 12 hoặc 7,5',
   startingMoneyHint: (salary: string) => `Bản gốc: 15tr. Mỗi lần qua Xuất phát nhận thêm ${salary}.`,
   needNames: 'Hãy nhập tên cho mọi người chơi',
+  savedGameTitle: 'Ván đang chơi dở',
+  savedAt: (when: string) => `Lưu lúc ${when}`,
+  continueGame: 'Chơi tiếp',
+  discardGame: 'Bỏ ván này',
+  confirmDiscard: 'Xóa ván đang lưu? Không thể khôi phục lại.',
+  newGameReplaces: 'Bắt đầu ván mới sẽ thay thế ván đang lưu.',
+  autoSaved: 'Tự động lưu',
 
   // Game
   newGame: 'Ván mới',
@@ -187,6 +194,13 @@ const en: Strings = {
   startingMoneyInvalid: 'Enter a number from 1 to 100 (million), e.g. 12 or 7.5',
   startingMoneyHint: (salary) => `Classic: 15tr. Everyone also collects ${salary} each time they pass Start.`,
   needNames: 'Enter a name for every player',
+  savedGameTitle: 'Unfinished game',
+  savedAt: (when) => `Saved ${when}`,
+  continueGame: 'Continue',
+  discardGame: 'Discard',
+  confirmDiscard: 'Delete the saved game? This cannot be undone.',
+  newGameReplaces: 'Starting a new game replaces the saved one.',
+  autoSaved: 'Saved automatically',
 
   newGame: 'New game',
   confirmNewGame: 'Quit this game and start a new one?',
