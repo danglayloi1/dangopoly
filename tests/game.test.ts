@@ -105,21 +105,24 @@ describe('rolling and moving', () => {
 });
 
 describe('doubles', () => {
-  it('lets the player roll again, up to three times', () => {
-    let s = play(newGame(), roll(1, 1)); // -> 2, card space (nothing yet)
+  it('lets the player roll again after doubles', () => {
+    let s = play(newGame(), roll(2, 2)); // -> 4, income tax
     expect(s.current).toBe(0);
     expect(legalActions(s)).toEqual(['ROLL']);
 
-    s = play(s, roll(2, 2), DECLINE); // -> 6, decline to buy
+    s = play(s, roll(3, 3)); // -> 10, just visiting
     expect(legalActions(s)).toEqual(['ROLL']);
+  });
 
-    s = play(s, roll(3, 3), DECLINE); // -> 12, third doubles
-    expect(s.doublesCount).toBe(3);
+  it('sends the player to jail on the third doubles in a row, without moving', () => {
+    const s = play(newGame(), roll(2, 2), roll(3, 3), roll(1, 1));
+    expect(s.players[0]).toMatchObject({ position: 10, inJail: true });
+    expect(s.log.at(-1)).toEqual({ type: 'wentToJail', player: 0, reason: 'doubles' });
     expect(legalActions(s)).toEqual(['END_TURN']);
   });
 
   it('ends the turn normally without doubles', () => {
-    const s = play(newGame(), roll(1, 1), roll(1, 2), DECLINE);
+    const s = play(newGame(), roll(2, 2), roll(1, 3), DECLINE); // 4, then 8 (Hồ Kẻ Gỗ)
     expect(legalActions(s)).toEqual(['END_TURN']);
   });
 });

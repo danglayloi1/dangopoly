@@ -1,4 +1,5 @@
-import { BOARD } from '../data/board';
+import { BOARD, JAIL_FINE } from '../data/board';
+import { CARDS, DECK_NAMES } from '../data/cards';
 import type { Lang } from '../data/text';
 import { formatMoney } from '../engine/money';
 import type { GameState, LogEntry, TradeSide } from '../engine/types';
@@ -7,6 +8,7 @@ import { STRINGS } from '../i18n/strings';
 /** One side of a trade as text: "Hồ Kẻ Gỗ + Kỳ Anh + 500k", or "nothing". */
 export function describeTradeSide(side: TradeSide, lang: Lang): string {
   const parts = side.spaces.map((i) => BOARD[i].name[lang]);
+  if (side.jailCards > 0) parts.push(STRINGS[lang].jailCards(side.jailCards));
   if (side.cash > 0) parts.push(formatMoney(side.cash));
   return parts.length > 0 ? parts.join(' + ') : STRINGS[lang].log.nothing;
 }
@@ -52,6 +54,22 @@ export function describeLog(entry: LogEntry, state: GameState, lang: Lang): stri
     }
     case 'tradeRejected':
       return t.tradeRejected(name(entry.offer.from), name(entry.offer.to));
+    case 'drewCard':
+      return t.drewCard(name(entry.player), DECK_NAMES[entry.deck][lang], CARDS[entry.deck][entry.card].text[lang]);
+    case 'cardCollected':
+      return t.cardCollected(name(entry.player), formatMoney(entry.amount));
+    case 'cardPaid':
+      return t.cardPaid(name(entry.player), formatMoney(entry.amount));
+    case 'paidEach':
+      return t.paidEach(name(entry.player), formatMoney(entry.each));
+    case 'collectedFromEach':
+      return t.collectedFromEach(name(entry.player), formatMoney(entry.total));
+    case 'wentToJail':
+      return t.wentToJail(name(entry.player), entry.reason);
+    case 'stayedInJail':
+      return t.stayedInJail(name(entry.player), entry.attempt);
+    case 'leftJail':
+      return t.leftJail(name(entry.player), entry.how, formatMoney(JAIL_FINE));
     case 'bankrupt':
       return entry.creditor === null
         ? t.bankruptToBank(name(entry.player))

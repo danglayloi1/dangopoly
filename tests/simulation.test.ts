@@ -38,6 +38,19 @@ function invariantError(s: GameState): string | null {
     }
   }
   if (s.phase.kind !== 'gameOver' && s.players[s.current].bankrupt) return 'a bankrupt player has the turn';
+  for (const p of s.players) {
+    if (p.inJail && p.position !== 10) return `player ${p.id} is in jail but not on the jail space`;
+    // 3 only while they owe the forced fine after the third failed roll
+    const owesFine = s.phase.kind === 'inDebt' && s.phase.debtor === p.id && s.phase.reason.kind === 'jailFine';
+    if (p.jailAttempts < 0 || p.jailAttempts > (owesFine ? 3 : 2)) {
+      return `player ${p.id} has ${p.jailAttempts} jail attempts`;
+    }
+  }
+  for (const deck of ['chance', 'community'] as const) {
+    const held = s.players.flatMap((p) => p.jailCards).filter((d) => d === deck).length;
+    if (new Set(s.decks[deck]).size !== s.decks[deck].length) return `duplicate cards in ${deck}`;
+    if (s.decks[deck].length + held !== 16) return `${deck} has ${s.decks[deck].length} cards + ${held} held`;
+  }
   if (s.log.length > LOG_LIMIT) return 'log grew past its limit';
   return null;
 }
@@ -61,8 +74,8 @@ function randomOffer(s: GameState, seed: number): TradeOffer {
   return {
     from: s.current,
     to,
-    give: { spaces: pick(s.current), cash: cash(s.current) },
-    take: { spaces: pick(to), cash: cash(to) },
+    give: { spaces: pick(s.current), cash: cash(s.current), jailCards: next(3) === 0 ? s.players[s.current].jailCards.length : 0 },
+    take: { spaces: pick(to), cash: cash(to), jailCards: next(3) === 0 ? s.players[to].jailCards.length : 0 },
   };
 }
 

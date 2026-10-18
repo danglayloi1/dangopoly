@@ -58,7 +58,10 @@ export function Board({ game, onSelectSpace, children }: Props) {
             {here.length > 0 && (
               <span className="cell-tokens">
                 {here.map((p) => (
-                  <span key={p.id} className={`cell-token${p.id === game.current ? ' current' : ''}`}>
+                  <span
+                    key={p.id}
+                    className={`cell-token${p.id === game.current ? ' current' : ''}${p.inJail ? ' jailed' : ''}`}
+                  >
                     <TokenIcon token={p.token} color={PLAYER_COLORS[p.id]} size="100%" title={p.name} />
                   </span>
                 ))}

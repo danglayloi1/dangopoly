@@ -1,16 +1,28 @@
 // The game rules as a pure state machine: applyAction(state, action) -> new state.
 // The input state is never modified, so the UI can keep history, save, and undo cheaply.
 
-import { BOARD, BOARD_SIZE, isOwnable, START_SALARY, STARTING_CASH } from '../data/board';
+import {
+  BOARD,
+  BOARD_SIZE,
+  isOwnable,
+  JAIL_FINE,
+  JAIL_SPACE,
+  START_SALARY,
+  STARTING_CASH,
+  UTILITY_CARD_MULTIPLIER,
+} from '../data/board';
+import { CARDS, type CardDeck } from '../data/cards';
 import type { TokenId } from '../data/tokens';
 import { houseCost, houseRefund, isPropertyActionAllowed, mortgageValue, unmortgageCost } from './buildings';
+import { jailFreeCardIndex, shuffledDeck } from './deck';
+import { rentFor } from './rent';
 import { rollDie } from './rng';
 import { normalizeOffer, offerProblem, tradeProblem } from './trading';
-import { rentFor } from './rent';
 import type {
   Action,
   Dice,
   GameState,
+  JailReason,
   PaymentReason,
   Player,
   PropertyAction,
@@ -35,6 +47,8 @@ export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 4;
 /** Only the most recent log entries are kept, so the state (copied on every action) stays small. */
 export const LOG_LIMIT = 200;
+/** Failed rolls for doubles allowed in jail; on the last one the fine must be paid. */
+export const MAX_JAIL_ATTEMPTS = 3;
 
 export function createGame({ players, seed, startingCash = STARTING_CASH }: NewGameOptions): GameState {
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
@@ -50,6 +64,11 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
     throw new GameError(`Starting money must be a positive whole number of đồng, got ${startingCash}`);
   }
 
+  let rngState = (seed ?? Date.now()) >>> 0;
+  const [chance, afterChance] = shuffledDeck(CARDS.chance.length, rngState);
+  const [community, afterCommunity] = shuffledDeck(CARDS.community.length, afterChance);
+  rngState = afterCommunity;
+
   return {
     players: players.map((p, id) => ({
       id,
@@ -58,13 +77,19 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
       cash: startingCash,
       position: 0,
       bankrupt: false,
+      inJail: false,
+      jailAttempts: 0,
+      jailCards: [],
     })),
     current: 0,
     ownership: {},
     phase: { kind: 'awaitRoll' },
     dice: null,
     doublesCount: 0,
-    rngState: (seed ?? Date.now()) >>> 0,
+    extraRoll: false,
+    decks: { chance, community },
+    lastCard: null,
+    rngState,
     log: [{ type: 'turnStarted', player: 0 }],
   };
 }
@@ -76,8 +101,14 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
 export function legalActions(state: GameState): TurnActionType[] {
   const { phase } = state;
   switch (phase.kind) {
-    case 'awaitRoll':
-      return ['ROLL'];
+    case 'awaitRoll': {
+      const player = state.players[state.current];
+      if (!player.inJail) return ['ROLL'];
+      const actions: TurnActionType[] = ['ROLL'];
+      if (player.cash >= JAIL_FINE) actions.push('PAY_JAIL_FINE');
+      if (player.jailCards.length > 0) actions.push('USE_JAIL_CARD');
+      return actions;
+    }
     case 'awaitBuy': {
       const space = BOARD[phase.space];
       const canAfford = isOwnable(space) && state.players[state.current].cash >= space.price;
@@ -128,6 +159,12 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'END_TURN':
       advanceTurn(s);
       break;
+    case 'PAY_JAIL_FINE':
+      payJailFine(s);
+      break;
+    case 'USE_JAIL_CARD':
+      useJailCard(s);
+      break;
     case 'BUILD_HOUSE':
     case 'SELL_HOUSE':
     case 'MORTGAGE':
@@ -166,13 +203,58 @@ function roll(s: GameState, forced?: Dice): void {
   }
 
   const player = s.players[s.current];
+  const doubles = dice[0] === dice[1];
   s.dice = dice;
-  if (dice[0] === dice[1]) s.doublesCount++;
+  s.lastCard = null;
   s.log.push({ type: 'rolled', player: player.id, dice });
 
-  // TODO(milestone 5): a third double in a row sends the player to jail.
+  if (player.inJail) {
+    rollInJail(s, player, doubles);
+    return;
+  }
+
+  if (doubles) s.doublesCount++;
+  if (s.doublesCount === 3) {
+    goToJail(s, player, 'doubles'); // three doubles in a row: straight to jail, no move
+    return;
+  }
+  s.extraRoll = doubles;
   moveBy(s, player, dice[0] + dice[1]);
   resolveLanding(s, player);
+}
+
+/** In jail, the roll is an attempt to get out with doubles. Leaving jail never earns an extra roll. */
+function rollInJail(s: GameState, player: Player, doubles: boolean): void {
+  s.extraRoll = false;
+  if (doubles) {
+    leaveJail(s, player, 'doubles');
+    moveByDice(s, player);
+    return;
+  }
+
+  player.jailAttempts++;
+  if (player.jailAttempts < MAX_JAIL_ATTEMPTS) {
+    s.log.push({ type: 'stayedInJail', player: player.id, attempt: player.jailAttempts });
+    s.phase = { kind: 'awaitEndTurn' };
+    return;
+  }
+  // Third failure: pay the fine, then move by this roll. If they can't pay, payDebt() continues later.
+  if (!charge(s, player.id, null, JAIL_FINE, { kind: 'jailFine' })) return;
+  leaveJail(s, player, 'forcedFine');
+  moveByDice(s, player);
+}
+
+function payJailFine(s: GameState): void {
+  const player = s.players[s.current];
+  player.cash -= JAIL_FINE;
+  leaveJail(s, player, 'fine'); // then they roll as usual
+}
+
+function useJailCard(s: GameState): void {
+  const player = s.players[s.current];
+  const deck = player.jailCards.pop()!;
+  s.decks[deck].push(jailFreeCardIndex(deck)); // the card goes back under its deck
+  leaveJail(s, player, 'card');
 }
 
 function buy(s: GameState): void {
@@ -199,6 +281,14 @@ function payDebt(s: GameState): void {
   if (s.phase.kind !== 'inDebt') return;
   const { debtor, creditor, amount, reason } = s.phase;
   transfer(s, debtor, creditor, amount, reason);
+
+  if (reason.kind === 'jailFine') {
+    // The forced fine is paid: now leave jail and move by the roll that failed.
+    const player = s.players[debtor];
+    leaveJail(s, player, 'forcedFine');
+    moveByDice(s, player);
+    return;
+  }
   finishLanding(s);
 }
 
@@ -221,8 +311,16 @@ function declareBankruptcy(s: GameState): void {
       s.ownership[index] = { owner: creditor, houses: 0, mortgaged: own.mortgaged };
     }
   }
-  if (creditor !== null) s.players[creditor].cash += assets;
+  if (creditor !== null) {
+    s.players[creditor].cash += assets;
+    s.players[creditor].jailCards.push(...player.jailCards);
+  } else {
+    for (const deck of player.jailCards) s.decks[deck].push(jailFreeCardIndex(deck));
+  }
   player.cash = 0;
+  player.jailCards = [];
+  player.inJail = false;
+  player.jailAttempts = 0;
   player.bankrupt = true;
   s.log.push({ type: 'bankrupt', player: debtor, creditor });
 
@@ -292,6 +390,8 @@ function acceptTrade(s: GameState): void {
   to.cash += offer.give.cash - offer.take.cash;
   for (const space of offer.give.spaces) s.ownership[space].owner = to.id;
   for (const space of offer.take.spaces) s.ownership[space].owner = from.id;
+  for (let i = 0; i < offer.give.jailCards; i++) to.jailCards.push(from.jailCards.pop()!);
+  for (let i = 0; i < offer.take.jailCards; i++) from.jailCards.push(to.jailCards.pop()!);
 
   s.log.push({ type: 'tradeAccepted', offer });
   s.phase = resume;
@@ -313,7 +413,95 @@ function advanceTurn(s: GameState): void {
   s.phase = { kind: 'awaitRoll' };
   s.dice = null;
   s.doublesCount = 0;
+  s.extraRoll = false;
+  s.lastCard = null;
   s.log.push({ type: 'turnStarted', player: next });
+}
+
+// ---------------------------------------------------------------------------
+// Jail and cards
+
+function goToJail(s: GameState, player: Player, reason: JailReason): void {
+  player.position = JAIL_SPACE;
+  player.inJail = true;
+  player.jailAttempts = 0;
+  s.extraRoll = false; // going to jail ends the turn, even after doubles
+  s.log.push({ type: 'wentToJail', player: player.id, reason });
+  s.phase = { kind: 'awaitEndTurn' };
+}
+
+function leaveJail(s: GameState, player: Player, how: 'doubles' | 'fine' | 'card' | 'forcedFine'): void {
+  player.inJail = false;
+  player.jailAttempts = 0;
+  s.log.push({ type: 'leftJail', player: player.id, how });
+}
+
+function drawCard(s: GameState, player: Player, deck: CardDeck): void {
+  const card = s.decks[deck].shift()!;
+  const { effect } = CARDS[deck][card];
+  s.lastCard = { deck, card };
+  s.log.push({ type: 'drewCard', player: player.id, deck, card });
+  if (effect.kind !== 'jailFree') s.decks[deck].push(card); // back under the deck
+
+  const others = s.players.filter((p) => p.id !== player.id && !p.bankrupt);
+  switch (effect.kind) {
+    case 'collect':
+      player.cash += effect.amount;
+      s.log.push({ type: 'cardCollected', player: player.id, amount: effect.amount });
+      break;
+    case 'pay':
+      if (!charge(s, player.id, null, effect.amount, { kind: 'card' })) return;
+      break;
+    case 'collectFromEach': {
+      // Players who can't afford it give what they have (they can't go bankrupt on someone else's turn).
+      let total = 0;
+      for (const other of others) {
+        const paid = Math.min(effect.amount, other.cash);
+        other.cash -= paid;
+        total += paid;
+      }
+      player.cash += total;
+      s.log.push({ type: 'collectedFromEach', player: player.id, total });
+      break;
+    }
+    case 'payEach': {
+      const total = effect.amount * others.length;
+      if (!charge(s, player.id, null, total, { kind: 'payEach', each: effect.amount })) return;
+      break;
+    }
+    case 'advanceTo':
+      moveBy(s, player, (effect.space - player.position + BOARD_SIZE) % BOARD_SIZE);
+      resolveLanding(s, player);
+      return;
+    case 'advanceToNearest': {
+      let steps = 1;
+      while (BOARD[(player.position + steps) % BOARD_SIZE].kind !== effect.target) steps++;
+      moveBy(s, player, steps);
+      resolveLanding(s, player, effect.target === 'transport' ? { rentMultiplier: 2 } : { utilityPerPip: UTILITY_CARD_MULTIPLIER });
+      return;
+    }
+    case 'moveBack':
+      player.position = (player.position - effect.steps + BOARD_SIZE) % BOARD_SIZE;
+      s.log.push({ type: 'moved', player: player.id, to: player.position });
+      resolveLanding(s, player);
+      return;
+    case 'goToJail':
+      goToJail(s, player, 'card');
+      return;
+    case 'jailFree':
+      player.jailCards.push(deck);
+      break;
+    case 'repairs': {
+      let amount = 0;
+      for (const own of Object.values(s.ownership)) {
+        if (own.owner !== player.id) continue;
+        amount += own.houses === 5 ? effect.perHotel : own.houses * effect.perHouse;
+      }
+      if (amount > 0 && !charge(s, player.id, null, amount, { kind: 'card' })) return;
+      break;
+    }
+  }
+  finishLanding(s);
 }
 
 // ---------------------------------------------------------------------------
@@ -328,8 +516,9 @@ function copyState(state: GameState): GameState {
   for (const [index, own] of Object.entries(state.ownership)) ownership[Number(index)] = { ...own };
   return {
     ...state,
-    players: state.players.map((p) => ({ ...p })),
+    players: state.players.map((p) => ({ ...p, jailCards: [...p.jailCards] })),
     ownership,
+    decks: { chance: [...state.decks.chance], community: [...state.decks.community] },
     log: state.log.slice(),
   };
 }
@@ -344,7 +533,17 @@ function moveBy(s: GameState, player: Player, steps: number): void {
   s.log.push({ type: 'moved', player: player.id, to: player.position });
 }
 
-function resolveLanding(s: GameState, player: Player): void {
+function moveByDice(s: GameState, player: Player): void {
+  moveBy(s, player, s.dice![0] + s.dice![1]);
+  resolveLanding(s, player);
+}
+
+interface RentOptions {
+  rentMultiplier?: number; // "pay double rent" cards
+  utilityPerPip?: number; // "pay the dice total × 100k" card
+}
+
+function resolveLanding(s: GameState, player: Player, options: RentOptions = {}): void {
   const index = player.position;
   const space = BOARD[index];
 
@@ -357,9 +556,12 @@ function resolveLanding(s: GameState, player: Player): void {
         s.phase = { kind: 'awaitBuy', space: index };
         return;
       }
-      if (own.owner !== player.id) {
-        const dice = s.dice!;
-        const rent = rentFor(s, index, dice[0] + dice[1]);
+      if (own.owner !== player.id && !own.mortgaged) {
+        const diceTotal = s.dice![0] + s.dice![1];
+        const rent =
+          space.kind === 'utility' && options.utilityPerPip
+            ? diceTotal * options.utilityPerPip
+            : rentFor(s, index, diceTotal) * (options.rentMultiplier ?? 1);
         if (rent > 0 && !charge(s, player.id, own.owner, rent, { kind: 'rent', space: index })) return;
       }
       break;
@@ -367,12 +569,15 @@ function resolveLanding(s: GameState, player: Player): void {
     case 'tax':
       if (!charge(s, player.id, null, space.amount, { kind: 'tax', space: index })) return;
       break;
+    case 'goToJail':
+      goToJail(s, player, 'space');
+      return;
+    case 'card':
+      drawCard(s, player, space.deck);
+      return;
     case 'start':
     case 'jail':
     case 'rest':
-      break;
-    case 'goToJail': // TODO(milestone 5): send the player to jail.
-    case 'card': // TODO(milestone 5): draw a card.
       break;
   }
   finishLanding(s);
@@ -380,7 +585,7 @@ function resolveLanding(s: GameState, player: Player): void {
 
 /**
  * Makes `debtor` pay. Returns false if they can't afford it; the game then waits in the
- * inDebt phase until they pay (after raising money, milestone 4) or go bankrupt.
+ * inDebt phase until they pay (after selling or mortgaging) or go bankrupt.
  */
 function charge(
   s: GameState,
@@ -408,15 +613,28 @@ function transfer(
   s.players[debtor].cash -= amount;
   if (creditor !== null) s.players[creditor].cash += amount;
 
-  if (reason.kind === 'rent' && creditor !== null) {
-    s.log.push({ type: 'paidRent', player: debtor, to: creditor, space: reason.space, amount });
-  } else {
-    s.log.push({ type: 'paidTax', player: debtor, space: reason.space, amount });
+  switch (reason.kind) {
+    case 'rent':
+      s.log.push({ type: 'paidRent', player: debtor, to: creditor!, space: reason.space, amount });
+      break;
+    case 'tax':
+      s.log.push({ type: 'paidTax', player: debtor, space: reason.space, amount });
+      break;
+    case 'card':
+      s.log.push({ type: 'cardPaid', player: debtor, amount });
+      break;
+    case 'payEach':
+      for (const other of s.players) {
+        if (other.id !== debtor && !other.bankrupt) other.cash += reason.each;
+      }
+      s.log.push({ type: 'paidEach', player: debtor, each: reason.each });
+      break;
+    case 'jailFine':
+      break; // logged as leftJail 'forcedFine'
   }
 }
 
-/** After the landing is fully resolved: roll again on doubles, otherwise wait for End turn. */
+/** After the landing is fully resolved: roll again after doubles, otherwise wait for End turn. */
 function finishLanding(s: GameState): void {
-  const rolledDoubles = s.dice !== null && s.dice[0] === s.dice[1];
-  s.phase = rolledDoubles && s.doublesCount < 3 ? { kind: 'awaitRoll' } : { kind: 'awaitEndTurn' };
+  s.phase = s.extraRoll ? { kind: 'awaitRoll' } : { kind: 'awaitEndTurn' };
 }

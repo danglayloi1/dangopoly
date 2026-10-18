@@ -44,8 +44,8 @@ function offer(partial: OfferParts): TradeOffer {
   return {
     from: partial.from ?? 0,
     to: partial.to ?? 1,
-    give: { spaces: [], cash: 0, ...partial.give },
-    take: { spaces: [], cash: 0, ...partial.take },
+    give: { spaces: [], cash: 0, jailCards: 0, ...partial.give } as TradeOffer['give'],
+    take: { spaces: [], cash: 0, jailCards: 0, ...partial.take } as TradeOffer['take'],
   };
 }
 const propose = (o: TradeOffer): Action => ({ type: 'PROPOSE_TRADE', offer: o });
@@ -104,7 +104,7 @@ describe('accepting and rejecting', () => {
   });
 
   it('works after rolling, then goes back to ending the turn', () => {
-    const rolled = play(splitBrown(), roll(2, 5)); // lands on 7 (card space)
+    const rolled = play(splitBrown(), roll(1, 5), { type: 'DECLINE' }); // lands on 6, doesn't buy
     expect(legalActions(rolled)).toEqual(['END_TURN']);
     const s = play(rolled, propose(offer({ give: { cash: 1_000_000 }, take: { spaces: [3] } })), ACCEPT);
     expect(legalActions(s)).toEqual(['END_TURN']);

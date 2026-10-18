@@ -976,6 +976,82 @@ footer {
   font-weight: 800;
 }
 
+/* ===== Jail and cards ===== */
+.drawn-card {
+  width: min(100%, 300px);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+
+.drawn-card-head {
+  padding: 6px 10px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.drawn-card.deck-chance .drawn-card-head {
+  background: #e8833a;
+}
+
+.drawn-card.deck-community .drawn-card-head {
+  background: #2d7dd2;
+}
+
+.drawn-card p {
+  margin: 0;
+  padding: 10px 12px 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.jail-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  /* a few bars on each side, so the text stays easy to read */
+  border-inline: 10px solid transparent;
+  border-image: repeating-linear-gradient(90deg, #9aa1ad 0 3px, transparent 3px 5px) 0 10;
+}
+
+.jail-box span {
+  font-size: 0.9em;
+  color: var(--muted);
+}
+
+.cell-token.jailed {
+  outline: 2px dashed #9aa1ad;
+  outline-offset: 1px;
+  filter: saturate(0.6);
+}
+
+.badge-jail,
+.badge-card {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.badge-jail {
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+.badge-card {
+  background: color-mix(in srgb, #f2c94c 35%, transparent);
+}
+
 .deed-table tr.current td {
   font-weight: 800;
   color: var(--accent);
@@ -1109,13 +1185,44 @@ footer {
   }
 }
 
+/* On small boards (phones) the middle is only ~250px tall: keep its buttons compact. */
+@container (max-width: 560px) {
+  .action-panel .primary,
+  .action-panel .secondary,
+  .action-panel .danger {
+    padding: 6px 11px;
+    font-size: 0.95em;
+  }
+
+  .action-buttons,
+  .side-actions {
+    gap: 6px;
+  }
+
+  .jail-box {
+    padding: 4px 10px;
+  }
+
+  .jail-box span,
+  .trade-offer .pass-device,
+  .turn-events li:not(:last-child) {
+    display: none; /* the full history is right below the board */
+  }
+
+  .drawn-card p {
+    padding: 6px 8px 8px;
+    font-size: 0.95em;
+  }
+}
+
 /* ===== Middle of the board ===== */
 .board-center {
   grid-row: 2 / 11;
   grid-column: 2 / 11;
   background: var(--board-bg);
   display: flex;
-  align-items: center;
+  /* "safe": if the content is taller than the middle, scroll from the top instead of cutting it off */
+  align-items: safe center;
   justify-content: center;
   padding: 2cqw;
   overflow: auto;

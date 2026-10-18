@@ -23,10 +23,12 @@ interface SideProps {
   onToggle: (space: number) => void;
   cashText: string;
   onCashText: (text: string) => void;
+  cards: number;
+  onCards: (count: number) => void;
 }
 
-/** One column of the trade: what one player puts in (properties and cash). */
-function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashText }: SideProps) {
+/** One column of the trade: what one player puts in (properties, jail cards and cash). */
+function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashText, cards, onCards }: SideProps) {
   const { t, lang } = useLang();
   const p = game.players[player];
   const holdings = holdingsOf(game, player);
@@ -39,7 +41,7 @@ function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashTex
         {t.sideGives(p.name)}
       </h3>
 
-      {holdings.length === 0 && <p className="muted">{t.noTradables}</p>}
+      {holdings.length === 0 && p.jailCards.length === 0 && <p className="muted">{t.noTradables}</p>}
       <ul className="trade-spaces">
         {holdings.flatMap((h) =>
           h.owned.map((space) => {
@@ -68,6 +70,16 @@ function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashTex
             );
           }),
         )}
+        {/* Jail cards are all alike, so the boxes just count how many are offered. */}
+        {p.jailCards.map((_, i) => (
+          <li key={`card-${i}`}>
+            <label className="trade-space">
+              <input type="checkbox" checked={i < cards} onChange={(e) => onCards(e.target.checked ? i + 1 : i)} />
+              <span className="holding-swatch icon">🎫</span>
+              <span className="trade-space-name">{t.jailCardName}</span>
+            </label>
+          </li>
+        ))}
       </ul>
 
       <label className="trade-cash">
@@ -102,6 +114,8 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
   const [take, setTake] = useState<Set<number>>(new Set());
   const [giveCash, setGiveCash] = useState('');
   const [takeCash, setTakeCash] = useState('');
+  const [giveCards, setGiveCards] = useState(0);
+  const [takeCards, setTakeCards] = useState(0);
 
   const toggle = (set: Set<number>, update: (s: Set<number>) => void) => (space: number) => {
     const next = new Set(set);
@@ -114,6 +128,7 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
     setPartner(id);
     setTake(new Set()); // their properties differ
     setTakeCash('');
+    setTakeCards(0);
   };
 
   const giveAmount = parseMoney(giveCash);
@@ -124,8 +139,8 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
       : {
           from: me,
           to: partner,
-          give: { spaces: [...give], cash: giveAmount },
-          take: { spaces: [...take], cash: takeAmount },
+          give: { spaces: [...give], cash: giveAmount, jailCards: giveCards },
+          take: { spaces: [...take], cash: takeAmount, jailCards: takeCards },
         };
   const problem = offer ? tradeProblem(game, offer) : 'badCash';
   const partnerName = game.players[partner]?.name ?? '';
@@ -170,6 +185,8 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
             onToggle={toggle(give, setGive)}
             cashText={giveCash}
             onCashText={setGiveCash}
+            cards={giveCards}
+            onCards={setGiveCards}
           />
           <div className="trade-arrows" aria-hidden="true">
             ⇄
@@ -183,6 +200,8 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
               onToggle={toggle(take, setTake)}
               cashText={takeCash}
               onCashText={setTakeCash}
+              cards={takeCards}
+              onCards={setTakeCards}
             />
           )}
         </div>

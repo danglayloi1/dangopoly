@@ -1,4 +1,4 @@
-import { BOARD, isOwnable } from '../data/board';
+import { BOARD, isOwnable, JAIL_FINE } from '../data/board';
 import { actingPlayer } from '../engine/buildings';
 import { legalActions } from '../engine/game';
 import { formatMoney } from '../engine/money';
@@ -6,6 +6,7 @@ import { canStartTrade } from '../engine/trading';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { Dice } from './Dice';
+import { DrawnCard } from './DrawnCard';
 import { describeLog } from './logText';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
@@ -31,7 +32,12 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
 
   // What happened since this turn started (most recent last).
   const turnStart = game.log.findLastIndex((e) => e.type === 'turnStarted');
-  const events = game.log.slice(turnStart + 1).slice(-3);
+  // The drawn card is shown on its own, so leave it out of this short list.
+  const events = game.log
+    .slice(turnStart + 1)
+    .filter((e) => e.type !== 'drewCard')
+    .slice(-3);
+  const waitingInJail = phase.kind === 'awaitRoll' && player.inJail;
 
   const offerSpace = phase.kind === 'awaitBuy' ? BOARD[phase.space] : null;
   const offer = offerSpace && isOwnable(offerSpace) ? offerSpace : null;
@@ -64,6 +70,15 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
 
       <Dice dice={game.dice} />
 
+      {game.lastCard && <DrawnCard deck={game.lastCard.deck} card={game.lastCard.card} />}
+
+      {waitingInJail && (
+        <div className="jail-box">
+          <strong>🔒 {t.inJailTitle(player.name)}</strong>
+          <span>{t.jailAttempt(player.jailAttempts)}</span>
+        </div>
+      )}
+
       {events.length > 0 && (
         <ul className="turn-events" aria-live="polite">
           {events.map((e, i) => (
@@ -94,7 +109,18 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
       <div className="action-buttons">
         {allowed.includes('ROLL') && (
           <button className="primary big" onClick={() => dispatch({ type: 'ROLL' })} autoFocus>
-            🎲 {game.dice && game.dice[0] === game.dice[1] ? t.rollAgain : t.roll}
+            🎲{' '}
+            {waitingInJail ? t.rollForDoubles : game.dice && game.dice[0] === game.dice[1] ? t.rollAgain : t.roll}
+          </button>
+        )}
+        {allowed.includes('PAY_JAIL_FINE') && (
+          <button className="secondary" onClick={() => dispatch({ type: 'PAY_JAIL_FINE' })}>
+            {t.payJailFine(formatMoney(JAIL_FINE))}
+          </button>
+        )}
+        {allowed.includes('USE_JAIL_CARD') && (
+          <button className="secondary" onClick={() => dispatch({ type: 'USE_JAIL_CARD' })}>
+            🎫 {t.useJailCard}
           </button>
         )}
         {offer && (

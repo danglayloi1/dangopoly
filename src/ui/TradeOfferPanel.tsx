@@ -15,7 +15,9 @@ interface Props {
 
 function SideList({ side, onShowSpace }: { side: TradeSide; onShowSpace: (index: number) => void }) {
   const { t, lang } = useLang();
-  if (side.spaces.length === 0 && side.cash === 0) return <p className="muted">{t.log.nothing}</p>;
+  if (side.spaces.length === 0 && side.cash === 0 && side.jailCards === 0) {
+    return <p className="muted">{t.log.nothing}</p>;
+  }
   return (
     <ul className="offer-items">
       {side.spaces.map((space) => {
@@ -33,6 +35,12 @@ function SideList({ side, onShowSpace }: { side: TradeSide; onShowSpace: (index:
           </li>
         );
       })}
+      {side.jailCards > 0 && (
+        <li>
+          <span className="holding-swatch icon">🎫</span>
+          {side.jailCards > 1 ? t.jailCards(side.jailCards) : t.jailCardName}
+        </li>
+      )}
       {side.cash > 0 && (
         <li className="offer-cash">
           <span className="holding-swatch icon">💰</span>
