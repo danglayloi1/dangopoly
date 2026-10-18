@@ -3,9 +3,10 @@
 
 import { BOARD, BOARD_SIZE, isOwnable, START_SALARY, STARTING_CASH } from '../data/board';
 import type { TokenId } from '../data/tokens';
+import { houseCost, houseRefund, isPropertyActionAllowed, mortgageValue, unmortgageCost } from './buildings';
 import { rollDie } from './rng';
 import { rentFor } from './rent';
-import type { Action, ActionType, Dice, GameState, PaymentReason, Player } from './types';
+import type { Action, Dice, GameState, PaymentReason, Player, PropertyAction, TurnActionType } from './types';
 
 export class GameError extends Error {}
 
@@ -58,8 +59,11 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
   };
 }
 
-/** The actions allowed right now. The UI shows a button for each. */
-export function legalActions(state: GameState): ActionType[] {
+/**
+ * The turn actions allowed right now (the UI shows a button for each). Property actions
+ * (build, sell, mortgage) depend on the space; see propertyActions() in buildings.ts.
+ */
+export function legalActions(state: GameState): TurnActionType[] {
   const { phase } = state;
   switch (phase.kind) {
     case 'awaitRoll':
@@ -80,9 +84,15 @@ export function legalActions(state: GameState): ActionType[] {
   }
 }
 
+function isAllowed(state: GameState, action: Action): boolean {
+  if ('space' in action) return isPropertyActionAllowed(state, action);
+  return legalActions(state).includes(action.type);
+}
+
 export function applyAction(state: GameState, action: Action): GameState {
-  if (!legalActions(state).includes(action.type)) {
-    throw new GameError(`${action.type} is not allowed now (phase: ${state.phase.kind})`);
+  if (!isAllowed(state, action)) {
+    const where = 'space' in action ? ` on space ${action.space}` : '';
+    throw new GameError(`${action.type}${where} is not allowed now (phase: ${state.phase.kind})`);
   }
   const s = copyState(state);
 
@@ -104,6 +114,12 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'END_TURN':
       advanceTurn(s);
+      break;
+    case 'BUILD_HOUSE':
+    case 'SELL_HOUSE':
+    case 'MORTGAGE':
+    case 'UNMORTGAGE':
+      manageProperty(s, action);
       break;
   }
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
@@ -194,6 +210,44 @@ function declareBankruptcy(s: GameState): void {
     s.log.push({ type: 'won', player: remaining[0].id });
   } else {
     advanceTurn(s);
+  }
+}
+
+/** Build, sell, mortgage or unmortgage. Already checked by isPropertyActionAllowed; the phase stays the same. */
+function manageProperty(s: GameState, action: PropertyAction): void {
+  const { space } = action;
+  const own = s.ownership[space];
+  const player = s.players[own.owner];
+
+  switch (action.type) {
+    case 'BUILD_HOUSE': {
+      const cost = houseCost(space);
+      player.cash -= cost;
+      own.houses++;
+      s.log.push({ type: 'builtHouse', player: player.id, space, houses: own.houses, cost });
+      break;
+    }
+    case 'SELL_HOUSE': {
+      const refund = houseRefund(space);
+      player.cash += refund;
+      own.houses--;
+      s.log.push({ type: 'soldHouse', player: player.id, space, houses: own.houses, refund });
+      break;
+    }
+    case 'MORTGAGE': {
+      const amount = mortgageValue(space);
+      player.cash += amount;
+      own.mortgaged = true;
+      s.log.push({ type: 'mortgaged', player: player.id, space, amount });
+      break;
+    }
+    case 'UNMORTGAGE': {
+      const amount = unmortgageCost(space);
+      player.cash -= amount;
+      own.mortgaged = false;
+      s.log.push({ type: 'unmortgaged', player: player.id, space, amount });
+      break;
+    }
   }
 }
 

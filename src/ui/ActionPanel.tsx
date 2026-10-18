@@ -1,4 +1,5 @@
 import { BOARD, isOwnable } from '../data/board';
+import { actingPlayer } from '../engine/buildings';
 import { legalActions } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import type { Action, GameState } from '../engine/types';
@@ -12,15 +13,18 @@ interface Props {
   game: GameState;
   dispatch: (action: Action) => void;
   onShowSpace: (index: number) => void;
+  onManage: () => void;
   onNewGame: () => void;
 }
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
-export function ActionPanel({ game, dispatch, onShowSpace, onNewGame }: Props) {
+export function ActionPanel({ game, dispatch, onShowSpace, onManage, onNewGame }: Props) {
   const { t, lang } = useLang();
   const { phase } = game;
   const player = game.players[game.current];
   const allowed = legalActions(game);
+  const actor = actingPlayer(game);
+  const actorOwnsSomething = actor !== null && Object.values(game.ownership).some((o) => o.owner === actor);
 
   // What happened since this turn started (most recent last).
   const turnStart = game.log.findLastIndex((e) => e.type === 'turnStarted');
@@ -106,7 +110,12 @@ export function ActionPanel({ game, dispatch, onShowSpace, onNewGame }: Props) {
           </button>
         )}
         {allowed.includes('DECLARE_BANKRUPTCY') && (
-          <button className="danger" onClick={() => dispatch({ type: 'DECLARE_BANKRUPTCY' })}>
+          <button
+            className="danger"
+            onClick={() => {
+              if (window.confirm(t.confirmBankruptcy)) dispatch({ type: 'DECLARE_BANKRUPTCY' });
+            }}
+          >
             {t.declareBankruptcy}
           </button>
         )}
@@ -116,6 +125,15 @@ export function ActionPanel({ game, dispatch, onShowSpace, onNewGame }: Props) {
           </button>
         )}
       </div>
+
+      {actorOwnsSomething && (
+        <button
+          className={phase.kind === 'inDebt' && !allowed.includes('PAY_DEBT') ? 'primary' : 'secondary small'}
+          onClick={onManage}
+        >
+          🏠 {t.manage}
+        </button>
+      )}
     </div>
   );
 }

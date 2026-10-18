@@ -29,6 +29,14 @@ export function describeLog(entry: LogEntry, state: GameState, lang: Lang): stri
       return t.paidTax(name(entry.player), space(entry.space), formatMoney(entry.amount));
     case 'cannotPay':
       return t.cannotPay(name(entry.player), formatMoney(entry.amount));
+    case 'builtHouse':
+      return t.builtHouse(name(entry.player), space(entry.space), entry.houses, formatMoney(entry.cost));
+    case 'soldHouse':
+      return t.soldHouse(name(entry.player), space(entry.space), entry.houses, formatMoney(entry.refund));
+    case 'mortgaged':
+      return t.mortgaged(name(entry.player), space(entry.space), formatMoney(entry.amount));
+    case 'unmortgaged':
+      return t.unmortgaged(name(entry.player), space(entry.space), formatMoney(entry.amount));
     case 'bankrupt':
       return entry.creditor === null
         ? t.bankruptToBank(name(entry.player))

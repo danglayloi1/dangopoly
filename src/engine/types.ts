@@ -40,9 +40,17 @@ export type Action =
   | { type: 'DECLINE' }
   | { type: 'PAY_DEBT' }
   | { type: 'DECLARE_BANKRUPTCY' }
-  | { type: 'END_TURN' };
+  | { type: 'END_TURN' }
+  // Managing your properties (see buildings.ts for when each is allowed)
+  | { type: 'BUILD_HOUSE'; space: number }
+  | { type: 'SELL_HOUSE'; space: number }
+  | { type: 'MORTGAGE'; space: number }
+  | { type: 'UNMORTGAGE'; space: number };
 
 export type ActionType = Action['type'];
+export type PropertyAction = Extract<Action, { space: number }>;
+/** Turn-flow actions: everything except managing a particular property. */
+export type TurnActionType = Exclude<ActionType, PropertyAction['type']>;
 
 /** Structured history, so the UI can show it in either language. */
 export type LogEntry =
@@ -55,6 +63,10 @@ export type LogEntry =
   | { type: 'paidRent'; player: number; to: number; space: number; amount: number }
   | { type: 'paidTax'; player: number; space: number; amount: number }
   | { type: 'cannotPay'; player: number; amount: number }
+  | { type: 'builtHouse'; player: number; space: number; houses: number; cost: number }
+  | { type: 'soldHouse'; player: number; space: number; houses: number; refund: number }
+  | { type: 'mortgaged'; player: number; space: number; amount: number }
+  | { type: 'unmortgaged'; player: number; space: number; amount: number }
   | { type: 'bankrupt'; player: number; creditor: number | null }
   | { type: 'won'; player: number };
 
