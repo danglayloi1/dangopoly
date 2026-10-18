@@ -9,8 +9,8 @@ export default function App() {
   const [game, setGame] = useState<GameState | null>(null);
   const [gameNumber, setGameNumber] = useState(0);
 
-  const start = (players: NewPlayer[]) => {
-    setGame(createGame({ players }));
+  const start = (players: NewPlayer[], startingCash: number) => {
+    setGame(createGame({ players, startingCash }));
     setGameNumber((n) => n + 1);
   };
 

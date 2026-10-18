@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { STARTING_CASH } from '../data/board';
+import { START_SALARY, STARTING_CASH } from '../data/board';
 import { TOKENS, type TokenId } from '../data/tokens';
 import { MAX_PLAYERS, MIN_PLAYERS, type NewPlayer } from '../engine/game';
 import { formatMoney } from '../engine/money';
@@ -8,8 +8,10 @@ import { LangSwitch } from './Header';
 import { GROUP_COLORS, PLAYER_COLORS } from './look';
 import { TokenIcon } from './TokenIcon';
 
+const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
+
 interface Props {
-  onStart: (players: NewPlayer[]) => void;
+  onStart: (players: NewPlayer[], startingCash: number) => void;
 }
 
 function firstFreeToken(used: TokenId[]): TokenId {
@@ -22,6 +24,7 @@ export function SetupScreen({ onStart }: Props) {
     { name: '', token: 'nonLa' },
     { name: '', token: 'conTrau' },
   ]);
+  const [startingCash, setStartingCash] = useState(STARTING_CASH);
   const [showErrors, setShowErrors] = useState(false);
 
   const update = (i: number, change: Partial<NewPlayer>) =>
@@ -38,7 +41,10 @@ export function SetupScreen({ onStart }: Props) {
       setShowErrors(true);
       return;
     }
-    onStart(players.map((p) => ({ ...p, name: p.name.trim() })));
+    onStart(
+      players.map((p) => ({ ...p, name: p.name.trim() })),
+      startingCash,
+    );
   };
 
   return (
@@ -121,6 +127,25 @@ export function SetupScreen({ onStart }: Props) {
           </button>
         )}
 
+        <div className="starting-cash">
+          <h2 id="starting-cash-label">{t.startingMoney}</h2>
+          <div className="segmented" role="radiogroup" aria-labelledby="starting-cash-label">
+            {STARTING_CASH_CHOICES.map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                role="radio"
+                aria-checked={amount === startingCash}
+                className={amount === startingCash ? 'selected' : ''}
+                onClick={() => setStartingCash(amount)}
+              >
+                {formatMoney(amount)}
+              </button>
+            ))}
+          </div>
+          <p className="muted">{t.startingMoneyHint(formatMoney(START_SALARY))}</p>
+        </div>
+
         {showErrors && players.some((p) => p.name.trim() === '') && (
           <p className="form-error" role="alert">
             {t.needNames}
@@ -130,7 +155,6 @@ export function SetupScreen({ onStart }: Props) {
         <button type="submit" className="primary big">
           {t.startGame}
         </button>
-        <p className="muted center">{t.startingMoney(formatMoney(STARTING_CASH))}</p>
       </form>
 
       <footer>{t.footer}</footer>

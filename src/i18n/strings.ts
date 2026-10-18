@@ -13,7 +13,8 @@ const vi = {
   addPlayer: 'Thêm người chơi',
   removePlayer: 'Bỏ người chơi',
   startGame: 'Bắt đầu chơi',
-  startingMoney: (amount: string) => `Mỗi người bắt đầu với ${amount}`,
+  startingMoney: 'Vốn khởi đầu',
+  startingMoneyHint: (salary: string) => `Bản gốc: 15tr. Mỗi lần qua Xuất phát nhận thêm ${salary}.`,
   needNames: 'Hãy nhập tên cho mọi người chơi',
 
   // Game
@@ -37,6 +38,20 @@ const vi = {
   history: 'Diễn biến',
   ownedBy: (name: string) => `Chủ: ${name}`,
   unowned: 'Chưa có chủ',
+  noProperties: 'Chưa có tài sản',
+  fullSet: 'Đủ bộ',
+  groupNames: {
+    brown: 'Nâu',
+    lightblue: 'Xanh nhạt',
+    pink: 'Hồng',
+    orange: 'Cam',
+    red: 'Đỏ',
+    yellow: 'Vàng',
+    green: 'Xanh lá',
+    darkblue: 'Xanh đậm',
+    transport: 'Giao thông',
+    utility: 'Điện nước',
+  },
 
   // Space details
   price: 'Giá mua',
@@ -88,7 +103,8 @@ const en: Strings = {
   addPlayer: 'Add player',
   removePlayer: 'Remove player',
   startGame: 'Start game',
-  startingMoney: (amount) => `Everyone starts with ${amount}`,
+  startingMoney: 'Starting money',
+  startingMoneyHint: (salary) => `Classic: 15tr. Everyone also collects ${salary} each time they pass Start.`,
   needNames: 'Enter a name for every player',
 
   newGame: 'New game',
@@ -111,6 +127,20 @@ const en: Strings = {
   history: 'History',
   ownedBy: (name) => `Owner: ${name}`,
   unowned: 'For sale',
+  noProperties: 'No properties yet',
+  fullSet: 'Full set',
+  groupNames: {
+    brown: 'Brown',
+    lightblue: 'Light blue',
+    pink: 'Pink',
+    orange: 'Orange',
+    red: 'Red',
+    yellow: 'Yellow',
+    green: 'Green',
+    darkblue: 'Dark blue',
+    transport: 'Transport',
+    utility: 'Utilities',
+  },
 
   price: 'Price',
   rent: 'Rent',
