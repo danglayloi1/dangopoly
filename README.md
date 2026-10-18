@@ -28,6 +28,8 @@ automatically (see [.github/workflows/deploy.yml](.github/workflows/deploy.yml))
 | Folder | What's inside |
 |---|---|
 | `src/engine/` | Game rules, with no UI code |
-| `src/` | React UI |
+| `src/data/` | The board, tokens, and other fixed game data |
+| `src/ui/` | React screens: setup, board, player list, history |
+| `src/i18n/` | Vietnamese and English text |
 | `tests/` | Unit tests (Vitest) |
 | `public/` | Static files such as the icon |

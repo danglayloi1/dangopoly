@@ -35,6 +35,9 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
   if (players.some((p) => p.name.trim() === '')) {
     throw new GameError('Every player needs a name');
   }
+  if (!Number.isInteger(startingCash) || startingCash <= 0) {
+    throw new GameError(`Starting money must be a positive whole number of đồng, got ${startingCash}`);
+  }
 
   return {
     players: players.map((p, id) => ({

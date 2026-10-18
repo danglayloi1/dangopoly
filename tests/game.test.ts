@@ -61,6 +61,14 @@ describe('createGame', () => {
       createGame({ players: [{ name: 'A', token: 'nonLa' }, { name: '  ', token: 'xeDap' }] }),
     ).toThrow(GameError);
   });
+
+  it('uses a custom starting amount and rejects invalid ones', () => {
+    const two = PLAYERS.slice(0, 2).map((p) => ({ ...p }));
+    expect(createGame({ players: two, startingCash: 7_500_000 }).players[0].cash).toBe(7_500_000);
+    expect(() => createGame({ players: two, startingCash: 0 })).toThrow(GameError);
+    expect(() => createGame({ players: two, startingCash: 1.5 })).toThrow(GameError);
+    expect(() => createGame({ players: two, startingCash: Number.NaN })).toThrow(GameError);
+  });
 });
 
 describe('rolling and moving', () => {
