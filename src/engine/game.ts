@@ -5,8 +5,18 @@ import { BOARD, BOARD_SIZE, isOwnable, START_SALARY, STARTING_CASH } from '../da
 import type { TokenId } from '../data/tokens';
 import { houseCost, houseRefund, isPropertyActionAllowed, mortgageValue, unmortgageCost } from './buildings';
 import { rollDie } from './rng';
+import { normalizeOffer, offerProblem, tradeProblem } from './trading';
 import { rentFor } from './rent';
-import type { Action, Dice, GameState, PaymentReason, Player, PropertyAction, TurnActionType } from './types';
+import type {
+  Action,
+  Dice,
+  GameState,
+  PaymentReason,
+  Player,
+  PropertyAction,
+  TradeOffer,
+  TurnActionType,
+} from './types';
 
 export class GameError extends Error {}
 
@@ -79,6 +89,8 @@ export function legalActions(state: GameState): TurnActionType[] {
       return state.players[phase.debtor].cash >= phase.amount
         ? ['PAY_DEBT', 'DECLARE_BANKRUPTCY']
         : ['DECLARE_BANKRUPTCY'];
+    case 'tradeOffer':
+      return ['ACCEPT_TRADE', 'REJECT_TRADE'];
     case 'gameOver':
       return [];
   }
@@ -86,6 +98,7 @@ export function legalActions(state: GameState): TurnActionType[] {
 
 function isAllowed(state: GameState, action: Action): boolean {
   if ('space' in action) return isPropertyActionAllowed(state, action);
+  if (action.type === 'PROPOSE_TRADE') return tradeProblem(state, action.offer) === null;
   return legalActions(state).includes(action.type);
 }
 
@@ -120,6 +133,15 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'MORTGAGE':
     case 'UNMORTGAGE':
       manageProperty(s, action);
+      break;
+    case 'PROPOSE_TRADE':
+      proposeTrade(s, action.offer);
+      break;
+    case 'ACCEPT_TRADE':
+      acceptTrade(s);
+      break;
+    case 'REJECT_TRADE':
+      rejectTrade(s);
       break;
   }
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
@@ -249,6 +271,36 @@ function manageProperty(s: GameState, action: PropertyAction): void {
       break;
     }
   }
+}
+
+function proposeTrade(s: GameState, offer: TradeOffer): void {
+  if (s.phase.kind !== 'awaitRoll' && s.phase.kind !== 'awaitEndTurn') return;
+  const stored = normalizeOffer(offer);
+  s.phase = { kind: 'tradeOffer', offer: stored, resume: s.phase };
+  s.log.push({ type: 'tradeProposed', offer: stored });
+}
+
+function acceptTrade(s: GameState): void {
+  if (s.phase.kind !== 'tradeOffer') return;
+  const { offer, resume } = s.phase;
+  // Nothing can change while an offer waits, but check again rather than trust it.
+  if (offerProblem(s, offer) !== null) throw new GameError('The offer is no longer valid');
+
+  const from = s.players[offer.from];
+  const to = s.players[offer.to];
+  from.cash += offer.take.cash - offer.give.cash;
+  to.cash += offer.give.cash - offer.take.cash;
+  for (const space of offer.give.spaces) s.ownership[space].owner = to.id;
+  for (const space of offer.take.spaces) s.ownership[space].owner = from.id;
+
+  s.log.push({ type: 'tradeAccepted', offer });
+  s.phase = resume;
+}
+
+function rejectTrade(s: GameState): void {
+  if (s.phase.kind !== 'tradeOffer') return;
+  s.log.push({ type: 'tradeRejected', offer: s.phase.offer });
+  s.phase = s.phase.resume;
 }
 
 function advanceTurn(s: GameState): void {

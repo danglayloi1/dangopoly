@@ -31,11 +31,12 @@ export function houseRefund(space: number): number {
 
 /**
  * The player who may manage properties right now: the debtor while a debt is open,
- * otherwise the player whose turn it is. Nobody once the game is over.
+ * otherwise the player whose turn it is. Nobody once the game is over or while a trade offer waits.
  */
 export function actingPlayer(state: GameState): number | null {
   switch (state.phase.kind) {
     case 'gameOver':
+    case 'tradeOffer': // nothing can be changed while an offer waits for an answer
       return null;
     case 'inDebt':
       return state.phase.debtor;
