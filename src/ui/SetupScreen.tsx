@@ -15,6 +15,7 @@ const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
 interface Props {
   onStart: (players: NewPlayer[], startingCash: number) => void;
+  onTutorial: () => void;
   saved: SaveFile | null;
   onContinue: () => void;
   onDiscard: () => void;
@@ -24,7 +25,7 @@ function firstFreeToken(used: TokenId[]): TokenId {
   return TOKENS.find((tok) => !used.includes(tok.id))!.id;
 }
 
-export function SetupScreen({ onStart, saved, onContinue, onDiscard }: Props) {
+export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard }: Props) {
   const { t, lang } = useLang();
   const [players, setPlayers] = useState<NewPlayer[]>([
     { name: '', token: 'nonLa' },
@@ -74,6 +75,13 @@ export function SetupScreen({ onStart, saved, onContinue, onDiscard }: Props) {
       </section>
 
       {saved && <SavedGameCard saved={saved} onContinue={onContinue} onDiscard={onDiscard} />}
+
+      <section className="tutorial-card">
+        <p>{t.tutorialIntro}</p>
+        <button className={saved ? 'secondary' : 'primary'} onClick={onTutorial}>
+          🎓 {t.tutorialStart}
+        </button>
+      </section>
 
       <form className="setup-card" onSubmit={submit} noValidate>
         <h2>{t.players}</h2>

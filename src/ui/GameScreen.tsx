@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS } from '../data/cards';
 import { actingPlayer } from '../engine/buildings';
 import { applyAction, GameError } from '../engine/game';
@@ -14,13 +14,16 @@ import { clearSavedGame, saveGame } from './savedGame';
 import { SpaceCard } from './SpaceCard';
 import { TradeDialog } from './TradeDialog';
 import { usePresentation } from './usePresentation';
+import { TutorialBubble } from '../tutorial/TutorialBubble';
+import { useTutorial } from '../tutorial/useTutorial';
 
 interface Props {
   initialGame: GameState;
   onNewGame: () => void;
+  tutorial?: boolean; // play the guided first game
 }
 
-export function GameScreen({ initialGame, onNewGame }: Props) {
+export function GameScreen({ initialGame, onNewGame, tutorial: tutorialMode = false }: Props) {
   const { t } = useLang();
   const [game, setGame] = useState(initialGame);
   const [shownSpace, setShownSpace] = useState<number | null>(null);
@@ -33,11 +36,27 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   const settled = useRef(game);
   if (!busy) settled.current = game;
 
-  // Auto-save after every change; a finished game is removed so it isn't offered again.
+  const play = useCallback((action: Action) => {
+    setGame((current) => {
+      try {
+        return applyAction(current, action);
+      } catch (error) {
+        // A button for an action that's no longer allowed (e.g. a double click): ignore it.
+        if (error instanceof GameError) return current;
+        throw error;
+      }
+    });
+  }, []);
+  // In the tutorial, every move goes through it: it only lets through what the lesson asks for.
+  const tutorial = useTutorial(tutorialMode, play, busy);
+  const dispatch = tutorial.dispatch;
+
+  // Auto-save after every change (not during the tutorial); a finished game is removed.
   useEffect(() => {
+    if (tutorial.active) return;
     if (game.phase.kind === 'gameOver') clearSavedGame();
     else setSaving(saveGame(game));
-  }, [game]);
+  }, [game, tutorial.active]);
 
   // Development only (removed from the published build): lets scripts/screenshots.mjs read the
   // game and jump straight to a situation, e.g. "Đăng owns these properties".
@@ -58,18 +77,6 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
     };
   }, []);
 
-  const dispatch = (action: Action) => {
-    setGame((current) => {
-      try {
-        return applyAction(current, action);
-      } catch (error) {
-        // A button for an action that's no longer allowed (e.g. a double click): ignore it.
-        if (error instanceof GameError) return current;
-        throw error;
-      }
-    });
-  };
-
   const confirmNewGame = () => {
     if (game.phase.kind === 'gameOver' || window.confirm(t.confirmNewGame)) onNewGame();
   };
@@ -77,7 +84,7 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
   return (
     <div className="game">
       <GameHeader>
-        {saving && game.phase.kind !== 'gameOver' && (
+        {saving && !tutorial.active && game.phase.kind !== 'gameOver' && (
           <span className="autosave muted" title={t.autoSaved}>
             💾 <span className="autosave-text">{t.autoSaved}</span>
           </span>
@@ -117,6 +124,7 @@ export function GameScreen({ initialGame, onNewGame }: Props) {
         />
       )}
       {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
+      {tutorial.active && <TutorialBubble tutorial={tutorial} onExit={onNewGame} />}
       {shownSpace !== null && (
         <SpaceCard index={shownSpace} game={game} dispatch={dispatch} onClose={() => setShownSpace(null)} />
       )}

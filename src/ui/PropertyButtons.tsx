@@ -41,6 +41,7 @@ export function PropertyButtons({ game, space, dispatch }: Props) {
           key="build"
           className="secondary small"
           disabled={!canBuildHouse(game, space)}
+          data-tutorial={`build-${space}`}
           onClick={() => dispatch({ type: 'BUILD_HOUSE', space })}
         >
           {own.houses === HOTEL - 1 ? t.buildHotel(cost) : t.buildHouse(cost)}
@@ -79,6 +80,7 @@ export function PropertyButtons({ game, space, dispatch }: Props) {
         key="mortgage"
         className="secondary small"
         disabled={!canMortgage(game, space)}
+        data-tutorial={`mortgage-${space}`}
         onClick={() => dispatch({ type: 'MORTGAGE', space })}
       >
         {t.mortgage(formatMoney(mortgageValue(space)))}

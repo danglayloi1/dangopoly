@@ -18,6 +18,18 @@ npm test         # runs the rule tests
 npm run build    # builds the final website into dist/
 ```
 
+New to the game? Press **🎓 Hướng dẫn chơi** on the start screen for a guided practice game.
+
+### Screenshots of a scene
+
+With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
+`screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`.
+
+```bash
+npm run shots -- tutorial            # desktop size
+npm run shots -- tutorial --mobile   # phone size
+```
+
 ## Deploying
 
 Every push to the `main` branch runs the tests, builds the site, and publishes it to GitHub Pages
@@ -31,5 +43,7 @@ automatically (see [.github/workflows/deploy.yml](.github/workflows/deploy.yml))
 | `src/data/` | The board, tokens, and other fixed game data |
 | `src/ui/` | React screens: setup, board, player list, history |
 | `src/i18n/` | Vietnamese and English text |
+| `src/tutorial/` | The guided first game: its steps and the hint card |
+| `scripts/` | The screenshot tool |
 | `tests/` | Unit tests (Vitest) |
 | `public/` | Static files such as the icon |

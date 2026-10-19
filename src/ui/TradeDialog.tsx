@@ -50,7 +50,7 @@ function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashTex
             const tradable = canTradeSpace(game, space);
             return (
               <li key={space}>
-                <label className={`trade-space${tradable ? '' : ' disabled'}`}>
+                <label className={`trade-space${tradable ? '' : ' disabled'}`} data-tutorial={`trade-space-${space}`}>
                   <input
                     type="checkbox"
                     checked={selected.has(space)}
@@ -217,7 +217,7 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
           <button className="secondary" onClick={close}>
             {t.cancel}
           </button>
-          <button className="primary" disabled={problem !== null} onClick={send}>
+          <button className="primary" data-tutorial="sendOffer" disabled={problem !== null} onClick={send}>
             {t.sendOffer(partnerName)}
           </button>
         </div>
