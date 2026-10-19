@@ -18,6 +18,77 @@ const dark = flags.includes('--dark');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}${dark ? '-dark' : ''}`);
 
 const scenes = {
+  /** Checks the published site with real buttons only (no dev helpers there):
+   *  DANGOPOLY_URL=https://danglayloi1.github.io/dangopoly/ npm run shots -- live */
+  async live({ page, shot, click }) {
+    const results = [];
+    const check = (ok, what) => {
+      results.push(ok);
+      console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    };
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+
+    const response = await page.goto(BASE_URL);
+    check(response?.ok(), `page loads (${response?.status()})`);
+    check((await page.title()) === 'Dangopoly: Nghệ Tĩnh Edition', 'page title');
+    const footer = await page.locator('footer').innerText();
+    check(footer.includes('v1.0.0'), `version on the start screen ("${footer}")`);
+    for (const file of ['manifest.webmanifest', 'og-image.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon.svg']) {
+      const r = await page.request.get(new URL(file, BASE_URL).href);
+      check(r.ok(), `${file} is served (${r.status()})`);
+    }
+    const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content');
+    check(ogImage === 'https://danglayloi1.github.io/dangopoly/og-image.png', 'link preview picture is set');
+    await shot('start-screen');
+
+    // A short real game with the real buttons.
+    const inputs = page.locator('.player-row input');
+    await inputs.nth(0).fill('Đăng');
+    await inputs.nth(1).fill('Lan');
+    await click(/Bắt đầu chơi/);
+    await page.waitForSelector('.board');
+    const order = ['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Bỏ qua'];
+    for (let i = 0; i < 30; i++) {
+      await page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
+      const buttons = page.locator('.action-panel .action-buttons button');
+      let clicked = false;
+      for (const word of order) {
+        const b = buttons.filter({ hasText: word }).first();
+        if (await b.count()) {
+          await b.click();
+          clicked = true;
+          break;
+        }
+      }
+      if (!clicked) break;
+    }
+    await page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
+    await shot('after-30-moves');
+    const owned = await page.locator('.cell.owned').count();
+    check(owned > 0, `players bought property (${owned} spaces owned)`);
+
+    // Leaving keeps the game; the theme button works.
+    await click(/Trang chủ/);
+    await page.waitForSelector('.saved-card');
+    check(true, 'Trang chủ shows the saved game');
+    const before = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    await page.getByRole('button', { name: /Giao diện/ }).click();
+    await page.getByRole('button', { name: /Giao diện/ }).click(); // auto → light → dark
+    const after = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    check(before !== after, 'theme button changes the colors');
+    await shot('start-screen-dark-with-saved-game');
+
+    // The tutorial starts.
+    await click(/Hướng dẫn chơi/);
+    await page.locator('.tutorial-bubble h2').waitFor();
+    check(true, 'tutorial starts');
+    await shot('tutorial');
+
+    check(errors === 0, `no errors on the page (${errors})`);
+    console.log(results.every(Boolean) ? 'ALL LIVE CHECKS PASSED' : 'SOME LIVE CHECKS FAILED');
+  },
+
   /** In a browser that prefers dark: the theme button switches to light and dark, and is remembered. */
   async theme({ page, shot, startGame }) {
     const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
