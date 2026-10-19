@@ -17,6 +17,107 @@ const mobile = flags.includes('--mobile');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}`);
 
 const scenes = {
+  /** The whole tutorial, played with the real buttons (and one wrong click on purpose). */
+  async tutorial({ page, shot, click }) {
+    await page.goto(BASE_URL);
+    await click(/Hướng dẫn chơi/);
+    const bubble = page.locator('.tutorial-bubble');
+    const step = (title) => bubble.locator('h2', { hasText: title }).waitFor({ timeout: 20_000 });
+    const next = async () => {
+      await bubble.getByRole('button', { name: /Tiếp/ }).waitFor({ timeout: 20_000 });
+      await bubble.getByRole('button', { name: /Tiếp/ }).click();
+    };
+    const settle = () => page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
+    const dialogButton = (dialog, name) => page.locator(`dialog.${dialog}`).getByRole('button', { name }).first();
+
+    await step('Chào mừng');
+    await shot('welcome');
+    await next();
+
+    await step('Gieo xúc xắc');
+    await shot('roll-highlighted');
+    await click(/Gieo xúc xắc/);
+    await settle();
+
+    await step('Mua đất');
+    await click(/Bỏ qua/); // wrong on purpose: the tutorial should nudge, not skip
+    await shot('wrong-click-nudge');
+    await click(/^Mua/);
+
+    await step('Giao dịch');
+    await shot('trade-step');
+    await click(/Giao dịch/);
+    const dialog = page.locator('dialog.trade-dialog');
+    await dialog.locator('.trade-side').nth(1).getByLabel(/Vườn bưởi Phúc Trạch/).check();
+    await dialog.locator('.trade-side').nth(0).locator('.trade-cash input').fill('1tr');
+    await shot('trade-dialog-with-hint');
+    await click(/Gửi đề nghị cho Lan/);
+
+    await step('Lan đồng ý');
+    await next();
+
+    await step('Xây nhà');
+    await click(/Quản lý tài sản/);
+    await shot('build-step-manage-open');
+    await page.locator('dialog.manage-dialog [data-tutorial="build-3"]').click();
+    await dialogButton('manage-dialog', 'Đóng').click();
+
+    await step('Kết thúc lượt');
+    await click(/Kết thúc lượt/);
+
+    await step('Lượt của Lan');
+    await bubble.getByRole('button', { name: /Tiếp/ }).waitFor({ timeout: 20_000 });
+    await shot('lan-paid-rent');
+    await next();
+
+    await step('Lượt của bạn');
+    await click(/Gieo xúc xắc/);
+    await settle();
+    await step('Thẻ Cơ hội');
+    await shot('chance-card');
+    await next();
+
+    await step('Kết thúc lượt');
+    await click(/Kết thúc lượt/);
+    await step('Lượt của Lan');
+    await next();
+
+    await step('Lượt của bạn');
+    await click(/Gieo xúc xắc/);
+    await settle();
+    await step('Vào nhà tạm giữ');
+    await shot('jail');
+    await next();
+
+    await step('Kết thúc lượt');
+    await click(/Kết thúc lượt/);
+    await step('Lượt của Lan');
+    await next();
+
+    await step('Ra khỏi nhà tạm giữ');
+    await shot('pay-fine-step');
+    await click(/Nộp 500k/);
+
+    await step('Tự do');
+    await click(/Gieo xúc xắc/);
+    await settle();
+    await step('Mua thêm');
+    await click(/^Mua/);
+
+    await step('Cầm cố');
+    await click(/Quản lý tài sản/);
+    await page.locator('dialog.manage-dialog [data-tutorial="mortgage-14"]').click();
+    await dialogButton('manage-dialog', 'Đóng').click();
+
+    await step('sẵn sàng');
+    await shot('done');
+    await bubble.getByRole('button', { name: /Chơi tiếp ván này/ }).click();
+    await page.waitForTimeout(200);
+    const gone = (await page.locator('.tutorial-bubble').count()) === 0;
+    console.log(gone ? 'CHECK OK: tutorial finished, normal game continues' : 'CHECK FAILED: hint still shown');
+    await shot('after-tutorial');
+  },
+
   /** Frames during a move (dice tumbling, token hopping, money floating), sounds, mute, reduced motion. */
   async motion({ page, shot, startGame, setup, act, sounds, click, browser }) {
     await startGame(['Đăng', 'Lan']);

@@ -124,13 +124,13 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
 
       <div className="action-buttons">
         {allowed.includes('ROLL') && (
-          <button className="primary big" onClick={() => dispatch({ type: 'ROLL' })} autoFocus>
+          <button className="primary big" data-tutorial="roll" onClick={() => dispatch({ type: 'ROLL' })} autoFocus>
             🎲{' '}
             {waitingInJail ? t.rollForDoubles : game.dice && game.dice[0] === game.dice[1] ? t.rollAgain : t.roll}
           </button>
         )}
         {allowed.includes('PAY_JAIL_FINE') && (
-          <button className="secondary" onClick={() => dispatch({ type: 'PAY_JAIL_FINE' })}>
+          <button className="secondary" data-tutorial="payJailFine" onClick={() => dispatch({ type: 'PAY_JAIL_FINE' })}>
             {t.payJailFine(formatMoney(JAIL_FINE))}
           </button>
         )}
@@ -142,7 +142,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
         {offer && (
           <>
             {allowed.includes('BUY') ? (
-              <button className="primary" onClick={() => dispatch({ type: 'BUY' })} autoFocus>
+              <button className="primary" data-tutorial="buy" onClick={() => dispatch({ type: 'BUY' })} autoFocus>
                 {t.buy(formatMoney(offer.price))}
               </button>
             ) : (
@@ -169,7 +169,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
           </button>
         )}
         {allowed.includes('END_TURN') && (
-          <button className="primary big" onClick={() => dispatch({ type: 'END_TURN' })} autoFocus>
+          <button className="primary big" data-tutorial="endTurn" onClick={() => dispatch({ type: 'END_TURN' })} autoFocus>
             {t.endTurn} →
           </button>
         )}
@@ -180,13 +180,14 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
           {actorOwnsSomething && (
             <button
               className={phase.kind === 'inDebt' && !allowed.includes('PAY_DEBT') ? 'primary' : 'secondary small'}
+              data-tutorial="manage"
               onClick={onManage}
             >
               🏠 {t.manage}
             </button>
           )}
           {canStartTrade(game) && (
-            <button className="secondary small" onClick={onTrade}>
+            <button className="secondary small" data-tutorial="trade" onClick={onTrade}>
               🤝 {t.trade}
             </button>
           )}

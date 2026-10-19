@@ -976,6 +976,166 @@ footer {
   font-weight: 800;
 }
 
+/* ===== Tutorial ===== */
+.tutorial-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+
+.tutorial-card p {
+  margin: 0;
+  flex: 1 1 220px;
+  color: var(--muted);
+}
+
+/* The hint card: a popover, so it can sit above the game's own pop-ups. */
+.tutorial-bubble {
+  position: fixed;
+  inset: auto 16px 16px auto;
+  width: min(360px, calc(100vw - 32px));
+  margin: 0;
+  padding: 14px 16px 12px;
+  border: 2px solid #2d7dd2;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+  overflow: visible;
+}
+
+.tutorial-bubble:not([popover]),
+.tutorial-bubble:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tutorial-bubble h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.tutorial-bubble p {
+  margin: 0;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+.tutorial-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.tutorial-badge {
+  font-weight: 800;
+  color: #2d7dd2;
+}
+
+.tutorial-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.tutorial-progress div {
+  height: 100%;
+  background: #2d7dd2;
+  transition: width 0.3s;
+}
+
+.tutorial-wrong {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #f2c94c 30%, var(--surface));
+  font-weight: 600;
+}
+
+.tutorial-wait {
+  font-size: 0.85rem;
+}
+
+.tutorial-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.tutorial-actions .link {
+  font-size: 0.85rem;
+}
+
+.tutorial-bubble.shake {
+  animation: shake 0.4s;
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+/* The button or box the current step is about. */
+.tutorial-target {
+  position: relative;
+  z-index: 2;
+  outline: 3px solid #2d7dd2 !important;
+  outline-offset: 3px;
+  animation: tutorial-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes tutorial-glow {
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, #2d7dd2 30%, transparent);
+  }
+}
+
+@media (max-width: 880px) {
+  .tutorial-bubble {
+    inset: auto 8px 8px 8px;
+    width: auto;
+    max-height: 45dvh;
+    overflow-y: auto;
+  }
+
+  /* While a pop-up is open, keep out of its way: just the title, at the top. */
+  .tutorial-bubble.with-dialog {
+    inset: 8px 8px auto 8px;
+    padding: 8px 12px;
+    gap: 2px;
+  }
+
+  .tutorial-bubble.with-dialog > p:not(.tutorial-wrong),
+  .tutorial-bubble.with-dialog .tutorial-progress,
+  .tutorial-bubble.with-dialog .tutorial-actions {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-target,
+  .tutorial-bubble.shake {
+    animation: none;
+  }
+}
+
 /* ===== Animations ===== */
 .die.rolling {
   animation: die-tumble 0.16s ease-in-out infinite alternate;
