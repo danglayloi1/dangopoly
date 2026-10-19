@@ -93,6 +93,8 @@ const vi = {
   reject: 'Từ chối',
   winner: (name: string) => `${name} chiến thắng!`,
   playAgain: 'Chơi ván mới',
+  winnerStats: (cash: string, places: number, houses: number) =>
+    `${cash} tiền mặt · ${places} ô đất${houses > 0 ? ` · ${houses} nhà` : ''}`,
   cash: 'Tiền mặt',
   bankrupt: 'Phá sản',
   history: 'Diễn biến',
@@ -277,6 +279,8 @@ const en: Strings = {
   reject: 'Decline',
   winner: (name) => `${name} wins!`,
   playAgain: 'Play again',
+  winnerStats: (cash, places, houses) =>
+    `${cash} cash · ${places} place${places === 1 ? '' : 's'}${houses > 0 ? ` · ${houses} house${houses === 1 ? '' : 's'}` : ''}`,
   cash: 'Cash',
   bankrupt: 'Bankrupt',
   history: 'History',

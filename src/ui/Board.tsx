@@ -53,7 +53,10 @@ export function Board({ game, positions, busy, onSelectSpace, children }: Props)
               {icon && <span className="cell-icon">{icon}</span>}
               <span className="cell-name">{name}</span>
               {isOwnable(space) && (
-                <span className="cell-price">{own?.mortgaged ? t.mortgaged : formatMoney(space.price)}</span>
+                <span className="cell-price">
+                  <span className="price-amount">{formatMoney(space.price)}</span>
+                  {own?.mortgaged && <span className="mortgaged-label">{t.mortgaged}</span>}
+                </span>
               )}
             </span>
             {own && <span className="owner-mark" aria-hidden="true" />}

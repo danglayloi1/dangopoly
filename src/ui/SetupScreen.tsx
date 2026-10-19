@@ -195,7 +195,9 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
         {saved && <p className="muted center small-note">{t.newGameReplaces}</p>}
       </form>
 
-      <footer>{t.footer}</footer>
+      <footer>
+        {t.footer} · v{__APP_VERSION__}
+      </footer>
     </main>
   );
 }

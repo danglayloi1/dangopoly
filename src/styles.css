@@ -441,9 +441,35 @@ footer {
   }
 }
 
+.header-actions button {
+  white-space: nowrap;
+}
+
 @media (max-width: 480px) {
   .logo-edition {
     display: none;
+  }
+
+  /* Phones: the header holds the logo plus four controls, so tighten everything a little. */
+  .game-header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .logo-word {
+    font-size: 1.15rem;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .header-actions .small {
+    padding: 6px 9px;
+  }
+
+  .lang-switch button {
+    padding: 5px 9px;
   }
 }
 
@@ -583,6 +609,22 @@ footer {
 
 .cell.mortgaged .cell-price {
   font-style: italic;
+}
+
+/* Big boards say "Đang cầm cố"; small ones have no room, so the price is crossed out instead. */
+.cell.mortgaged .price-amount {
+  display: none;
+}
+
+@container (max-width: 560px) {
+  .cell.mortgaged .price-amount {
+    display: inline;
+    text-decoration: line-through;
+  }
+
+  .cell.mortgaged .mortgaged-label {
+    display: none;
+  }
 }
 
 .cell.mortgaged {
@@ -974,6 +1016,52 @@ footer {
 
 .offer-cash {
   font-weight: 800;
+}
+
+/* ===== Winner ===== */
+.winner-panel {
+  position: relative;
+}
+
+.winner-stats {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.confetti {
+  position: absolute;
+  inset: -40px 0 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti span {
+  position: absolute;
+  top: -10%;
+  left: var(--x);
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall 2.6s ease-in var(--delay) 2 forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(320px) rotate(var(--spin));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
 }
 
 /* ===== Tutorial ===== */

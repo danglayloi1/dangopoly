@@ -3,7 +3,7 @@
 //
 //   npm run dev                      (in another terminal)
 //   npm run shots -- trade           desktop screenshots of the trading scene
-//   npm run shots -- trade --mobile  the same on a phone-sized screen
+//   npm run shots -- trade --mobile  the same on a phone-sized screen (add --dark for dark mode)
 //
 // Pictures go to screenshots/<scene>[-mobile]/. Needs Microsoft Edge (installed on Windows).
 
@@ -14,9 +14,92 @@ import { chromium } from 'playwright-core';
 const BASE_URL = process.env.DANGOPOLY_URL ?? 'http://localhost:5173/dangopoly/';
 const [scene = 'trade', ...flags] = process.argv.slice(2);
 const mobile = flags.includes('--mobile');
-const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}`);
+const dark = flags.includes('--dark');
+const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}${dark ? '-dark' : ''}`);
 
 const scenes = {
+  /** A look at every main screen (use --dark for dark mode), the winner screen, and a long random game. */
+  async audit({ page, shot, startGame, setup, act, click }) {
+    await page.goto(BASE_URL);
+    await shot('setup');
+    await startGame(['Đăng', 'Lan', 'Minh', 'Hoa']);
+    await setup((game) => {
+      const give = (owner, ...spaces) => {
+        for (const s of spaces) game.ownership[s] = { owner, houses: 0, mortgaged: false };
+      };
+      give(0, 1, 3, 5, 12);
+      give(1, 6, 8, 9, 15);
+      give(2, 11, 13, 14, 16, 18);
+      give(3, 37, 39, 25);
+      game.ownership[1].houses = 2;
+      game.ownership[3].houses = 2;
+      game.ownership[6].houses = 5;
+      game.ownership[8].houses = 5;
+      game.ownership[9].houses = 5;
+      game.ownership[16].mortgaged = true;
+      game.players[2].inJail = true;
+      game.players[2].position = 10;
+      game.players[3].jailCards = ['chance'];
+      game.decks.chance = game.decks.chance.filter((c) => c !== 10); // Hoa holds that jail card
+      // a harmless card on top, so the turn always goes the same way ("Trúng mùa bưởi": collect 500k)
+      game.decks.chance = [12, ...game.decks.chance.filter((c) => c !== 12)];
+    });
+    await act({ type: 'ROLL', dice: [2, 5] }); // Đăng → Cơ hội
+    await shot('busy-board');
+    await click(/Quản lý tài sản/);
+    await shot('manage-dialog');
+    await page.keyboard.press('Escape');
+    await page.locator('.cell').nth(39).click();
+    await shot('space-card');
+    await page.keyboard.press('Escape');
+    await click(/Giao dịch/);
+    await shot('trade-dialog');
+    await page.keyboard.press('Escape');
+
+    await setup((game) => {
+      for (const p of game.players.slice(1)) {
+        p.bankrupt = true;
+        p.cash = 0;
+      }
+      game.ownership = {};
+      game.phase = { kind: 'gameOver', winner: 0 };
+      game.log.push({ type: 'won', player: 0 });
+    });
+    await shot('winner');
+
+    // A long game played at random through the real buttons, watching for errors.
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    page.on('console', (m) => m.type() === 'error' && errors++);
+    await click(/Chơi ván mới/);
+    const inputs = page.locator('.player-row input');
+    await click(/Thêm người chơi/);
+    for (const [i, name] of ['Đăng', 'Lan', 'Minh'].entries()) await inputs.nth(i).fill(name);
+    await page.locator('.cash-field input').fill('5');
+    await click(/Bắt đầu chơi/);
+    const order = ['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Tuyên bố', 'Bỏ qua'];
+    let moves = 0;
+    for (; moves < 400; moves++) {
+      await page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
+      const panel = page.locator('.action-panel');
+      if (await panel.getByRole('button', { name: /Chơi ván mới/ }).count()) break;
+      let clicked = false;
+      for (const word of order) {
+        const button = panel.locator('.action-buttons button', { hasText: word }).first();
+        if (await button.count()) {
+          await button.click();
+          clicked = true;
+          break;
+        }
+      }
+      if (!clicked) break;
+    }
+    const finished = await page.locator('.winner-text').count();
+    console.log(`Soak game: ${moves} moves, ${finished ? 'finished with a winner' : 'still going'}, ${errors} errors`);
+    console.log(errors === 0 ? 'CHECK OK: no errors during the long game' : 'CHECK FAILED: errors during the long game');
+    await shot('after-soak');
+  },
+
   /** The whole tutorial, played with the real buttons (and one wrong click on purpose). */
   async tutorial({ page, shot, click }) {
     await page.goto(BASE_URL);
@@ -321,11 +404,12 @@ async function main() {
   await mkdir(outDir, { recursive: true });
 
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
-  const context = await browser.newContext(
-    mobile
+  const context = await browser.newContext({
+    ...(mobile
       ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
-      : { viewport: { width: 1280, height: 860 } },
-  );
+      : { viewport: { width: 1280, height: 860 } }),
+    colorScheme: dark ? 'dark' : 'light',
+  });
   const page = await context.newPage();
   page.on('pageerror', (error) => console.error('Page error:', error.message));
   page.on('dialog', (dialog) => dialog.accept()); // answer "OK" to confirm() prompts

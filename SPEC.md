@@ -1,7 +1,7 @@
 # Dangopoly: Nghệ Tĩnh Edition — Design Spec
 
 > A property-trading board game set in Hà Tĩnh and Nghệ An, played in the browser.
-> Status: **draft for review**. Nothing is coded yet.
+> Status: **built (v1.0.0)**. This document now describes the finished game. Play at https://danglayloi1.github.io/dangopoly/
 
 ---
 
@@ -12,13 +12,13 @@
 | Platform | Web browser (PC + phone), no install |
 | Players | 2–4, hot-seat (take turns on one device) |
 | Language | Vietnamese + English, switchable at any time |
-| Rules | Classic property-trading rules + Nghệ Tĩnh flavor |
+| Rules | Classic property-trading rules + Nghệ Tĩnh flavor (see the simplifications in §3) |
 | Game end | Last player standing (everyone else bankrupt) |
 | Money | Simplified đồng: `500k`, `2tr`, `15tr` |
 | Visual style | Clean flat 2D, colorful, mobile-friendly |
 | Tokens | Local icons |
 | Saving | Auto-save in the browser; reopen page to continue |
-| Polish | Dice + token animations, sound effects (mute button). No music. |
+| Polish | Dice + token animations, sound effects (mute button), confetti for the winner. No music. |
 | Tutorial | Interactive guided first game with pop-up hints |
 | Hosting | GitHub Pages, public repo `dangopoly`, auto-deploy on push |
 
@@ -87,7 +87,7 @@ All amounts are classic values × 10,000đ (e.g. classic $200 → **2tr**).
 
 Town names have no "thị xã / thị trấn" prefix, because the 2025 administrative reorganization removed district-level units.
 
-Rent tables follow the classic values × 10k and will live in `src/data/board.ts`, where they're easy to tune.
+Rent tables follow the classic values × 10k and live in `src/data/board.ts`, where they're easy to tune.
 
 **Left out on purpose:** memorials and religious or historic sites (Làng Sen Kim Liên, Ngã ba Đồng Lộc,
 Khu lưu niệm Nguyễn Du, Chùa Hương Tích, Đền Cuông). Buying them and charging rent would feel disrespectful.
@@ -140,29 +140,39 @@ They can still appear respectfully in cards and the tutorial, e.g. *"Visit Ngã 
 - The last player who isn't bankrupt **wins**.
 
 ### Starting money
-**15tr** per player.
+**15tr** per player by default (the classic amount). The setup screen also offers **10tr / 20tr** or any typed amount from 1 to 100 triệu.
+
+### Simplifications compared with the classic rules
+- **No auctions:** a property nobody buys stays with the bank.
+- **No limit** on the bank's supply of houses and hotels.
+- **Bankruptcy to a player:** mortgaged properties pass on still mortgaged, without the 10% interest.
+- **Bankruptcy to the bank:** properties go back on sale instead of being auctioned.
+- **"Đám cưới" card:** a player who can't afford the 100k gift gives what they have (nobody goes bankrupt on someone else's turn).
+- **"Mất điện!" card:** uses the dice already rolled instead of rolling again.
 
 ---
 
-## 4. Cards (draft — full lists of 16 each written during development)
+## 4. Cards
+
+16 per deck, all listed in `src/data/cards.ts`, shuffled from the game seed. A few examples:
 
 **Cơ hội (Chance)**: movement and luck
 - Đi tắm biển Cửa Lò → advance to Biển Cửa Lò.
 - Đi tàu Thống Nhất → advance to the nearest transport space; pay double rent if it's owned.
 - Không đội mũ bảo hiểm → fine 150k.
-- Trúng mùa bưởi Phúc Trạch → collect 1tr.
-- Lạc đường ở Vinh → go back 3 spaces.
+- Trúng mùa bưởi Phúc Trạch → collect 500k.
+- Lạc đường trong thành Vinh → go back 3 spaces.
 - Ra tù miễn phí → keep this card.
 - Lũ miền Trung → pay 250k per house and 1tr per hotel for repairs.
 - Về Xuất phát → advance to Start and collect 2tr.
 
 **Khí vận (Community Chest)**: money events
-- SLNA vô địch! → collect 500k.
-- Bán kẹo cu đơ cho khách du lịch → collect 200k.
-- Học bổng Đại học Vinh → collect 1tr.
+- SLNA vô địch! → collect 200k.
+- Bán kẹo cu đơ cho khách du lịch → collect 500k.
+- Đóng học phí Đại học Vinh → pay 500k.
 - Đám cưới → every player gives you 100k as a wedding gift.
-- Viện phí → pay 500k.
-- Đãi bạn cháo lươn → pay 50k to each player.
+- Đi khám ở bệnh viện → pay 1tr.
+- Khao cả nhóm cháo lươn Vinh (Cơ hội) → pay 500k to each player.
 - Dâng hương tại Ngã ba Đồng Lộc → pay 100k for incense and flowers.
 - Ra tù miễn phí → keep this card.
 
@@ -177,7 +187,7 @@ Drawn as simple flat SVG icons, each with its own player color.
 ---
 
 ## 6. Tutorial
-An **interactive guided first game**:
+An **interactive guided first game** (21 steps, `src/tutorial/script.ts`), started from **🎓 Hướng dẫn chơi**:
 - The dice are scripted, so the tutorial always hits the same situations:
   buy a property, pay rent, draw a card, complete a set, build a house, get sent to Jail, make a trade, mortgage a property.
 - A pop-up points at the relevant button and explains it in one or two sentences, in the current language.
@@ -196,8 +206,9 @@ An **interactive guided first game**:
 | Randomness | Seedable RNG | Lets the tutorial script the dice; reproducible bugs |
 | Tests | **Vitest** | Unit tests for every rule |
 | Save | `localStorage` | Auto-save after every action |
-| i18n | Simple `vi.json` / `en.json` dictionaries | Lightweight, no big library |
-| Sound | Small Web Audio helper + short free-licensed SFX | Dice, coins, jail door |
+| i18n | One typed dictionary per language (`src/i18n/strings.ts`) | Lightweight; the compiler checks both languages have every text |
+| Sound | Sounds generated with the Web Audio API | No audio files to download or license |
+| Screenshots | `playwright-core` driving Microsoft Edge | Scripted scenes with checks (`npm run shots`) |
 | Deploy | GitHub Actions → GitHub Pages | Push to `main` → the site updates |
 
 ```
@@ -205,32 +216,34 @@ dangopoly/
 ├─ src/
 │  ├─ engine/     # pure game rules: state, actions, reducer, rng (no UI)
 │  ├─ data/       # board.ts, cards.ts, tokens.ts
-│  ├─ i18n/       # vi.json, en.json
-│  ├─ ui/         # React components: Board, PlayerPanel, Dice, TradeDialog...
-│  ├─ tutorial/   # scripted steps
-│  └─ audio/
+│  ├─ i18n/       # strings.ts: Vietnamese and English text
+│  ├─ ui/         # React components: Board, PlayerList, Dice, TradeDialog, sound, animations...
+│  └─ tutorial/   # scripted steps and the hint card
+├─ scripts/       # screenshots.mjs, make-assets.mjs (icons, link preview)
 ├─ tests/
 └─ .github/workflows/deploy.yml
 ```
 
 ---
 
-## 8. Milestones
+## 8. Milestones (all done)
 
-1. **Setup**: install Node/Git, scaffold the project, create the GitHub repo, put a "hello" page online.
-2. **Core engine**: board, dice, movement, buying, rent, Start salary, bankruptcy, with tests.
-3. **Playable board UI**: hot-seat turns for 2–4 players. *First version you can actually play.*
-4. **Building and money**: houses, hotels, sell-back, mortgage.
-5. **Jail and cards**.
-6. **Trading**.
-7. **Auto-save + language switch**.
-8. **Animations + sound**.
-9. **Interactive tutorial**.
-10. **Polish + final deploy**: phone layout, testing with friends.
+Built in this order; trading came before jail and cards, because without it games often stalled with no complete color sets. Each milestone was a pull request and a release.
+
+1. ✅ **Setup** (v0.1.0): project, GitHub repo, auto-deploy to GitHub Pages.
+2. ✅ **Core engine** (v0.2.0): board, dice, movement, buying, rent, Start salary, bankruptcy, with tests.
+3. ✅ **Playable board UI** (v0.3.0): hot-seat turns for 2–4 players, VI/EN switch.
+4. ✅ **Building and money** (v0.4.0): houses, hotels, sell-back, mortgage.
+5. ✅ **Trading** (v0.5.0).
+6. ✅ **Jail and cards** (v0.6.0).
+7. ✅ **Auto-save** (v0.7.0).
+8. ✅ **Animations + sound** (v0.8.0).
+9. ✅ **Interactive tutorial** (v0.9.0).
+10. ✅ **Polish + final release** (v1.0.0): dark-mode and phone audit, winner screen, link preview, home-screen icon.
 
 ---
 
 ## 9. GitHub
 - Account: [danglayloi1](https://github.com/danglayloi1)
 - Repo: `danglayloi1/dangopoly`
-- Live game URL (after deploy): https://danglayloi1.github.io/dangopoly/
+- Live game: https://danglayloi1.github.io/dangopoly/
