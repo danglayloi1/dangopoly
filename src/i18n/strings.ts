@@ -26,6 +26,8 @@ const vi = {
   confirmDiscard: 'Xóa ván đang lưu? Không thể khôi phục lại.',
   newGameReplaces: 'Bắt đầu ván mới sẽ thay thế ván đang lưu.',
   autoSaved: 'Tự động lưu',
+  soundOff: 'Tắt âm thanh',
+  soundOn: 'Bật âm thanh',
 
   // Game
   newGame: 'Ván mới',
@@ -201,6 +203,8 @@ const en: Strings = {
   confirmDiscard: 'Delete the saved game? This cannot be undone.',
   newGameReplaces: 'Starting a new game replaces the saved one.',
   autoSaved: 'Saved automatically',
+  soundOff: 'Mute sounds',
+  soundOn: 'Turn sounds on',
 
   newGame: 'New game',
   confirmNewGame: 'Quit this game and start a new one?',

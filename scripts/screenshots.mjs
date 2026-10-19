@@ -17,6 +17,55 @@ const mobile = flags.includes('--mobile');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}`);
 
 const scenes = {
+  /** Frames during a move (dice tumbling, token hopping, money floating), sounds, mute, reduced motion. */
+  async motion({ page, shot, startGame, setup, act, sounds, click, browser }) {
+    await startGame(['Đăng', 'Lan']);
+    await setup((game) => {
+      game.players[0].position = 34; // 34 + 8 → 2: passes Start, lands on Khí vận
+      const collect = game.decks.community.find((c) => c === 1); // "Ngân hàng tính nhầm... Nhận 2tr"
+      game.decks.community = [collect, ...game.decks.community.filter((c) => c !== collect)];
+    });
+    await act({ type: 'ROLL', dice: [3, 5] }, { wait: false });
+    await shot('frame-1-dice-tumbling');
+    await page.waitForTimeout(820);
+    await shot('frame-2-token-hopping');
+    await page.waitForSelector('.board[data-busy="false"]');
+    await page.waitForTimeout(200);
+    await shot('frame-3-arrived-card-and-money');
+    console.log('Sounds for that move:', (await sounds()).join(', '));
+
+    await act({ type: 'END_TURN' });
+    await setup((game) => (game.players[1].position = 27));
+    await act({ type: 'ROLL', dice: [1, 2] }, { wait: false }); // 27 → 30 → jail
+    await page.waitForTimeout(1050);
+    await shot('frame-4-jump-to-jail');
+    await page.waitForSelector('.board[data-busy="false"]');
+
+    const before = (await sounds()).length;
+    await page.getByRole('button', { name: /Tắt âm thanh/ }).click();
+    await shot('muted');
+    await act({ type: 'END_TURN' });
+    await act({ type: 'ROLL', dice: [1, 2] });
+    const after = (await sounds()).length;
+    console.log(after === before ? 'CHECK OK: no sounds while muted' : `CHECK FAILED: ${after - before} sounds while muted`);
+
+    // A device set to "reduce motion": results appear at once, nothing waits.
+    const calm = await browser.newContext({ viewport: { width: 1280, height: 860 }, reducedMotion: 'reduce' });
+    const calmPage = await calm.newPage();
+    await calmPage.goto(BASE_URL);
+    const inputs = calmPage.locator('.player-row input');
+    await inputs.nth(0).fill('Đăng');
+    await inputs.nth(1).fill('Lan');
+    await calmPage.getByRole('button', { name: /Bắt đầu chơi/ }).click();
+    await calmPage.waitForSelector('.board');
+    await calmPage.evaluate(() => window.__dangopoly.dispatch({ type: 'ROLL', dice: [1, 2] }));
+    await calmPage.waitForTimeout(60);
+    const busyNow = await calmPage.locator('.board[data-busy="true"]').count();
+    console.log(busyNow === 0 ? 'CHECK OK: reduced motion shows the result at once' : 'CHECK FAILED: animated anyway');
+    await calm.close();
+    void click;
+  },
+
   /** Play a little, close and reopen the page, continue; then a damaged save is ignored. */
   async save({ page, shot, startGame, act, click }) {
     await startGame(['Đăng', 'Lan', 'Minh']);
@@ -207,14 +256,16 @@ async function main() {
       hook.setGame(game);
     }, change.toString());
 
-  /** Sends a game action directly (dev-server helper), e.g. a roll with chosen dice. */
-  const act = async (action) => {
+  /** Sends a game action directly (dev-server helper), e.g. a roll with chosen dice; waits for any animation. */
+  const act = async (action, { wait = true } = {}) => {
     await page.evaluate((a) => window.__dangopoly.dispatch(a), action);
     await page.waitForTimeout(50);
+    if (wait) await page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
   };
+  const sounds = () => page.evaluate(() => [...(window.__dangopolySounds ?? [])]);
 
   try {
-    await run({ page, shot, click, startGame, setup, act });
+    await run({ page, shot, click, startGame, setup, act, sounds, browser, context });
   } finally {
     await browser.close();
   }

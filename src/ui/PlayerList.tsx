@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { BOARD } from '../data/board';
 import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
@@ -24,6 +24,33 @@ function Swatch({ kind }: { kind: Holding['kind'] }) {
     );
   }
   return <span className="holding-swatch" style={{ background: GROUP_COLORS[kind] }} aria-hidden="true" />;
+}
+
+/** A player's cash; when it changes, the difference floats up next to it for a moment. */
+function Cash({ cash }: { cash: number }) {
+  const previous = useRef(cash);
+  const [delta, setDelta] = useState<{ amount: number; id: number } | null>(null);
+
+  useEffect(() => {
+    const amount = cash - previous.current;
+    previous.current = cash;
+    if (amount === 0) return;
+    setDelta((d) => ({ amount, id: (d?.id ?? 0) + 1 }));
+    const timer = setTimeout(() => setDelta(null), 1600);
+    return () => clearTimeout(timer);
+  }, [cash]);
+
+  return (
+    <span className="player-cash">
+      {formatMoney(cash)}
+      {delta && (
+        <span key={delta.id} className={`cash-delta ${delta.amount > 0 ? 'up' : 'down'}`} aria-hidden="true">
+          {delta.amount > 0 ? '+' : '−'}
+          {formatMoney(Math.abs(delta.amount))}
+        </span>
+      )}
+    </span>
+  );
 }
 
 export function PlayerList({ game, onShowSpace }: Props) {
@@ -57,7 +84,7 @@ export function PlayerList({ game, onShowSpace }: Props) {
                   </span>
                 )}
               </span>
-              <span className="player-cash">{p.bankrupt ? t.bankrupt : formatMoney(p.cash)}</span>
+              {p.bankrupt ? <span className="player-cash">{t.bankrupt}</span> : <Cash cash={p.cash} />}
             </div>
 
             {!p.bankrupt && (

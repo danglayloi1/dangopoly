@@ -19,10 +19,12 @@ interface Props {
   onManage: () => void;
   onTrade: () => void;
   onNewGame: () => void;
+  busy: boolean; // a move is being animated: show only the turn and the dice
+  rolling: boolean;
 }
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
-export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, onNewGame }: Props) {
+export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, onNewGame, busy, rolling }: Props) {
   const { t, lang } = useLang();
   const { phase } = game;
   const player = game.players[game.current];
@@ -41,6 +43,23 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
 
   const offerSpace = phase.kind === 'awaitBuy' ? BOARD[phase.space] : null;
   const offer = offerSpace && isOwnable(offerSpace) ? offerSpace : null;
+
+  const turnBanner = (
+    <div className="turn-banner" style={{ color: PLAYER_COLORS[player.id] }}>
+      <TokenIcon token={player.token} color={PLAYER_COLORS[player.id]} size={28} />
+      <span>{t.turnOf(player.name)}</span>
+    </div>
+  );
+
+  // While the dice tumble and the token hops, results and buttons wait until it arrives.
+  if (busy) {
+    return (
+      <div className="action-panel" aria-busy="true">
+        {turnBanner}
+        <Dice dice={game.dice} rolling={rolling} />
+      </div>
+    );
+  }
 
   if (phase.kind === 'tradeOffer') {
     return <TradeOfferPanel game={game} offer={phase.offer} dispatch={dispatch} onShowSpace={onShowSpace} />;
@@ -63,10 +82,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
 
   return (
     <div className="action-panel">
-      <div className="turn-banner" style={{ color: PLAYER_COLORS[player.id] }}>
-        <TokenIcon token={player.token} color={PLAYER_COLORS[player.id]} size={28} />
-        <span>{t.turnOf(player.name)}</span>
-      </div>
+      {turnBanner}
 
       <Dice dice={game.dice} />
 
