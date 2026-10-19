@@ -31,12 +31,15 @@ export function MuteButton() {
   );
 }
 
-/** Top bar used during a game: small logo, extra buttons, language switch. */
-export function GameHeader({ children }: { children?: ReactNode }) {
+/** Top bar used during a game: back button, small logo, extra buttons, sound and language. */
+export function GameHeader({ children, onBack }: { children?: ReactNode; onBack: () => void }) {
   const { t } = useLang();
   return (
     <header className="game-header">
       <div className="logo-small">
+        <button className="secondary small back-button" onClick={onBack} title={t.backToMenuHint}>
+          ← <span className="back-text">{t.backToMenu}</span>
+        </button>
         <span className="logo-word">Dangopoly</span>
         <span className="logo-edition">{t.edition}</span>
       </div>

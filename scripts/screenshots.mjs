@@ -271,10 +271,30 @@ const scenes = {
     const after = await page.evaluate(() => JSON.stringify(window.__dangopoly.getGame()));
     console.log(after === before ? 'CHECK OK: the continued game is identical' : 'CHECK FAILED: game differs');
 
-    await click(/Ván mới/); // confirm is accepted automatically
-    await page.waitForSelector('.setup-card');
-    const cardAfterNew = await page.locator('.saved-card').count();
-    console.log(cardAfterNew === 0 ? 'CHECK OK: no saved game after "Ván mới"' : 'CHECK FAILED: save still offered');
+    // The ← Trang chủ button: back to the start screen, with the game kept.
+    await click(/Trang chủ/);
+    await page.waitForSelector('.saved-card');
+    await shot('home-button-keeps-game');
+    console.log('CHECK OK: ← Trang chủ shows the start screen with the game kept');
+    await click(/Chơi tiếp/);
+    await page.waitForSelector('.board');
+
+    // The phone/browser back button does the same instead of leaving the site.
+    await page.goBack();
+    await page.waitForSelector('.saved-card', { timeout: 5_000 });
+    const stillHere = page.url().startsWith(BASE_URL);
+    console.log(stillHere ? 'CHECK OK: the back button returns to the start screen' : 'CHECK FAILED: back left the site');
+    await click(/Chơi tiếp/);
+    await page.waitForSelector('.board');
+    const again = await page.evaluate(() => JSON.stringify(window.__dangopoly.getGame()));
+    console.log(again === before ? 'CHECK OK: continuing after back gives the same game' : 'CHECK FAILED: game changed');
+
+    // Discarding from the start screen removes the save.
+    await click(/Trang chủ/);
+    await page.waitForSelector('.saved-card');
+    await click(/Bỏ ván này/); // confirm is accepted automatically
+    const cardAfterDiscard = await page.locator('.saved-card').count();
+    console.log(cardAfterDiscard === 0 ? 'CHECK OK: no saved game after "Bỏ ván này"' : 'CHECK FAILED: save still offered');
 
     await page.evaluate(() => localStorage.setItem('dangopoly.savedGame', '{"version":1,"game":{"players":"broken"'));
     await page.reload();

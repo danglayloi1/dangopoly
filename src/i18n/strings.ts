@@ -39,8 +39,8 @@ const vi = {
   tutorialNewGame: 'Bắt đầu ván thật',
 
   // Game
-  newGame: 'Ván mới',
-  confirmNewGame: 'Bỏ ván đang chơi và bắt đầu ván mới?',
+  backToMenu: 'Trang chủ',
+  backToMenuHint: 'Về màn hình chính. Ván đang chơi được lưu lại để chơi tiếp sau.',
   turnOf: (name: string) => `Lượt của ${name}`,
   roll: 'Gieo xúc xắc',
   rollAgain: 'Đổ đôi! Gieo tiếp',
@@ -226,8 +226,8 @@ const en: Strings = {
   tutorialKeepPlaying: 'Keep playing this game',
   tutorialNewGame: 'Start a real game',
 
-  newGame: 'New game',
-  confirmNewGame: 'Quit this game and start a new one?',
+  backToMenu: 'Home',
+  backToMenuHint: 'Back to the start screen. This game is saved so you can continue it later.',
   turnOf: (name) => `${name}'s turn`,
   roll: 'Roll dice',
   rollAgain: 'Doubles! Roll again',

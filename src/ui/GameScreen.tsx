@@ -19,11 +19,11 @@ import { useTutorial } from '../tutorial/useTutorial';
 
 interface Props {
   initialGame: GameState;
-  onNewGame: () => void;
+  onLeave: () => void; // back to the start screen (the game stays saved)
   tutorial?: boolean; // play the guided first game
 }
 
-export function GameScreen({ initialGame, onNewGame, tutorial: tutorialMode = false }: Props) {
+export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = false }: Props) {
   const { t } = useLang();
   const [game, setGame] = useState(initialGame);
   const [shownSpace, setShownSpace] = useState<number | null>(null);
@@ -77,21 +77,14 @@ export function GameScreen({ initialGame, onNewGame, tutorial: tutorialMode = fa
     };
   }, []);
 
-  const confirmNewGame = () => {
-    if (game.phase.kind === 'gameOver' || window.confirm(t.confirmNewGame)) onNewGame();
-  };
-
   return (
     <div className="game">
-      <GameHeader>
+      <GameHeader onBack={onLeave}>
         {saving && !tutorial.active && game.phase.kind !== 'gameOver' && (
           <span className="autosave muted" title={t.autoSaved}>
             💾 <span className="autosave-text">{t.autoSaved}</span>
           </span>
         )}
-        <button className="secondary small" onClick={confirmNewGame}>
-          {t.newGame}
-        </button>
       </GameHeader>
 
       <div className="game-layout">
@@ -102,7 +95,7 @@ export function GameScreen({ initialGame, onNewGame, tutorial: tutorialMode = fa
             onShowSpace={setShownSpace}
             onManage={() => setManaging(true)}
             onTrade={() => setTrading(true)}
-            onNewGame={onNewGame}
+            onNewGame={onLeave}
             busy={busy}
             rolling={rolling}
           />
@@ -124,7 +117,7 @@ export function GameScreen({ initialGame, onNewGame, tutorial: tutorialMode = fa
         />
       )}
       {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
-      {tutorial.active && <TutorialBubble tutorial={tutorial} onExit={onNewGame} />}
+      {tutorial.active && <TutorialBubble tutorial={tutorial} onExit={onLeave} />}
       {shownSpace !== null && (
         <SpaceCard index={shownSpace} game={game} dispatch={dispatch} onClose={() => setShownSpace(null)} />
       )}
