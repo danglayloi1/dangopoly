@@ -28,6 +28,8 @@ const vi = {
   autoSaved: 'Tự động lưu',
   soundOff: 'Tắt âm thanh',
   soundOn: 'Bật âm thanh',
+  themeLabel: (name: string) => `Giao diện: ${name} (bấm để đổi)`,
+  themeNames: { auto: 'theo thiết bị', light: 'sáng', dark: 'tối' },
   tutorial: 'Hướng dẫn',
   tutorialStart: 'Hướng dẫn chơi',
   tutorialIntro: 'Lần đầu chơi? Học cách chơi trong vài phút với một ván mẫu.',
@@ -39,8 +41,8 @@ const vi = {
   tutorialNewGame: 'Bắt đầu ván thật',
 
   // Game
-  newGame: 'Ván mới',
-  confirmNewGame: 'Bỏ ván đang chơi và bắt đầu ván mới?',
+  backToMenu: 'Trang chủ',
+  backToMenuHint: 'Về màn hình chính. Ván đang chơi được lưu lại để chơi tiếp sau.',
   turnOf: (name: string) => `Lượt của ${name}`,
   roll: 'Gieo xúc xắc',
   rollAgain: 'Đổ đôi! Gieo tiếp',
@@ -93,6 +95,8 @@ const vi = {
   reject: 'Từ chối',
   winner: (name: string) => `${name} chiến thắng!`,
   playAgain: 'Chơi ván mới',
+  winnerStats: (cash: string, places: number, houses: number) =>
+    `${cash} tiền mặt · ${places} ô đất${houses > 0 ? ` · ${houses} nhà` : ''}`,
   cash: 'Tiền mặt',
   bankrupt: 'Phá sản',
   history: 'Diễn biến',
@@ -214,6 +218,8 @@ const en: Strings = {
   autoSaved: 'Saved automatically',
   soundOff: 'Mute sounds',
   soundOn: 'Turn sounds on',
+  themeLabel: (name) => `Theme: ${name} (click to change)`,
+  themeNames: { auto: 'match device', light: 'light', dark: 'dark' },
   tutorial: 'Tutorial',
   tutorialStart: 'How to play',
   tutorialIntro: 'First time? Learn the game in a few minutes with a practice game.',
@@ -224,8 +230,8 @@ const en: Strings = {
   tutorialKeepPlaying: 'Keep playing this game',
   tutorialNewGame: 'Start a real game',
 
-  newGame: 'New game',
-  confirmNewGame: 'Quit this game and start a new one?',
+  backToMenu: 'Home',
+  backToMenuHint: 'Back to the start screen. This game is saved so you can continue it later.',
   turnOf: (name) => `${name}'s turn`,
   roll: 'Roll dice',
   rollAgain: 'Doubles! Roll again',
@@ -277,6 +283,8 @@ const en: Strings = {
   reject: 'Decline',
   winner: (name) => `${name} wins!`,
   playAgain: 'Play again',
+  winnerStats: (cash, places, houses) =>
+    `${cash} cash · ${places} place${places === 1 ? '' : 's'}${houses > 0 ? ` · ${houses} house${houses === 1 ? '' : 's'}` : ''}`,
   cash: 'Cash',
   bankrupt: 'Bankrupt',
   history: 'History',

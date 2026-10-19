@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createGame, type NewPlayer } from './engine/game';
 import type { SaveFile } from './engine/save';
 import type { GameState } from './engine/types';
@@ -25,6 +25,8 @@ function Screens() {
   const [saved, setSaved] = useState<SaveFile | null>(loadSavedGame);
 
   const play = (next: GameState, asTutorial = false) => {
+    // A history entry for the game, so the phone/browser back button returns to this screen.
+    history.pushState({ dangopoly: 'game' }, '');
     setTutorial(asTutorial);
     setGame(next);
     setGameNumber((n) => n + 1);
@@ -37,13 +39,26 @@ function Screens() {
     setSaved(null);
   };
 
-  const leaveGame = () => {
-    if (!tutorial) discardSaved(); // "Ván mới" means this game is over (a tutorial was never saved)
+  // Back to this screen. The game stays saved (unless it's over), so it can be continued from here.
+  const showMenu = () => {
     setGame(null);
+    setSaved(loadSavedGame());
+  };
+
+  // The back button (phone or browser) while playing comes here instead of leaving the site.
+  useEffect(() => {
+    window.addEventListener('popstate', showMenu);
+    return () => window.removeEventListener('popstate', showMenu);
+  }, []);
+
+  // The in-game buttons go back through history too, so the back button stays in step.
+  const leaveGame = () => {
+    if ((history.state as { dangopoly?: string } | null)?.dangopoly === 'game') history.back();
+    else showMenu();
   };
 
   return game ? (
-    <GameScreen key={gameNumber} initialGame={game} onNewGame={leaveGame} tutorial={tutorial} />
+    <GameScreen key={gameNumber} initialGame={game} onLeave={leaveGame} tutorial={tutorial} />
   ) : (
     <SetupScreen
       onStart={start}

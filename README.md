@@ -23,12 +23,16 @@ New to the game? Press **🎓 Hướng dẫn chơi** on the start screen for a g
 ### Screenshots of a scene
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
-`screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`.
+`screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`.
 
 ```bash
 npm run shots -- tutorial            # desktop size
 npm run shots -- tutorial --mobile   # phone size
+npm run shots -- audit --dark        # every main screen in dark mode, plus a long random game
 ```
+
+The app icons and the link-preview picture in `public/` are made by `node scripts/make-assets.mjs`
+(also needs `npm run dev` running); run it again only when the look changes.
 
 ## Deploying
 

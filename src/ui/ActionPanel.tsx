@@ -11,6 +11,7 @@ import { describeLog } from './logText';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
 import { TradeOfferPanel } from './TradeOfferPanel';
+import { WinnerPanel } from './WinnerPanel';
 
 interface Props {
   game: GameState;
@@ -66,18 +67,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
   }
 
   if (phase.kind === 'gameOver') {
-    const winner = game.players[phase.winner];
-    return (
-      <div className="action-panel">
-        <div className="winner">
-          <TokenIcon token={winner.token} color={PLAYER_COLORS[winner.id]} size={64} />
-          <p className="winner-text">🏆 {t.winner(winner.name)}</p>
-        </div>
-        <button className="primary big" onClick={onNewGame}>
-          {t.playAgain}
-        </button>
-      </div>
-    );
+    return <WinnerPanel game={game} winner={phase.winner} onNewGame={onNewGame} />;
   }
 
   return (

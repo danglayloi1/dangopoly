@@ -18,8 +18,24 @@
   color-scheme: light;
 }
 
+/* Dark colors: chosen with the theme button (data-theme="dark"), or by the device when the
+   button is on "auto" (no data-theme). data-theme="light" keeps the light colors above. */
+:root[data-theme='dark'] {
+  --bg: #171a21;
+  --surface: #222631;
+  --surface-2: #2b3040;
+  --text: #eef0f4;
+  --muted: #9aa1ad;
+  --border: #333947;
+  --board-bg: #1c2620;
+  --board-line: #3d4f42;
+  --cell-bg: #242a33;
+  --danger: #f97066;
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #171a21;
     --surface: #222631;
     --surface-2: #2b3040;
@@ -170,6 +186,8 @@ button {
 .setup-top {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
 }
 
 .hero {
@@ -441,8 +459,50 @@ footer {
   }
 }
 
+.header-actions button {
+  white-space: nowrap;
+}
+
+.logo-small {
+  align-items: center;
+}
+
+.back-button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 @media (max-width: 480px) {
   .logo-edition {
+    display: none;
+  }
+
+  /* Phones: the header holds the logo plus four controls, so tighten everything a little. */
+  .game-header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .logo-word {
+    font-size: 1.15rem;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .header-actions .small {
+    padding: 6px 9px;
+  }
+
+  .lang-switch button {
+    padding: 5px 9px;
+  }
+}
+
+/* Narrow phones: the back button matters more than the logo (the board says what this is). */
+@media (max-width: 400px) {
+  .logo-word {
     display: none;
   }
 }
@@ -583,6 +643,22 @@ footer {
 
 .cell.mortgaged .cell-price {
   font-style: italic;
+}
+
+/* Big boards say "Đang cầm cố"; small ones have no room, so the price is crossed out instead. */
+.cell.mortgaged .price-amount {
+  display: none;
+}
+
+@container (max-width: 560px) {
+  .cell.mortgaged .price-amount {
+    display: inline;
+    text-decoration: line-through;
+  }
+
+  .cell.mortgaged .mortgaged-label {
+    display: none;
+  }
 }
 
 .cell.mortgaged {
@@ -974,6 +1050,52 @@ footer {
 
 .offer-cash {
   font-weight: 800;
+}
+
+/* ===== Winner ===== */
+.winner-panel {
+  position: relative;
+}
+
+.winner-stats {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.confetti {
+  position: absolute;
+  inset: -40px 0 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti span {
+  position: absolute;
+  top: -10%;
+  left: var(--x);
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall 2.6s ease-in var(--delay) 2 forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(320px) rotate(var(--spin));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
 }
 
 /* ===== Tutorial ===== */
