@@ -18,8 +18,24 @@
   color-scheme: light;
 }
 
+/* Dark colors: chosen with the theme button (data-theme="dark"), or by the device when the
+   button is on "auto" (no data-theme). data-theme="light" keeps the light colors above. */
+:root[data-theme='dark'] {
+  --bg: #171a21;
+  --surface: #222631;
+  --surface-2: #2b3040;
+  --text: #eef0f4;
+  --muted: #9aa1ad;
+  --border: #333947;
+  --board-bg: #1c2620;
+  --board-line: #3d4f42;
+  --cell-bg: #242a33;
+  --danger: #f97066;
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #171a21;
     --surface: #222631;
     --surface-2: #2b3040;
@@ -170,6 +186,8 @@ button {
 .setup-top {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
 }
 
 .hero {

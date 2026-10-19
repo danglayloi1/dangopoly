@@ -9,6 +9,13 @@
       content="Cờ tỷ phú Nghệ Tĩnh: từ quê nhà Hà Tĩnh, qua cầu Bến Thủy, đến thành Vinh. 2–4 người chơi chung một máy, miễn phí trên trình duyệt."
     />
     <meta name="theme-color" content="#d64545" />
+    <script>
+      // Apply the saved light/dark choice before the page draws (see src/ui/theme.ts).
+      try {
+        const theme = localStorage.getItem('dangopoly.theme');
+        if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+      } catch {}
+    </script>
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

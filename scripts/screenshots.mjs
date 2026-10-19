@@ -18,6 +18,37 @@ const dark = flags.includes('--dark');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}${dark ? '-dark' : ''}`);
 
 const scenes = {
+  /** In a browser that prefers dark: the theme button switches to light and dark, and is remembered. */
+  async theme({ page, shot, startGame }) {
+    const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    const themeButton = page.getByRole('button', { name: /Giao diện/ }).first();
+    await page.goto(BASE_URL);
+    const auto = await bg();
+    await shot('auto-follows-device');
+    await themeButton.click(); // → light
+    const light = await bg();
+    await shot('light');
+    await page.reload();
+    const lightAfterReload = await bg();
+    await startGame(['Đăng', 'Lan']);
+    await shot('game-light');
+    await themeButton.click(); // → dark
+    const dark = await bg();
+    await shot('game-dark');
+    await themeButton.click(); // → auto again
+    const backToAuto = await bg();
+    console.log(`auto=${auto} light=${light} dark=${dark}`);
+    const LIGHT = 'rgb(246, 241, 231)';
+    const DARK = 'rgb(23, 26, 33)';
+    const ok =
+      auto === (dark ? (flags.includes('--dark') ? DARK : LIGHT) : LIGHT) &&
+      light === LIGHT &&
+      lightAfterReload === LIGHT &&
+      dark === DARK &&
+      backToAuto === auto;
+    console.log(ok ? 'CHECK OK: theme switches, is remembered after reload, and goes back to auto' : 'CHECK FAILED: theme');
+  },
+
   /** A look at every main screen (use --dark for dark mode), the winner screen, and a long random game. */
   async audit({ page, shot, startGame, setup, act, click }) {
     await page.goto(BASE_URL);

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useLang } from '../i18n/LangContext';
 import { isMuted, setMuted } from './sound';
+import { applyTheme, nextTheme, savedTheme, type Theme } from './theme';
 
 export function LangSwitch() {
   const { lang, setLang } = useLang();
@@ -31,7 +32,26 @@ export function MuteButton() {
   );
 }
 
-/** Top bar used during a game: back button, small logo, extra buttons, sound and language. */
+const THEME_ICONS: Record<Theme, string> = { auto: '🌓', light: '☀️', dark: '🌙' };
+
+/** Cycles the colors: follow the device → light → dark. The choice is remembered. */
+export function ThemeButton() {
+  const { t } = useLang();
+  const [theme, setTheme] = useState(savedTheme);
+  const change = () => {
+    const next = nextTheme(theme);
+    applyTheme(next);
+    setTheme(next);
+  };
+  const label = t.themeLabel(t.themeNames[theme]);
+  return (
+    <button className="secondary small icon-only" onClick={change} aria-label={label} title={label}>
+      {THEME_ICONS[theme]}
+    </button>
+  );
+}
+
+/** Top bar used during a game: back button, small logo, extra buttons, sound, theme and language. */
 export function GameHeader({ children, onBack }: { children?: ReactNode; onBack: () => void }) {
   const { t } = useLang();
   return (
@@ -46,6 +66,7 @@ export function GameHeader({ children, onBack }: { children?: ReactNode; onBack:
       <div className="header-actions">
         {children}
         <MuteButton />
+        <ThemeButton />
         <LangSwitch />
       </div>
     </header>

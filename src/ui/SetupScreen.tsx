@@ -5,7 +5,7 @@ import { MAX_PLAYERS, MIN_PLAYERS, type NewPlayer } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import type { SaveFile } from '../engine/save';
-import { LangSwitch } from './Header';
+import { LangSwitch, ThemeButton } from './Header';
 import { GROUP_COLORS, PLAYER_COLORS } from './look';
 import { SavedGameCard } from './SavedGameCard';
 import { millionsText, parseMillions } from './startingCash';
@@ -60,6 +60,7 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
   return (
     <main className="setup">
       <div className="setup-top">
+        <ThemeButton />
         <LangSwitch />
       </div>
 
