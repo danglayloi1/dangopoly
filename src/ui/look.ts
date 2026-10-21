@@ -1,45 +1,21 @@
 // Visual details that aren't game rules: player colors and space icons.
 
-import { BOARD, type ColorGroup } from '../data/board';
+import type { ColorGroup } from '../data/board';
 
 /** One color per seat, used for tokens, ownership marks and the player list. */
-export const PLAYER_COLORS = ['#d64545', '#2d7dd2', '#2e9d5b', '#8e5bd6'] as const;
+export const PLAYER_COLORS = ['#b8322a', '#2f5d8a', '#4f7a3a', '#7a4a8a'] as const;
 
+// Natural-pigment versions of the classic 8 set colors (kept clearly different from each other).
 export const GROUP_COLORS: Record<ColorGroup, string> = {
-  brown: '#8b5a3c',
-  lightblue: '#7cc6e8',
-  pink: '#e05ba1',
-  orange: '#f39237',
-  red: '#d64545',
-  yellow: '#f2c94c',
-  green: '#3fa66b',
-  darkblue: '#2d4f9e',
+  brown: '#7a4a2c',
+  lightblue: '#6fa8c4',
+  pink: '#c95b7b',
+  orange: '#d9822b',
+  red: '#b8322a',
+  yellow: '#d9a62e',
+  green: '#4f7a3a',
+  darkblue: '#2f4f6f',
 };
 
-const TRANSPORT_ICONS: Record<number, string> = { 5: '🚌', 15: '🚢', 25: '🚆', 35: '✈️' };
-const UTILITY_ICONS: Record<number, string> = { 12: '⚡', 28: '💧' };
-
-/** An emoji for spaces that aren't colored properties, or null. */
-export function spaceIcon(index: number): string | null {
-  const space = BOARD[index];
-  switch (space.kind) {
-    case 'start':
-      return '🏁';
-    case 'jail':
-      return '🔒';
-    case 'rest':
-      return '🌉';
-    case 'goToJail':
-      return '👮';
-    case 'card':
-      return space.deck === 'chance' ? '❓' : '🎁';
-    case 'tax':
-      return '🧾';
-    case 'transport':
-      return TRANSPORT_ICONS[index] ?? '🚌';
-    case 'utility':
-      return UTILITY_ICONS[index] ?? '⚡';
-    case 'property':
-      return null;
-  }
-}
+// Space icons are drawn in icons.tsx.
+export { spaceIcon } from './icons';

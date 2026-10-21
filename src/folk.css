@@ -1,0 +1,573 @@
+/* Folk-art look (tranh Đông Hồ), layered over styles.css: paper texture, bold ink outlines,
+   offset "block print" shadows, display type, and the illustrated board.
+   Colors come from the theme tokens in styles.css, so dark mode becomes sơn mài (lacquer). */
+
+body {
+  background-color: var(--bg);
+  background-image: var(--paper);
+}
+
+h1,
+h2,
+h3,
+.logo-word,
+.winner-text,
+.turn-banner {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+/* Money stays in Be Vietnam Pro: Playfair's old-style digits make "15tr5" look uneven. */
+.player-cash,
+.deed-price strong,
+.offer-price,
+.manage-cash strong {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Buttons: stamped with ink ===== */
+.primary,
+.secondary,
+.danger {
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: var(--print-shadow);
+  font-weight: 700;
+  transition: transform 0.06s, box-shadow 0.06s, filter 0.15s;
+}
+
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled),
+.danger:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.secondary {
+  background: var(--surface);
+  background-image: var(--paper);
+}
+
+.danger {
+  background: var(--surface);
+}
+
+/* Disabled actions should look clearly unavailable (critique item). */
+.property-buttons button:disabled,
+.trade-actions .primary:disabled,
+button.primary:disabled,
+button.secondary:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  border-style: dashed;
+  filter: grayscale(0.6);
+}
+
+.icon-only {
+  min-width: 44px;
+  min-height: 40px;
+}
+
+.icon {
+  color: var(--text);
+  vertical-align: middle;
+}
+
+/* ===== Language switch and other small controls ===== */
+.lang-switch {
+  border: 2px solid var(--ink);
+  box-shadow: var(--print-shadow);
+}
+
+.lang-switch button {
+  background: var(--surface);
+}
+
+/* ===== Start screen ===== */
+.hero h1 {
+  font-weight: 900;
+  font-size: clamp(2.8rem, 11vw, 4.4rem);
+  color: var(--accent);
+  text-shadow: 3px 3px 0 var(--gold);
+  letter-spacing: 0;
+}
+
+.hero .edition {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+
+.hero-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 5px 5px 0 var(--ink);
+  margin-bottom: 18px;
+  background: var(--surface-2);
+}
+
+.setup-card,
+.saved-card,
+.tutorial-card,
+.player-row {
+  background: var(--surface);
+  background-image: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: var(--print-shadow);
+}
+
+.player-row {
+  border-left-width: 8px;
+  border-left-color: var(--player);
+}
+
+.saved-card {
+  border-color: var(--accent);
+  box-shadow: 4px 4px 0 var(--accent);
+}
+
+.tutorial-card {
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.token-choice {
+  border: 2px solid transparent;
+  background: var(--surface-2);
+}
+
+.token-choice.selected {
+  border-color: var(--player);
+  background: var(--surface);
+  box-shadow: 2px 2px 0 var(--player);
+}
+
+.player-row input,
+.cash-field input,
+.trade-cash input {
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.segmented {
+  border: 2px solid var(--ink);
+  box-shadow: var(--print-shadow);
+}
+
+.segmented button {
+  border-left: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+/* ===== The board: a woodblock print ===== */
+.board {
+  gap: 2px;
+  background: var(--board-line);
+  border: 4px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.cell {
+  background-color: var(--cell-bg);
+  background-image: var(--paper);
+}
+
+.cell.owned {
+  background-color: color-mix(in srgb, var(--owner) 18%, var(--cell-bg));
+}
+
+.strip {
+  border-bottom: 2px solid var(--ink);
+}
+
+.side-top .strip {
+  border-bottom: 0;
+  border-top: 2px solid var(--ink);
+}
+
+.side-left .strip {
+  border-bottom: 0;
+  border-left: 2px solid var(--ink);
+}
+
+.side-right .strip {
+  border-bottom: 0;
+  border-right: 2px solid var(--ink);
+}
+
+.cell-name {
+  font-weight: 700;
+}
+
+.cell-price {
+  color: var(--text);
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.cell-icon {
+  font-size: 3.2cqw;
+}
+
+.side-corner .cell-icon {
+  font-size: 5.4cqw;
+}
+
+.side-corner .cell-name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: 1.7cqw;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.side-corner {
+  background-color: var(--surface-2);
+}
+
+@container (max-width: 560px) {
+  .cell-icon {
+    font-size: 4.2cqw;
+  }
+
+  .side-corner .cell-icon {
+    font-size: 7cqw;
+  }
+
+}
+
+.cell-token {
+  box-shadow: 0 0 0 2px var(--ink), 2px 2px 0 1px var(--ink);
+}
+
+.building {
+  border: 1.5px solid var(--ink);
+}
+
+.building.house {
+  background: #4f7a3a;
+}
+
+.building.hotel {
+  background: #b8322a;
+}
+
+/* The middle: the Lam River illustration, with the turn panel on a sheet of paper in front. */
+.board-center {
+  background-color: var(--board-bg);
+  background-image: url('./assets/art/board.webp');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+:root[data-theme='dark'] .board-center {
+  background-image: linear-gradient(rgba(27, 21, 18, 0.62), rgba(27, 21, 18, 0.62)), url('./assets/art/board.webp');
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .board-center {
+    background-image: linear-gradient(rgba(27, 21, 18, 0.62), rgba(27, 21, 18, 0.62)), url('./assets/art/board.webp');
+  }
+}
+
+.action-panel {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  background-image: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: clamp(10px, 2.4cqw, 20px) clamp(10px, 2.6cqw, 22px);
+  width: auto;
+  max-width: min(440px, 100%);
+  backdrop-filter: blur(1px);
+}
+
+.turn-banner {
+  font-weight: 900;
+  font-size: 1.3em;
+}
+
+/* Dice: ivory with ink edges; the 1 and 4 are red, as on traditional Vietnamese dice. */
+.die {
+  background: #fbf6e8;
+  border: 2px solid #2b2420;
+  box-shadow: 2px 2px 0 #2b2420;
+}
+
+.die .pip {
+  background: #2b2420;
+}
+
+.die.red-pips .pip {
+  background: #b8322a;
+}
+
+/* Drawn card: its artwork on top. */
+.drawn-card {
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 var(--ink);
+  background: var(--surface);
+}
+
+.drawn-card-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: clamp(70px, 16cqw, 150px);
+  object-fit: cover;
+  border-bottom: 2px solid var(--ink);
+}
+
+.drawn-card-head {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.05em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--ink);
+}
+
+.drawn-card.deck-chance .drawn-card-head {
+  background: #b8322a;
+}
+
+.drawn-card.deck-community .drawn-card-head {
+  background: #2f4f6f;
+}
+
+.offer,
+.debt,
+.jail-box,
+.offer-side {
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.offer {
+  border-top-width: 12px;
+}
+
+.turn-events {
+  color: var(--muted);
+}
+
+/* ===== Side panel ===== */
+.player-card,
+.game-log {
+  background: var(--surface);
+  background-image: var(--paper);
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--player, var(--ink));
+  border-radius: 10px;
+}
+
+.game-log {
+  border-left-width: 2px;
+}
+
+/* Whose turn: a stronger mark than a thin border (critique item). */
+.player-card.current {
+  box-shadow: 5px 5px 0 var(--player);
+  transform: translate(-2px, -2px);
+}
+
+.holding-swatch {
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+}
+
+.holding-swatch.icon {
+  border: 0;
+}
+
+/* Property names as small chips instead of dotted links (critique item). */
+.holding-names .link,
+.offer-items .link {
+  text-decoration: none;
+  padding: 1px 7px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.holding-names .link:hover,
+.offer-items .link:hover {
+  border-color: var(--ink);
+}
+
+.holding-names .link.is-mortgaged {
+  text-decoration: line-through;
+}
+
+/* ===== Pop-ups: paper cards with a printed border ===== */
+.space-card,
+.manage-dialog,
+.trade-dialog {
+  background: var(--surface);
+  background-image: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+  outline: 1px solid var(--ink);
+  outline-offset: -9px;
+}
+
+.deed-header,
+.manage-header,
+.trade-header {
+  background: transparent;
+}
+
+.deed-header h2 {
+  font-size: 1.35rem;
+}
+
+.manage-row,
+.trade-side {
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.trade-side {
+  border-top: 6px solid var(--player);
+}
+
+.tutorial-bubble {
+  border: 3px solid #2f4f6f;
+  background: var(--surface);
+  background-image: var(--paper);
+  box-shadow: 6px 6px 0 #2f4f6f;
+}
+
+.tutorial-badge {
+  color: #2f4f6f;
+}
+
+:root[data-theme='dark'] .tutorial-badge {
+  color: var(--gold);
+}
+
+.tutorial-target {
+  outline-color: var(--accent) !important;
+}
+
+/* Muted text a little darker for contrast on paper (critique item). */
+.muted,
+.tagline,
+.cell-price {
+  color: var(--muted);
+}
+
+/* Header */
+.back-button {
+  font-weight: 700;
+}
+
+.logo-word {
+  font-weight: 900;
+  font-size: 1.55rem;
+}
+
+/* Phones: the middle of the board is small, so the panel is slimmer and cards show without
+   their picture. Kept last so it wins over the general rules above. */
+@container (max-width: 560px) {
+  .board-center {
+    padding: 1cqw;
+  }
+
+  .action-panel {
+    width: 100%;
+    max-width: 100%;
+    padding: 6px 8px;
+    border-width: 1.5px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 0 var(--ink);
+    gap: 5px;
+    line-height: 1.25;
+  }
+
+  .turn-banner {
+    font-size: 1.05em;
+    gap: 6px;
+  }
+
+  .turn-banner svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .die {
+    width: 28px;
+    height: 28px;
+    border-width: 1.5px;
+    box-shadow: 1.5px 1.5px 0 #2b2420;
+  }
+
+  .dice {
+    gap: 6px;
+  }
+
+  /* Before the first roll the dice are blank: no need to spend a row on them. */
+  .dice:has(.die.blank) {
+    display: none;
+  }
+
+  .action-panel .primary,
+  .action-panel .secondary,
+  .action-panel .danger {
+    padding: 4px 9px;
+    font-size: 0.88em;
+  }
+
+  .action-buttons,
+  .side-actions {
+    gap: 5px;
+  }
+
+  .turn-events {
+    font-size: 0.88em;
+  }
+
+  .drawn-card-head {
+    padding: 3px 8px;
+    font-size: 0.9em;
+  }
+
+  .offer {
+    padding: 4px 10px 6px;
+    border-top-width: 8px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .offer,
+  .debt,
+  .jail-box,
+  .offer-side {
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .drawn-card-art {
+    display: none;
+  }
+
+  .drawn-card {
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .action-panel .primary,
+  .action-panel .secondary,
+  .action-panel .danger {
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+}

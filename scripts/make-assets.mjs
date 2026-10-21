@@ -56,24 +56,28 @@ const board = (await game.locator('.board').screenshot()).toString('base64');
 await game.close();
 
 const card = await browser.newPage({ viewport: { width: 1200, height: 630 } });
-const colors = ['#8b5a3c', '#7cc6e8', '#e05ba1', '#f39237', '#d64545', '#f2c94c', '#3fa66b', '#2d4f9e'];
+// The same palette and type as the game's folk-art look (src/ui/look.ts, src/folk.css).
+const colors = ['#7a4a2c', '#6fa8c4', '#c95b7b', '#d9822b', '#b8322a', '#d9a62e', '#4f7a3a', '#2f4f6f'];
 await card.setContent(`
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600&family=Playfair+Display:wght@800;900&display=block">
   <body style="margin:0;width:1200px;height:630px;display:flex;align-items:center;gap:40px;
-               padding:0 56px;box-sizing:border-box;background:#f6f1e7;
-               font-family:'Segoe UI',system-ui,sans-serif;color:#1f2430">
+               padding:0 56px;box-sizing:border-box;background:#efe4cc;
+               font-family:'Be Vietnam Pro',system-ui,sans-serif;color:#2b2420">
     <div style="flex:1">
       <div style="display:flex;gap:8px;margin-bottom:22px">
-        ${colors.map((c) => `<span style="width:44px;height:14px;border-radius:4px;background:${c}"></span>`).join('')}
+        ${colors.map((c) => `<span style="width:44px;height:14px;border-radius:3px;border:2px solid #2b2420;background:${c}"></span>`).join('')}
       </div>
-      <div style="font-size:96px;font-weight:800;color:#d64545;letter-spacing:-2px;line-height:1">Dangopoly</div>
-      <div style="font-size:38px;font-weight:700;margin-top:12px">Phiên bản Nghệ Tĩnh</div>
-      <div style="font-size:26px;color:#6b7280;margin-top:18px;line-height:1.35">
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:100px;font-weight:900;color:#b8322a;
+                  text-shadow:4px 4px 0 #c99a2e;line-height:1">Dangopoly</div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:40px;font-weight:800;margin-top:14px">Phiên bản Nghệ Tĩnh</div>
+      <div style="font-size:26px;color:#6a5946;margin-top:18px;line-height:1.4">
         Từ quê nhà Hà Tĩnh, qua cầu Bến Thủy,<br>đến thành Vinh. Chơi miễn phí trên trình duyệt.
       </div>
     </div>
-    <img src="data:image/png;base64,${board}" style="width:540px;height:540px;border-radius:14px;
-         box-shadow:0 18px 40px rgba(0,0,0,.25)">
+    <img src="data:image/png;base64,${board}" style="width:540px;height:540px;border-radius:6px;
+         box-shadow:8px 8px 0 #2b2420">
   </body>`);
+await card.evaluate(() => document.fonts.ready);
 await card.screenshot({ path: 'public/og-image.png' });
 console.log('saved public/og-image.png');
 

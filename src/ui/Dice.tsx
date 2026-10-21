@@ -14,7 +14,7 @@ const PIPS: Record<number, number[]> = {
 function Die({ value, rolling }: { value: number | null; rolling: boolean }) {
   return (
     <div
-      className={`die${value === null ? ' blank' : ''}${rolling ? ' rolling' : ''}`}
+      className={`die${value === null ? ' blank' : ''}${rolling ? ' rolling' : ''}${value === 1 || value === 4 ? ' red-pips' : ''}`}
       role="img"
       aria-label={value === null ? '–' : String(value)}
     >
