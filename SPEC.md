@@ -247,3 +247,32 @@ Built in this order; trading came before jail and cards, because without it game
 - Account: [danglayloi1](https://github.com/danglayloi1)
 - Repo: `danglayloi1/dangopoly`
 - Live game: https://danglayloi1.github.io/dangopoly/
+
+---
+
+## 10. Online play (in progress)
+
+Friends play from their own phones. One player creates a room and shares its code or link; everyone else joins from the link. Hot-seat play on one device stays as it is.
+
+### How it works
+
+```
+ phone A ─┐                          ┌──────────────────────────────┐
+ phone B ─┼─ WebSocket ─ Worker ─────┤ Room (Durable Object)        │
+ phone C ─┘   (moves in,             │  seats, lobby, GameState      │
+               state out)            │  runs the same engine code    │
+                                     └──────────────────────────────┘
+```
+
+- **Server:** a Cloudflare Worker with one *Durable Object* per room, on Cloudflare's free plan. The room keeps the seats and the `GameState` and runs the same `applyAction` as the browser, so all phones see the same game and a move is only accepted if it's allowed.
+- **Who may move:** the player whose turn it is; the player in debt while a debt is open; the player a trade is offered to, for the answer. Nobody else. Dice are always rolled by the server.
+- **Seats and reconnecting:** joining gives the phone a secret seat key (kept in that browser). A phone that sleeps, reloads or loses signal reconnects with it and gets its seat back. Others see it as offline meanwhile.
+- **Rooms:** 6-letter codes without look-alike letters (no I, O, 0, 1). A room is deleted after 7 days without moves.
+- **Privacy:** no accounts; a room holds only the names and the game. The Spotify panel is unaffected.
+- **Limits:** 2–4 players per room; messages over 8 KB are refused.
+
+### Milestones
+
+11. **Game server** (no release: nothing changes for players yet): the who-may-move rule in the engine; the room logic as plain TypeScript with tests; the Worker and Durable Object around it; deploy from GitHub Actions.
+12. **Online screens** (v1.3.0): "Chơi online" on the start screen (create or join), the lobby (name, token, color; the host starts; first-turn dice for everyone), the game screen in online mode (only your own buttons; trade offers pop up on the other player's phone), offline markers, rejoin by link, QR code; screenshots of 2–4 phones playing.
+
