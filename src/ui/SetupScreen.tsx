@@ -10,14 +10,18 @@ import { LangSwitch, ThemeButton } from './Header';
 import bannerArt from '../assets/art/banner.webp';
 import { FirstTurnDialog } from './FirstTurnDialog';
 import { colorHex } from './look';
+import { OnlineCard } from './OnlineCard';
 import { SavedGameCard } from './SavedGameCard';
 import { millionsText, parseMillions } from './startingCash';
+import { ColorPicker, TokenPicker } from './Pickers';
 import { TokenIcon } from './TokenIcon';
 
 const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
 interface Props {
   onStart: (players: NewPlayer[], startingCash: number) => void;
+  onCreateRoom: () => void;
+  onJoinRoom: (code: string) => void;
   onTutorial: () => void;
   saved: SaveFile | null;
   onContinue: () => void;
@@ -37,7 +41,7 @@ type SetupPlayer = NewPlayer & { color: PlayerColorId };
 
 type FirstTurn = 'roll' | 'inOrder';
 
-export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard }: Props) {
+export function SetupScreen({ onStart, onCreateRoom, onJoinRoom, onTutorial, saved, onContinue, onDiscard }: Props) {
   const { t, lang } = useLang();
   const [players, setPlayers] = useState<SetupPlayer[]>([
     { name: '', token: 'nonLa', color: defaultPlayerColor(0) },
@@ -97,6 +101,8 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
         </button>
       </section>
 
+      <OnlineCard onCreateRoom={onCreateRoom} onJoinRoom={onJoinRoom} />
+
       <form className="setup-card" onSubmit={submit} noValidate>
         <h2>{t.players}</h2>
 
@@ -132,46 +138,8 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
                   </button>
                 )}
               </div>
-              <div className="token-picker" role="radiogroup" aria-label={t.chooseToken}>
-                {TOKENS.map((tok) => {
-                  const taken = usedByOthers.includes(tok.id);
-                  const selected = p.token === tok.id;
-                  return (
-                    <button
-                      key={tok.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      disabled={taken}
-                      className={`token-choice${selected ? ' selected' : ''}`}
-                      title={tok.name[lang]}
-                      onClick={() => update(i, { token: tok.id })}
-                    >
-                      <TokenIcon token={tok.id} color={taken ? '#9aa1ad' : color} size={30} />
-                      <span>{tok.name[lang]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="color-picker" role="radiogroup" aria-label={t.chooseColor}>
-                {PLAYER_COLORS.map((c) => {
-                  const selected = p.color === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      aria-label={c.name[lang]}
-                      title={c.name[lang]}
-                      disabled={colorsOfOthers.includes(c.id)}
-                      className={`color-choice${selected ? ' selected' : ''}`}
-                      style={{ background: c.hex }}
-                      onClick={() => update(i, { color: c.id })}
-                    />
-                  );
-                })}
-              </div>
+              <TokenPicker value={p.token} color={color} taken={usedByOthers} onChange={(token) => update(i, { token })} />
+              <ColorPicker value={p.color} taken={colorsOfOthers} onChange={(c) => update(i, { color: c })} />
             </fieldset>
           );
         })}

@@ -6,6 +6,7 @@ import { useLang } from '../i18n/LangContext';
 import { Icon } from './icons';
 import { groupFill, playerColor, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
+import { useMayAct, useViewer } from './viewer';
 
 interface Props {
   game: GameState;
@@ -64,6 +65,8 @@ export function TradeOfferPanel({ game, offer, dispatch, onShowSpace }: Props) {
   const { t } = useLang();
   const from = game.players[offer.from];
   const to = game.players[offer.to];
+  const mayAct = useMayAct(game); // online: only the player the offer is for can answer
+  const { online } = useViewer();
 
   return (
     <div className="action-panel trade-offer" style={{ '--player': playerColor(to) } as CSSProperties}>
@@ -71,7 +74,7 @@ export function TradeOfferPanel({ game, offer, dispatch, onShowSpace }: Props) {
         <TokenIcon token={to.token} color={playerColor(to)} size={28} />
         <span>🤝 {t.offerTitle(to.name, from.name)}</span>
       </div>
-      <p className="muted pass-device">{t.passDevice(to.name)}</p>
+      {!online && <p className="muted pass-device">{t.passDevice(to.name)}</p>}
 
       <div className="offer-sides">
         <div className="offer-side">
@@ -84,14 +87,17 @@ export function TradeOfferPanel({ game, offer, dispatch, onShowSpace }: Props) {
         </div>
       </div>
 
-      <div className="action-buttons">
-        <button className="primary big" onClick={() => dispatch({ type: 'ACCEPT_TRADE' })}>
-          ✓ {t.accept}
-        </button>
-        <button className="danger" onClick={() => dispatch({ type: 'REJECT_TRADE' })}>
-          ✕ {t.reject}
-        </button>
-      </div>
+      {!mayAct && <p className="waiting-note">{t.waitingAnswer(to.name)}</p>}
+      {mayAct && (
+        <div className="action-buttons">
+          <button className="primary big" onClick={() => dispatch({ type: 'ACCEPT_TRADE' })}>
+            ✓ {t.accept}
+          </button>
+          <button className="danger" onClick={() => dispatch({ type: 'REJECT_TRADE' })}>
+            ✕ {t.reject}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Icon } from './icons';
 import { groupFill, playerColor } from './look';
 import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
+import { useViewer } from './viewer';
 
 interface Props {
   game: GameState;
@@ -56,6 +57,7 @@ function Cash({ cash }: { cash: number }) {
 
 export function PlayerList({ game, onShowSpace }: Props) {
   const { t, lang } = useLang();
+  const viewer = useViewer();
 
   return (
     <ul className="player-list">
@@ -83,6 +85,10 @@ export function PlayerList({ game, onShowSpace }: Props) {
                   <span className="badge-card" title={t.jailCards(p.jailCards.length)}>
                     <Icon name="ticket" />×{p.jailCards.length}
                   </span>
+                )}
+                {viewer.online && p.id === viewer.seat && <span className="badge badge-you">{t.youBadge}</span>}
+                {viewer.online && !p.bankrupt && !viewer.connected[p.id] && (
+                  <span className="badge badge-away">{t.offline}</span>
                 )}
               </span>
               {p.bankrupt ? <span className="player-cash">{t.bankrupt}</span> : <Cash cash={p.cash} />}

@@ -250,7 +250,7 @@ Built in this order; trading came before jail and cards, because without it game
 
 ---
 
-## 10. Online play (in progress)
+## 10. Online play
 
 Friends play from their own phones. One player creates a room and shares its code or link; everyone else joins from the link. Hot-seat play on one device stays as it is.
 
@@ -273,6 +273,6 @@ Friends play from their own phones. One player creates a room and shares its cod
 
 ### Milestones
 
-11. **Game server** (no release: nothing changes for players yet): the who-may-move rule in the engine; the room logic as plain TypeScript with tests; the Worker and Durable Object around it; deploy from GitHub Actions.
-12. **Online screens** (v1.3.0): "Chơi online" on the start screen (create or join), the lobby (name, token, color; the host starts; first-turn dice for everyone), the game screen in online mode (only your own buttons; trade offers pop up on the other player's phone), offline markers, rejoin by link, QR code; screenshots of 2–4 phones playing.
+11. ✅ **Game server** (no release: nothing changed for players yet): the who-may-move rule in the engine; the room logic as plain TypeScript with tests; the Worker and Durable Object around it; deploy from GitHub Actions.
+12. ✅ **Online screens** (v1.3.0): "Chơi online" on the start screen (create or join), the lobby (name, token, color; the host starts; first-turn dice for everyone), the game screen in online mode (only your own buttons; trade offers pop up on the other player's phone), offline markers, rejoin by link, QR code; screenshots of 2–4 phones playing.
 

@@ -135,24 +135,31 @@ export function legalActions(state: GameState): TurnActionType[] {
 }
 
 /**
- * Which player may send `action` now, for games where each player is on their own device:
- * the player a trade is offered to answers it; while a debt is open, the debtor acts (pays, sells,
- * mortgages or gives up); otherwise the player whose turn it is. Null: nobody (the game is over,
- * or the action can't be sent in this phase). Whether the action itself is allowed is still up
- * to applyAction.
+ * Whose move it is, for games where each player is on their own device: the player a trade is
+ * offered to (to answer it); while a debt is open, the debtor (to pay, sell, mortgage or give up);
+ * otherwise the player whose turn it is. Null once the game is over.
  */
-export function actorFor(state: GameState, action: Action): number | null {
+export function whoseMove(state: GameState): number | null {
   const { phase } = state;
   switch (phase.kind) {
     case 'gameOver':
       return null;
     case 'tradeOffer':
-      return action.type === 'ACCEPT_TRADE' || action.type === 'REJECT_TRADE' ? phase.offer.to : null;
+      return phase.offer.to;
     case 'inDebt':
       return phase.debtor;
     default:
       return state.current;
   }
+}
+
+/**
+ * Which player may send `action` now (see whoseMove); null if nobody may. While a trade offer
+ * waits, only the answer can be sent. Whether the action itself is allowed is up to applyAction.
+ */
+export function actorFor(state: GameState, action: Action): number | null {
+  if (state.phase.kind === 'tradeOffer' && action.type !== 'ACCEPT_TRADE' && action.type !== 'REJECT_TRADE') return null;
+  return whoseMove(state);
 }
 
 function isAllowed(state: GameState, action: Action): boolean {
