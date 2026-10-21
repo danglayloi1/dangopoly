@@ -28,7 +28,8 @@ export type IconName =
   | 'bridge'
   | 'police'
   | 'coins'
-  | 'ticket';
+  | 'ticket'
+  | 'music';
 
 const DRAWINGS: Record<IconName, ReactNode> = {
   bus: (
@@ -141,6 +142,14 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <ellipse cx="16" cy="17" rx="10" ry="4" fill={YELLOW} />
       <ellipse cx="16" cy="12" rx="10" ry="4" fill={YELLOW} />
       <rect x="14.5" y="10.5" width="3" height="3" fill={PINK} />
+    </>
+  ),
+  // Music: two notes
+  music: (
+    <>
+      <path d="M12 23 V9 L25 6 V20 M12 13 L25 10" fill="none" strokeWidth={2.2} />
+      <ellipse cx="8.6" cy="23" rx="4" ry="3" fill={RED} />
+      <ellipse cx="21.6" cy="20" rx="4" ry="3" fill={RED} />
     </>
   ),
   // The get-out-of-jail card: a ticket with notched sides

@@ -5,6 +5,7 @@ import type { GameState } from './engine/types';
 import { LangProvider, useLang } from './i18n/LangContext';
 import { createTutorialGame } from './tutorial/script';
 import { GameScreen } from './ui/GameScreen';
+import { MusicPanel } from './ui/MusicPanel';
 import { clearSavedGame, loadSavedGame } from './ui/savedGame';
 import { SetupScreen } from './ui/SetupScreen';
 
@@ -12,6 +13,7 @@ export default function App() {
   return (
     <LangProvider>
       <Screens />
+      <MusicPanel />
     </LangProvider>
   );
 }

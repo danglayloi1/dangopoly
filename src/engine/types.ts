@@ -1,10 +1,12 @@
 import type { CardDeck } from '../data/cards';
+import type { PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
 
 export interface Player {
   id: number; // index in GameState.players
   name: string;
   token: TokenId;
+  color: PlayerColorId;
   cash: number; // đồng
   position: number; // board index 0..39
   bankrupt: boolean;

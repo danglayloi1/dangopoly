@@ -4,7 +4,7 @@ import { formatMoney } from '../engine/money';
 import type { Action, GameState, TradeOffer, TradeSide } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { Icon } from './icons';
-import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { groupFill, playerColor, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
 
 interface Props {
@@ -26,7 +26,7 @@ function SideList({ side, onShowSpace }: { side: TradeSide; onShowSpace: (index:
         return (
           <li key={space}>
             {s.kind === 'property' ? (
-              <span className="holding-swatch" style={{ background: GROUP_COLORS[s.group] }} />
+              <span className="holding-swatch" style={{ background: groupFill(s.group) }} />
             ) : (
               <span className="holding-swatch icon">{spaceIcon(space)}</span>
             )}
@@ -66,9 +66,9 @@ export function TradeOfferPanel({ game, offer, dispatch, onShowSpace }: Props) {
   const to = game.players[offer.to];
 
   return (
-    <div className="action-panel trade-offer" style={{ '--player': PLAYER_COLORS[to.id] } as CSSProperties}>
-      <div className="turn-banner" style={{ color: PLAYER_COLORS[to.id] }}>
-        <TokenIcon token={to.token} color={PLAYER_COLORS[to.id]} size={28} />
+    <div className="action-panel trade-offer" style={{ '--player': playerColor(to) } as CSSProperties}>
+      <div className="turn-banner" style={{ color: playerColor(to) }}>
+        <TokenIcon token={to.token} color={playerColor(to)} size={28} />
         <span>🤝 {t.offerTitle(to.name, from.name)}</span>
       </div>
       <p className="muted pass-device">{t.passDevice(to.name)}</p>

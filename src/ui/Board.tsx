@@ -4,7 +4,7 @@ import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { cellPosition } from './geometry';
-import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { groupFill, playerColor, spaceIcon } from './look';
 import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
 
@@ -32,8 +32,8 @@ export function Board({ game, positions, busy, onSelectSpace, children }: Props)
         const style = {
           gridRow: row + 1,
           gridColumn: col + 1,
-          '--group': space.kind === 'property' ? GROUP_COLORS[space.group] : undefined,
-          '--owner': own ? PLAYER_COLORS[own.owner] : undefined,
+          '--group': space.kind === 'property' ? groupFill(space.group) : undefined,
+          '--owner': own ? playerColor(game.players[own.owner]) : undefined,
         } as CSSProperties;
 
         return (
@@ -67,7 +67,7 @@ export function Board({ game, positions, busy, onSelectSpace, children }: Props)
                     key={p.id}
                     className={`cell-token${p.id === game.current ? ' current' : ''}${p.inJail ? ' jailed' : ''}`}
                   >
-                    <TokenIcon token={p.token} color={PLAYER_COLORS[p.id]} size="100%" title={p.name} />
+                    <TokenIcon token={p.token} color={playerColor(p)} size="100%" title={p.name} />
                   </span>
                 ))}
               </span>

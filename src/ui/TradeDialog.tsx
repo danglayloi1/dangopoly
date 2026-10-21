@@ -6,7 +6,7 @@ import type { Action, GameState, TradeOffer } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { holdingsOf } from './holdings';
 import { Icon } from './icons';
-import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { groupFill, playerColor, spaceIcon } from './look';
 import { parseMoney } from './moneyInput';
 import { TokenIcon } from './TokenIcon';
 import { useModalDialog } from './useModalDialog';
@@ -36,9 +36,9 @@ function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashTex
   const cash = parseMoney(cashText);
 
   return (
-    <section className="trade-side" style={{ '--player': PLAYER_COLORS[player] } as CSSProperties}>
+    <section className="trade-side" style={{ '--player': playerColor(p) } as CSSProperties}>
       <h3>
-        <TokenIcon token={p.token} color={PLAYER_COLORS[player]} size={24} />
+        <TokenIcon token={p.token} color={playerColor(p)} size={24} />
         {t.sideGives(p.name)}
       </h3>
 
@@ -59,7 +59,7 @@ function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashTex
                     onChange={() => onToggle(space)}
                   />
                   {s.kind === 'property' ? (
-                    <span className="holding-swatch" style={{ background: GROUP_COLORS[s.group] }} />
+                    <span className="holding-swatch" style={{ background: groupFill(s.group) }} />
                   ) : (
                     <span className="holding-swatch icon">{spaceIcon(space)}</span>
                   )}
@@ -156,7 +156,7 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
 
   return (
     <dialog {...dialogProps} className="trade-dialog" aria-labelledby="trade-title">
-      <header className="trade-header" style={{ borderTopColor: PLAYER_COLORS[me] }}>
+      <header className="trade-header" style={{ borderTopColor: playerColor(game.players[me]) }}>
         <h2 id="trade-title">🤝 {t.trade}</h2>
         {partners.length > 1 && (
           <div className="partner-picker" role="radiogroup" aria-label={t.tradeWith}>
@@ -168,10 +168,10 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
                 role="radio"
                 aria-checked={p.id === partner}
                 className={`partner${p.id === partner ? ' selected' : ''}`}
-                style={{ '--player': PLAYER_COLORS[p.id] } as CSSProperties}
+                style={{ '--player': playerColor(p) } as CSSProperties}
                 onClick={() => choosePartner(p.id)}
               >
-                <TokenIcon token={p.token} color={PLAYER_COLORS[p.id]} size={20} />
+                <TokenIcon token={p.token} color={playerColor(p)} size={20} />
                 {p.name}
               </button>
             ))}

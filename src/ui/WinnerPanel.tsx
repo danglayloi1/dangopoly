@@ -2,10 +2,11 @@ import type { CSSProperties } from 'react';
 import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
-import { GROUP_COLORS, PLAYER_COLORS } from './look';
+import { playerColor } from './look';
 import { TokenIcon } from './TokenIcon';
 
-const CONFETTI_COLORS = Object.values(GROUP_COLORS);
+// Paper confetti (pháo giấy) in the folk-print colors.
+const CONFETTI_COLORS = ['#b8322a', '#d9ae4f', '#2f4f6f', '#4f7a3a', '#c95b7b', '#f6ecd4'];
 
 /** Falling paper pieces in the board colors. Decorative; skipped for "reduce motion". */
 function Confetti() {
@@ -38,7 +39,7 @@ export function WinnerPanel({ game, winner, onNewGame }: { game: GameState; winn
     <div className="action-panel winner-panel">
       <Confetti />
       <div className="winner">
-        <TokenIcon token={player.token} color={PLAYER_COLORS[winner]} size={72} />
+        <TokenIcon token={player.token} color={playerColor(player)} size={72} />
         <p className="winner-text">🏆 {t.winner(player.name)}</p>
         <p className="winner-stats">{t.winnerStats(formatMoney(player.cash), owned.length, houses)}</p>
       </div>

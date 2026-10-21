@@ -3,6 +3,7 @@
 
 import { BOARD, BOARD_SIZE, isOwnable } from '../data/board';
 import { CARDS, type CardDeck } from '../data/cards';
+import { defaultPlayerColor, PLAYER_COLOR_IDS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
 import type { GameState } from './types';
 
@@ -31,7 +32,10 @@ export function parseSave(text: string | null): SaveFile | null {
   }
   if (!isRecord(data) || data.version !== SAVE_VERSION || typeof data.savedAt !== 'string') return null;
   if (Number.isNaN(Date.parse(data.savedAt)) || !isValidGame(data.game)) return null;
-  return { version: data.version, savedAt: data.savedAt, game: data.game };
+  // Saves from before players picked colors have none: give each seat its default color.
+  const players = data.game.players.map((p) => ({ ...p, color: p.color ?? defaultPlayerColor(p.id) }));
+  if (new Set(players.map((p) => p.color)).size !== players.length) return null;
+  return { version: data.version, savedAt: data.savedAt, game: { ...data.game, players } };
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +59,7 @@ function isValidPlayer(v: unknown, index: number): boolean {
     v.name.trim() !== '' &&
     typeof v.token === 'string' &&
     TOKEN_IDS.includes(v.token) &&
+    (v.color === undefined || PLAYER_COLOR_IDS.includes(v.color as never)) &&
     isInt(v.cash, 0, Number.MAX_SAFE_INTEGER) &&
     isInt(v.position, 0, BOARD_SIZE - 1) &&
     isBool(v.bankrupt) &&

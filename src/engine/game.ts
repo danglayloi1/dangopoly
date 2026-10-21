@@ -12,6 +12,7 @@ import {
   UTILITY_CARD_MULTIPLIER,
 } from '../data/board';
 import { CARDS, type CardDeck } from '../data/cards';
+import { defaultPlayerColor, type PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
 import { houseCost, houseRefund, isPropertyActionAllowed, mortgageValue, unmortgageCost } from './buildings';
 import { jailFreeCardIndex, shuffledDeck } from './deck';
@@ -35,6 +36,7 @@ export class GameError extends Error {}
 export interface NewPlayer {
   name: string;
   token: TokenId;
+  color?: PlayerColorId; // the seat's default color if not given
 }
 
 export interface NewGameOptions {
@@ -57,6 +59,10 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
   if (new Set(players.map((p) => p.token)).size !== players.length) {
     throw new GameError('Each player needs a different token');
   }
+  const colors = players.map((p, seat) => p.color ?? defaultPlayerColor(seat));
+  if (new Set(colors).size !== players.length) {
+    throw new GameError('Each player needs a different color');
+  }
   if (players.some((p) => p.name.trim() === '')) {
     throw new GameError('Every player needs a name');
   }
@@ -74,6 +80,7 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
       id,
       name: p.name.trim(),
       token: p.token,
+      color: colors[id],
       cash: startingCash,
       position: 0,
       bankrupt: false,

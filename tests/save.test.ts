@@ -31,6 +31,22 @@ describe('saving and loading', () => {
     expect(next(loaded)).toEqual(next(game)); // including the dice from the seeded RNG
   });
 
+  it('gives saves from before color picking the seat colors', () => {
+    const old = structuredClone(midGame()) as unknown as { players: Record<string, unknown>[] };
+    for (const p of old.players) delete p.color;
+    const text = JSON.stringify({ version: SAVE_VERSION, savedAt: '2026-10-18T12:00:00Z', game: old });
+    expect(parseSave(text)?.game.players.map((p) => p.color)).toEqual(['red', 'indigo', 'green']);
+  });
+
+  it('ignores saves with an unknown or repeated color', () => {
+    const odd = structuredClone(midGame());
+    (odd.players[0] as { color: string }).color = 'gold';
+    expect(parseSave(serializeGame(odd))).toBeNull();
+    const twice = structuredClone(midGame());
+    twice.players[1].color = twice.players[0].color;
+    expect(parseSave(serializeGame(twice))).toBeNull();
+  });
+
   it('keeps games in every phase', () => {
     const inDebt = structuredClone(midGame());
     inDebt.phase = { kind: 'inDebt', debtor: 1, creditor: 0, amount: 5_000_000, reason: { kind: 'rent', space: 3 } };
