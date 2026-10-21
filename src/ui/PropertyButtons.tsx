@@ -14,6 +14,7 @@ import { BOARD } from '../data/board';
 import { formatMoney } from '../engine/money';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
+import { useMayAct } from './viewer';
 
 interface Props {
   game: GameState;
@@ -28,7 +29,8 @@ interface Props {
 export function PropertyButtons({ game, space, dispatch }: Props) {
   const { t } = useLang();
   const own = game.ownership[space];
-  if (!own || own.owner !== actingPlayer(game)) return null;
+  const mayAct = useMayAct(game); // online: only on this phone's own move
+  if (!own || own.owner !== actingPlayer(game) || !mayAct) return null;
 
   const isProperty = BOARD[space].kind === 'property';
   const buttons = [];

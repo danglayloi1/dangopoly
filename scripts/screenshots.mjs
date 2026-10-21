@@ -530,6 +530,139 @@ const scenes = {
     await click(/Từ chối/);
     await shot('after-reject');
   },
+
+  /**
+   * Online play with three phones in one room: lobby, who goes first, a few turns, a trade offer
+   * that pops up on the other player's phone, and a phone that drops out and comes back.
+   * Needs the room server too (npm run server). Each picture shows the three phones side by side.
+   */
+  async online({ browser }) {
+    let failed = 0;
+    const check = (ok, what) => {
+      if (!ok) failed++;
+      console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    };
+    let errors = 0;
+    const phoneOptions = {
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: dark ? 'dark' : 'light',
+    };
+    const openPhone = async (name, context) => {
+      const ctx = context ?? (await browser.newContext(phoneOptions));
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => {
+        errors++;
+        console.error(`${name}: ${e.message}`);
+      });
+      return { name, ctx, page };
+    };
+    const phones = [await openPhone('Đăng'), await openPhone('Lan'), await openPhone('Minh')];
+    const [dang, lan, minh] = phones;
+    const button = (p, name) => p.page.getByRole('button', { name }).first();
+
+    // Each phone's screen, side by side, with its owner's name underneath.
+    let count = 0;
+    const together = async (label) => {
+      for (const p of phones) await p.page.waitForTimeout(150);
+      const pics = [];
+      for (const p of phones) pics.push((await p.page.screenshot()).toString('base64'));
+      const sheet = await browser.newPage({ viewport: { width: 3 * 390 + 4 * 24, height: 844 + 72 } });
+      await sheet.setContent(`<body style="margin:0;padding:24px;display:flex;gap:24px;background:#3a2e26;font:700 20px system-ui;color:#f3e7cc">${pics
+        .map((b, i) => `<figure style="margin:0;text-align:center"><img src="data:image/png;base64,${b}" style="width:390px;height:844px;border-radius:18px;display:block"><figcaption style="margin-top:10px">📱 ${phones[i].name}</figcaption></figure>`)
+        .join('')}</body>`);
+      const file = path.join(outDir, `${String(++count).padStart(2, '0')}-${label}.png`);
+      await sheet.screenshot({ path: file });
+      await sheet.close();
+      console.log('saved', file);
+    };
+
+    // Đăng creates the room.
+    await dang.page.goto(BASE_URL);
+    await button(dang, 'Tạo phòng').click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    check(/^[A-Z2-9]{6}$/.test(code), `a room is created (${code})`);
+
+    // Lan and Minh open the link and join.
+    for (const p of [lan, minh]) {
+      await p.page.goto(`${BASE_URL}?room=${code}`);
+      await p.page.waitForSelector('.lobby-seat');
+      await p.page.getByPlaceholder('Tên').fill(p.name);
+      await button(p, 'Vào phòng').click();
+      await p.page.waitForSelector('.badge-you');
+    }
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 3);
+    check(true, 'Lan and Minh join from the link; everyone sees 3 players');
+    await together('lobby');
+
+    // Đăng starts; the server rolls for who goes first and every phone shows the same dice.
+    await button(dang, /Bắt đầu ván/).click();
+    for (const p of phones) await p.page.waitForSelector('.first-turn-dialog');
+    const order = await Promise.all(phones.map((p) => p.page.locator('.first-turn-order').textContent()));
+    check(order.every((o) => o === order[0]), `every phone shows the same playing order (${order[0]})`);
+    await together('who-goes-first');
+    for (const p of phones) await button(p, /Vào chơi/).click();
+
+    // Whose phone has buttons right now (once the board has settled)?
+    const withButtons = async () => {
+      for (const p of phones) await p.page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
+      const has = [];
+      for (const p of phones) if (await p.page.locator('.action-panel .action-buttons button').count()) has.push(p);
+      return has;
+    };
+
+    // A trade offer from the first player: it pops up only on the other player's phone.
+    let [mover] = await withButtons();
+    const partner = phones.find((p) => p !== mover);
+    await button(mover, /Giao dịch/).click();
+    await mover.page.locator('.partner', { hasText: partner.name }).click();
+    await mover.page.locator('dialog.trade-dialog .trade-cash input').first().fill('1tr');
+    await button(mover, new RegExp(`Gửi đề nghị cho ${partner.name}`)).click();
+    await partner.page.waitForSelector('.trade-offer .action-buttons');
+    const onlyPartner = (await withButtons()).map((p) => p.name);
+    check(onlyPartner.length === 1 && onlyPartner[0] === partner.name, `only ${partner.name}'s phone can answer the offer`);
+    await together('trade-offer');
+    await button(partner, /Đồng ý/).click();
+
+    // A few turns, always pressed on the phone that has the buttons.
+    const prefer = ['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Bỏ qua'];
+    let oneAtATime = true;
+    for (let move = 0; move < 14; move++) {
+      const has = await withButtons();
+      if (has.length !== 1) oneAtATime = false;
+      if (has.length === 0) break;
+      const buttons = has[0].page.locator('.action-panel .action-buttons button');
+      for (const word of prefer) {
+        const b = buttons.filter({ hasText: word }).first();
+        if (await b.count()) {
+          await b.click();
+          break;
+        }
+      }
+      if (move === 1) await together('a-turn');
+      await has[0].page.waitForTimeout(250);
+    }
+    check(oneAtATime, 'at every step exactly one phone has buttons');
+
+    // Lan's phone drops out; the others see it; she comes back to her seat from the link.
+    await lan.page.close();
+    await dang.page.waitForSelector('.badge-away');
+    check(true, "the others see Lan's phone as offline");
+    lan.page = (await openPhone('Lan', lan.ctx)).page;
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.waitForSelector('.board');
+    await dang.page.waitForFunction(() => !document.querySelector('.badge-away'));
+    const lanSeat = await lan.page.locator('.player-card', { has: lan.page.locator('.badge-you') }).locator('.player-name').textContent();
+    check(lanSeat.includes('Lan'), 'Lan comes back to her own seat from the link');
+    await together('lan-back');
+
+    check(errors === 0, `no errors on any phone (${errors})`);
+    console.log(failed === 0 ? 'ALL ONLINE CHECKS PASSED' : `${failed} ONLINE CHECKS FAILED`);
+  },
 };
 
 async function main() {

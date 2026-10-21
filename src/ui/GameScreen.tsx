@@ -1,18 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS } from '../data/cards';
-import { actingPlayer } from '../engine/buildings';
 import { applyAction, GameError } from '../engine/game';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
-import { ActionPanel } from './ActionPanel';
-import { Board } from './Board';
-import { GameLog } from './GameLog';
-import { GameHeader } from './Header';
-import { ManageDialog } from './ManageDialog';
-import { PlayerList } from './PlayerList';
+import { GameTable } from './GameTable';
 import { clearSavedGame, saveGame } from './savedGame';
-import { SpaceCard } from './SpaceCard';
-import { TradeDialog } from './TradeDialog';
 import { usePresentation } from './usePresentation';
 import { TutorialBubble } from '../tutorial/TutorialBubble';
 import { useTutorial } from '../tutorial/useTutorial';
@@ -23,18 +15,12 @@ interface Props {
   tutorial?: boolean; // play the guided first game
 }
 
+/** A game on this one device: players take turns with it. Saved after every move. */
 export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = false }: Props) {
   const { t } = useLang();
   const [game, setGame] = useState(initialGame);
-  const [shownSpace, setShownSpace] = useState<number | null>(null);
-  const [managing, setManaging] = useState(false);
-  const [trading, setTrading] = useState(false);
   const [saving, setSaving] = useState(true); // false if this browser won't let us store the game
-  const actor = actingPlayer(game);
-  const { positions, rolling, busy } = usePresentation(game);
-  // While a move plays out, the side panel keeps showing money as it was until the token arrives.
-  const settled = useRef(game);
-  if (!busy) settled.current = game;
+  const presentation = usePresentation(game);
 
   const play = useCallback((action: Action) => {
     setGame((current) => {
@@ -48,8 +34,7 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
     });
   }, []);
   // In the tutorial, every move goes through it: it only lets through what the lesson asks for.
-  const tutorial = useTutorial(tutorialMode, play, busy);
-  const dispatch = tutorial.dispatch;
+  const tutorial = useTutorial(tutorialMode, play, presentation.busy);
 
   // Auto-save after every change (not during the tutorial); a finished game is removed.
   useEffect(() => {
@@ -77,50 +62,15 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
     };
   }, []);
 
+  const autosave = saving && !tutorial.active && game.phase.kind !== 'gameOver' && (
+    <span className="autosave muted" title={t.autoSaved}>
+      💾 <span className="autosave-text">{t.autoSaved}</span>
+    </span>
+  );
+
   return (
-    <div className="game">
-      <GameHeader onBack={onLeave}>
-        {saving && !tutorial.active && game.phase.kind !== 'gameOver' && (
-          <span className="autosave muted" title={t.autoSaved}>
-            💾 <span className="autosave-text">{t.autoSaved}</span>
-          </span>
-        )}
-      </GameHeader>
-
-      <div className="game-layout">
-        <Board game={game} positions={positions} busy={busy} onSelectSpace={setShownSpace}>
-          <ActionPanel
-            game={game}
-            dispatch={dispatch}
-            onShowSpace={setShownSpace}
-            onManage={() => setManaging(true)}
-            onTrade={() => setTrading(true)}
-            onNewGame={onLeave}
-            busy={busy}
-            rolling={rolling}
-          />
-        </Board>
-
-        <aside className="sidebar">
-          <PlayerList game={busy ? settled.current : game} onShowSpace={setShownSpace} />
-          <GameLog game={busy ? settled.current : game} />
-        </aside>
-      </div>
-
-      {managing && actor !== null && (
-        <ManageDialog
-          game={game}
-          player={actor}
-          dispatch={dispatch}
-          onShowSpace={setShownSpace}
-          onClose={() => setManaging(false)}
-        />
-      )}
-      {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
+    <GameTable game={game} dispatch={tutorial.dispatch} presentation={presentation} onLeave={onLeave} headerExtra={autosave}>
       {tutorial.active && <TutorialBubble tutorial={tutorial} onExit={onLeave} />}
-      {shownSpace !== null && (
-        <SpaceCard index={shownSpace} game={game} dispatch={dispatch} onClose={() => setShownSpace(null)} />
-      )}
-    </div>
+    </GameTable>
   );
 }

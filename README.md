@@ -1,7 +1,7 @@
 # Dangopoly: Nghệ Tĩnh Edition
 
 A property-trading board game set in Hà Tĩnh and Nghệ An, played in the browser.
-2–4 players take turns on one device, in Vietnamese or English.
+2–4 players take turns on one device, or play online from their own phones, in Vietnamese or English.
 
 **Play:** https://danglayloi1.github.io/dangopoly/
 
@@ -27,7 +27,8 @@ Spotify login, each song plays for 30 seconds.
 ### Screenshots of a scene
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
-`screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`.
+`screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
+`online` (three phones in one room; needs `npm run server` too), `live` (the published site).
 
 ```bash
 npm run shots -- tutorial            # desktop size

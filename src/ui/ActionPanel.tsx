@@ -1,6 +1,6 @@
 import { BOARD, isOwnable, JAIL_FINE } from '../data/board';
 import { actingPlayer } from '../engine/buildings';
-import { legalActions } from '../engine/game';
+import { legalActions, whoseMove } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import { canStartTrade } from '../engine/trading';
 import type { Action, GameState } from '../engine/types';
@@ -12,6 +12,7 @@ import { describeLog } from './logText';
 import { GROUP_COLORS, playerColor, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
 import { TradeOfferPanel } from './TradeOfferPanel';
+import { useMayAct, useViewer } from './viewer';
 import { WinnerPanel } from './WinnerPanel';
 
 interface Props {
@@ -33,6 +34,11 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
   const allowed = legalActions(game);
   const actor = actingPlayer(game);
   const actorOwnsSomething = actor !== null && Object.values(game.ownership).some((o) => o.owner === actor);
+  // Online, only the phone whose move it is gets the buttons; the others see who they're waiting for.
+  const mayAct = useMayAct(game);
+  const viewer = useViewer();
+  const mine = viewer.online && viewer.seat === game.current;
+  const waitingOn = whoseMove(game);
 
   // What happened since this turn started (most recent last).
   const turnStart = game.log.findLastIndex((e) => e.type === 'turnStarted');
@@ -49,7 +55,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
   const turnBanner = (
     <div className="turn-banner" style={{ color: playerColor(player) }}>
       <TokenIcon token={player.token} color={playerColor(player)} size={28} />
-      <span>{t.turnOf(player.name)}</span>
+      <span>{mine ? t.yourTurn : t.turnOf(player.name)}</span>
     </div>
   );
 
@@ -115,60 +121,64 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
         </div>
       )}
 
-      <div className="action-buttons">
-        {allowed.includes('ROLL') && (
-          <button className="primary big" data-tutorial="roll" onClick={() => dispatch({ type: 'ROLL' })} autoFocus>
-            🎲{' '}
-            {waitingInJail ? t.rollForDoubles : game.dice && game.dice[0] === game.dice[1] ? t.rollAgain : t.roll}
-          </button>
-        )}
-        {allowed.includes('PAY_JAIL_FINE') && (
-          <button className="secondary" data-tutorial="payJailFine" onClick={() => dispatch({ type: 'PAY_JAIL_FINE' })}>
-            {t.payJailFine(formatMoney(JAIL_FINE))}
-          </button>
-        )}
-        {allowed.includes('USE_JAIL_CARD') && (
-          <button className="secondary" onClick={() => dispatch({ type: 'USE_JAIL_CARD' })}>
-            <Icon name="ticket" /> {t.useJailCard}
-          </button>
-        )}
-        {offer && (
-          <>
-            {allowed.includes('BUY') ? (
-              <button className="primary" data-tutorial="buy" onClick={() => dispatch({ type: 'BUY' })} autoFocus>
-                {t.buy(formatMoney(offer.price))}
-              </button>
-            ) : (
-              <span className="muted">{t.cannotAfford}</span>
-            )}
-            <button className="secondary" onClick={() => dispatch({ type: 'DECLINE' })}>
-              {t.skip}
-            </button>
-          </>
-        )}
-        {allowed.includes('PAY_DEBT') && phase.kind === 'inDebt' && (
-          <button className="primary" onClick={() => dispatch({ type: 'PAY_DEBT' })}>
-            {t.payDebt(formatMoney(phase.amount))}
-          </button>
-        )}
-        {allowed.includes('DECLARE_BANKRUPTCY') && (
-          <button
-            className="danger"
-            onClick={() => {
-              if (window.confirm(t.confirmBankruptcy)) dispatch({ type: 'DECLARE_BANKRUPTCY' });
-            }}
-          >
-            {t.declareBankruptcy}
-          </button>
-        )}
-        {allowed.includes('END_TURN') && (
-          <button className="primary big" data-tutorial="endTurn" onClick={() => dispatch({ type: 'END_TURN' })} autoFocus>
-            {t.endTurn} →
-          </button>
-        )}
-      </div>
+      {!mayAct && waitingOn !== null && <p className="waiting-note">{t.waitingFor(game.players[waitingOn].name)}</p>}
 
-      {(actorOwnsSomething || canStartTrade(game)) && (
+      {mayAct && (
+        <div className="action-buttons">
+          {allowed.includes('ROLL') && (
+            <button className="primary big" data-tutorial="roll" onClick={() => dispatch({ type: 'ROLL' })} autoFocus>
+              🎲{' '}
+              {waitingInJail ? t.rollForDoubles : game.dice && game.dice[0] === game.dice[1] ? t.rollAgain : t.roll}
+            </button>
+          )}
+          {allowed.includes('PAY_JAIL_FINE') && (
+            <button className="secondary" data-tutorial="payJailFine" onClick={() => dispatch({ type: 'PAY_JAIL_FINE' })}>
+              {t.payJailFine(formatMoney(JAIL_FINE))}
+            </button>
+          )}
+          {allowed.includes('USE_JAIL_CARD') && (
+            <button className="secondary" onClick={() => dispatch({ type: 'USE_JAIL_CARD' })}>
+              <Icon name="ticket" /> {t.useJailCard}
+            </button>
+          )}
+          {offer && (
+            <>
+              {allowed.includes('BUY') ? (
+                <button className="primary" data-tutorial="buy" onClick={() => dispatch({ type: 'BUY' })} autoFocus>
+                  {t.buy(formatMoney(offer.price))}
+                </button>
+              ) : (
+                <span className="muted">{t.cannotAfford}</span>
+              )}
+              <button className="secondary" onClick={() => dispatch({ type: 'DECLINE' })}>
+                {t.skip}
+              </button>
+            </>
+          )}
+          {allowed.includes('PAY_DEBT') && phase.kind === 'inDebt' && (
+            <button className="primary" onClick={() => dispatch({ type: 'PAY_DEBT' })}>
+              {t.payDebt(formatMoney(phase.amount))}
+            </button>
+          )}
+          {allowed.includes('DECLARE_BANKRUPTCY') && (
+            <button
+              className="danger"
+              onClick={() => {
+                if (window.confirm(t.confirmBankruptcy)) dispatch({ type: 'DECLARE_BANKRUPTCY' });
+              }}
+            >
+              {t.declareBankruptcy}
+            </button>
+          )}
+          {allowed.includes('END_TURN') && (
+            <button className="primary big" data-tutorial="endTurn" onClick={() => dispatch({ type: 'END_TURN' })} autoFocus>
+              {t.endTurn} →
+            </button>
+          )}
+        </div>
+      )}
+
+      {mayAct && (actorOwnsSomething || canStartTrade(game)) && (
         <div className="side-actions">
           {actorOwnsSomething && (
             <button
