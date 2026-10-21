@@ -1,7 +1,7 @@
 import { formatMoney } from '../engine/money';
 import type { SaveFile } from '../engine/save';
 import { useLang } from '../i18n/LangContext';
-import { PLAYER_COLORS } from './look';
+import { playerColor } from './look';
 import { TokenIcon } from './TokenIcon';
 
 interface Props {
@@ -31,7 +31,7 @@ export function SavedGameCard({ saved, onContinue, onDiscard }: Props) {
       <ul className="saved-players">
         {game.players.map((p) => (
           <li key={p.id} className={p.bankrupt ? 'bankrupt' : undefined}>
-            <TokenIcon token={p.token} color={PLAYER_COLORS[p.id]} size={28} />
+            <TokenIcon token={p.token} color={playerColor(p)} size={28} />
             <span className="saved-name">
               {p.name}
               {p.id === game.current && <span className="saved-turn"> · {t.turnOf(p.name)}</span>}

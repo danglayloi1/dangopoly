@@ -20,6 +20,10 @@ npm run build    # builds the final website into dist/
 
 New to the game? Press **🎓 Hướng dẫn chơi** on the start screen for a guided practice game.
 
+**Music:** the 🎵 button in the corner opens a Spotify player with Nghệ Tĩnh folk songs (dân ca ví giặm),
+or any Spotify playlist you paste in. Nothing is loaded from Spotify until you open it. Without a
+Spotify login, each song plays for 30 seconds.
+
 ### Screenshots of a scene
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to

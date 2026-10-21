@@ -5,7 +5,7 @@ import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { holdingsOf, type Holding } from './holdings';
 import { Icon } from './icons';
-import { GROUP_COLORS, PLAYER_COLORS } from './look';
+import { groupFill, playerColor } from './look';
 import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
 
@@ -24,7 +24,7 @@ function Swatch({ kind }: { kind: Holding['kind'] }) {
       </span>
     );
   }
-  return <span className="holding-swatch" style={{ background: GROUP_COLORS[kind] }} aria-hidden="true" />;
+  return <span className="holding-swatch" style={{ background: groupFill(kind) }} aria-hidden="true" />;
 }
 
 /** A player's cash; when it changes, the difference floats up next to it for a moment. */
@@ -67,10 +67,10 @@ export function PlayerList({ game, onShowSpace }: Props) {
           <li
             key={p.id}
             className={`player-card${isCurrent ? ' current' : ''}${p.bankrupt ? ' bankrupt' : ''}`}
-            style={{ '--player': PLAYER_COLORS[p.id] } as CSSProperties}
+            style={{ '--player': playerColor(p) } as CSSProperties}
             aria-current={isCurrent ? 'true' : undefined}
           >
-            <TokenIcon token={p.token} color={PLAYER_COLORS[p.id]} size={36} />
+            <TokenIcon token={p.token} color={playerColor(p)} size={36} />
             <div className="player-info">
               <span className="player-name">
                 {p.name}

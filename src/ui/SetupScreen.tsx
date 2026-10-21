@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { START_SALARY, STARTING_CASH } from '../data/board';
+import { defaultPlayerColor, PLAYER_COLORS, type PlayerColorId } from '../data/colors';
 import { TOKENS, type TokenId } from '../data/tokens';
 import { MAX_PLAYERS, MIN_PLAYERS, type NewPlayer } from '../engine/game';
 import { formatMoney } from '../engine/money';
@@ -7,7 +8,8 @@ import { useLang } from '../i18n/LangContext';
 import type { SaveFile } from '../engine/save';
 import { LangSwitch, ThemeButton } from './Header';
 import bannerArt from '../assets/art/banner.webp';
-import { PLAYER_COLORS } from './look';
+import { FirstTurnDialog } from './FirstTurnDialog';
+import { colorHex } from './look';
 import { SavedGameCard } from './SavedGameCard';
 import { millionsText, parseMillions } from './startingCash';
 import { TokenIcon } from './TokenIcon';
@@ -26,22 +28,37 @@ function firstFreeToken(used: TokenId[]): TokenId {
   return TOKENS.find((tok) => !used.includes(tok.id))!.id;
 }
 
+function firstFreeColor(used: PlayerColorId[]): PlayerColorId {
+  return PLAYER_COLORS.find((c) => !used.includes(c.id))!.id;
+}
+
+/** Every player in the setup form has a color (NewPlayer allows leaving it out). */
+type SetupPlayer = NewPlayer & { color: PlayerColorId };
+
+type FirstTurn = 'roll' | 'inOrder';
+
 export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard }: Props) {
   const { t, lang } = useLang();
-  const [players, setPlayers] = useState<NewPlayer[]>([
-    { name: '', token: 'nonLa' },
-    { name: '', token: 'conTrau' },
+  const [players, setPlayers] = useState<SetupPlayer[]>([
+    { name: '', token: 'nonLa', color: defaultPlayerColor(0) },
+    { name: '', token: 'conTrau', color: defaultPlayerColor(1) },
   ]);
+  const [firstTurn, setFirstTurn] = useState<FirstTurn>('roll');
+  // While set, the "who goes first" dice are shown for these players.
+  const [rollingFor, setRollingFor] = useState<NewPlayer[] | null>(null);
   // The starting money is whatever is typed in the box; the preset buttons just fill it in.
   const [cashText, setCashText] = useState(() => millionsText(STARTING_CASH, lang));
   const startingCash = parseMillions(cashText);
   const [showErrors, setShowErrors] = useState(false);
 
-  const update = (i: number, change: Partial<NewPlayer>) =>
+  const update = (i: number, change: Partial<SetupPlayer>) =>
     setPlayers((ps) => ps.map((p, j) => (j === i ? { ...p, ...change } : p)));
 
   const addPlayer = () =>
-    setPlayers((ps) => [...ps, { name: '', token: firstFreeToken(ps.map((p) => p.token)) }]);
+    setPlayers((ps) => [
+      ...ps,
+      { name: '', token: firstFreeToken(ps.map((p) => p.token)), color: firstFreeColor(ps.map((p) => p.color)) },
+    ]);
 
   const removePlayer = (i: number) => setPlayers((ps) => ps.filter((_, j) => j !== i));
 
@@ -52,10 +69,9 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
       return;
     }
     if (saved && !window.confirm(t.newGameReplaces)) return;
-    onStart(
-      players.map((p) => ({ ...p, name: p.name.trim() })),
-      startingCash,
-    );
+    const named = players.map((p) => ({ ...p, name: p.name.trim() }));
+    if (firstTurn === 'roll') setRollingFor(named);
+    else onStart(named, startingCash);
   };
 
   return (
@@ -85,13 +101,16 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
         <h2>{t.players}</h2>
 
         {players.map((p, i) => {
-          const usedByOthers = players.filter((_, j) => j !== i).map((o) => o.token);
+          const others = players.filter((_, j) => j !== i);
+          const usedByOthers = others.map((o) => o.token);
+          const colorsOfOthers = others.map((o) => o.color);
+          const color = colorHex(p.color);
           const missingName = showErrors && p.name.trim() === '';
           return (
-            <fieldset key={i} className="player-row" style={{ '--player': PLAYER_COLORS[i] } as CSSProperties}>
+            <fieldset key={i} className="player-row" style={{ '--player': color } as CSSProperties}>
               <legend className="visually-hidden">{t.playerN(i + 1)}</legend>
               <div className="player-row-top">
-                <TokenIcon token={p.token} color={PLAYER_COLORS[i]} size={40} />
+                <TokenIcon token={p.token} color={color} size={40} />
                 <input
                   className={missingName ? 'invalid' : ''}
                   value={p.name}
@@ -128,9 +147,28 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
                       title={tok.name[lang]}
                       onClick={() => update(i, { token: tok.id })}
                     >
-                      <TokenIcon token={tok.id} color={taken ? '#9aa1ad' : PLAYER_COLORS[i]} size={30} />
+                      <TokenIcon token={tok.id} color={taken ? '#9aa1ad' : color} size={30} />
                       <span>{tok.name[lang]}</span>
                     </button>
+                  );
+                })}
+              </div>
+              <div className="color-picker" role="radiogroup" aria-label={t.chooseColor}>
+                {PLAYER_COLORS.map((c) => {
+                  const selected = p.color === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={c.name[lang]}
+                      title={c.name[lang]}
+                      disabled={colorsOfOthers.includes(c.id)}
+                      className={`color-choice${selected ? ' selected' : ''}`}
+                      style={{ background: c.hex }}
+                      onClick={() => update(i, { color: c.id })}
+                    />
                   );
                 })}
               </div>
@@ -181,6 +219,24 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
           </p>
         </div>
 
+        <div className="first-turn-choice">
+          <h2 id="first-turn-label">{t.whoFirst}</h2>
+          <div className="segmented" role="radiogroup" aria-labelledby="first-turn-label">
+            {(['roll', 'inOrder'] as const).map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                role="radio"
+                aria-checked={firstTurn === choice}
+                className={firstTurn === choice ? 'selected' : ''}
+                onClick={() => setFirstTurn(choice)}
+              >
+                {choice === 'roll' ? `🎲 ${t.firstByRoll}` : t.firstInOrder}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {showErrors && players.some((p) => p.name.trim() === '') && (
           <p className="form-error" role="alert">
             {t.needNames}
@@ -192,6 +248,14 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
         </button>
         {saved && <p className="muted center small-note">{t.newGameReplaces}</p>}
       </form>
+
+      {rollingFor && startingCash !== null && (
+        <FirstTurnDialog
+          players={rollingFor}
+          onDone={(ordered) => onStart(ordered, startingCash)}
+          onClose={() => setRollingFor(null)}
+        />
+      )}
 
       <footer>
         {t.footer} · v{__APP_VERSION__}

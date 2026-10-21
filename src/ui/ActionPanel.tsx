@@ -9,7 +9,7 @@ import { Dice } from './Dice';
 import { DrawnCard } from './DrawnCard';
 import { Icon } from './icons';
 import { describeLog } from './logText';
-import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { GROUP_COLORS, playerColor, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
 import { TradeOfferPanel } from './TradeOfferPanel';
 import { WinnerPanel } from './WinnerPanel';
@@ -47,8 +47,8 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
   const offer = offerSpace && isOwnable(offerSpace) ? offerSpace : null;
 
   const turnBanner = (
-    <div className="turn-banner" style={{ color: PLAYER_COLORS[player.id] }}>
-      <TokenIcon token={player.token} color={PLAYER_COLORS[player.id]} size={28} />
+    <div className="turn-banner" style={{ color: playerColor(player) }}>
+      <TokenIcon token={player.token} color={playerColor(player)} size={28} />
       <span>{t.turnOf(player.name)}</span>
     </div>
   );

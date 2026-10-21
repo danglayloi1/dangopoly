@@ -62,6 +62,14 @@ describe('createGame', () => {
     ).toThrow(GameError);
   });
 
+  it('gives each player a color: the chosen one, or the seat default, never the same twice', () => {
+    const two = PLAYERS.slice(0, 2).map((p) => ({ ...p }));
+    expect(createGame({ players: two }).players.map((p) => p.color)).toEqual(['red', 'indigo']);
+    const picked = createGame({ players: [{ ...two[0], color: 'teal' }, { ...two[1], color: 'pink' }] });
+    expect(picked.players.map((p) => p.color)).toEqual(['teal', 'pink']);
+    expect(() => createGame({ players: [{ ...two[0], color: 'teal' }, { ...two[1], color: 'teal' }] })).toThrow(GameError);
+  });
+
   it('uses a custom starting amount and rejects invalid ones', () => {
     const two = PLAYERS.slice(0, 2).map((p) => ({ ...p }));
     expect(createGame({ players: two, startingCash: 7_500_000 }).players[0].cash).toBe(7_500_000);

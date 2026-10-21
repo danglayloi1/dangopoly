@@ -2,9 +2,24 @@
    offset "block print" shadows, display type, and the illustrated board.
    Colors come from the theme tokens in styles.css, so dark mode becomes sơn mài (lacquer). */
 
+/* Wallpaper: faint cloud scrolls and flowers, as in the borders of Đông Hồ prints. */
+:root {
+  --wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%23c9b48a' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M20 60Q20 44 36 44Q50 44 50 56Q50 64 42 64Q36 64 36 58M50 56Q62 56 68 48M100 130Q100 114 116 114Q130 114 130 126Q130 134 122 134Q116 134 116 128M130 126Q142 126 148 118'/%3E%3Cpath d='M120 34Q125 40 120 46Q115 40 120 34ZM114 40Q120 45 126 40Q120 35 114 40Z'/%3E%3Ccircle cx='40' cy='120' r='2'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='dark'] {
+  --wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%235a4526' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M20 60Q20 44 36 44Q50 44 50 56Q50 64 42 64Q36 64 36 58M50 56Q62 56 68 48M100 130Q100 114 116 114Q130 114 130 126Q130 134 122 134Q116 134 116 128M130 126Q142 126 148 118'/%3E%3Cpath d='M120 34Q125 40 120 46Q115 40 120 34ZM114 40Q120 45 126 40Q120 35 114 40Z'/%3E%3Ccircle cx='40' cy='120' r='2'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%235a4526' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M20 60Q20 44 36 44Q50 44 50 56Q50 64 42 64Q36 64 36 58M50 56Q62 56 68 48M100 130Q100 114 116 114Q130 114 130 126Q130 134 122 134Q116 134 116 128M130 126Q142 126 148 118'/%3E%3Cpath d='M120 34Q125 40 120 46Q115 40 120 34ZM114 40Q120 45 126 40Q120 35 114 40Z'/%3E%3Ccircle cx='40' cy='120' r='2'/%3E%3C/svg%3E");
+  }
+}
+
 body {
   background-color: var(--bg);
-  background-image: var(--paper);
+  background-image: var(--paper), var(--wallpaper);
 }
 
 h1,
@@ -123,6 +138,7 @@ button.secondary:disabled {
 }
 
 .player-row {
+  min-width: 0; /* a fieldset is as wide as its contents unless told otherwise; it overflowed on phones */
   border-left-width: 8px;
   border-left-color: var(--player);
 }
@@ -247,16 +263,50 @@ button.secondary:disabled {
   box-shadow: 0 0 0 2px var(--ink), 2px 2px 0 1px var(--ink);
 }
 
-.building {
-  border: 1.5px solid var(--ink);
-}
-
-.building.house {
-  background: #4f7a3a;
-}
-
+/* Houses and the đình are small drawings (see Buildings), not colored blocks. */
+.building,
+.building.house,
 .building.hotel {
-  background: #b8322a;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+
+.strip .building.house {
+  width: 1.5cqw;
+  height: 1.5cqw;
+}
+
+.strip .building.hotel {
+  width: 3cqw;
+  height: 1.75cqw;
+}
+
+.buildings-inline .building.house {
+  width: 11px;
+  height: 11px;
+}
+
+.buildings-inline .building.hotel {
+  width: 20px;
+  height: 12px;
+}
+
+/* Property card: a band with the set's color and motif across the top. */
+.deed-header {
+  position: relative;
+  border-top: 0;
+  padding-top: 32px;
+}
+
+.deed-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 18px;
+  background: var(--band, var(--surface-2));
+  border-bottom: 2px solid var(--ink);
 }
 
 /* The middle: the Lam River illustration, with the turn panel on a sheet of paper in front. */
@@ -278,7 +328,41 @@ button.secondary:disabled {
   }
 }
 
+/* Clouds drifting slowly across the top of the picture (still when motion is reduced). */
+.board-center::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 30%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='60' fill='%23fbf6e8' stroke='%235f6f7a' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M30 40Q30 26 44 26Q50 18 60 22Q72 16 78 28Q90 28 88 40Z'/%3E%3Cpath d='M48 34Q48 30 53 30M66 30Q70 27 73 31' fill='none'/%3E%3Cpath d='M160 30Q160 20 170 20Q176 14 184 18Q194 16 196 26Q204 28 202 34Z'/%3E%3C/svg%3E")
+    repeat-x 0 40% / 40% auto;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: clouds-drift 120s linear infinite;
+}
+
+/* One tile is 40% wide: moving the image by 66.67% of the leftover 60% shifts it one tile. */
+@keyframes clouds-drift {
+  from {
+    background-position-x: 0%;
+  }
+  to {
+    background-position-x: -66.667%;
+  }
+}
+
+:root[data-theme='dark'] .board-center::before {
+  opacity: 0.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-center::before {
+    animation: none;
+  }
+}
+
 .action-panel {
+  position: relative;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   background-image: var(--paper);
   border: 2px solid var(--ink);
@@ -477,6 +561,283 @@ button.secondary:disabled {
 .logo-word {
   font-weight: 900;
   font-size: 1.55rem;
+}
+
+/* ===== Setup: player colors and who goes first ===== */
+.color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.color-choice {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-choice.selected {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.color-choice:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.first-turn-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.first-turn-dialog {
+  width: min(460px, calc(100vw - 24px));
+  padding: 16px 18px 18px;
+  color: var(--text);
+  background: var(--surface);
+  background-image: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+}
+
+.first-turn-dialog::backdrop {
+  background: rgba(20, 14, 10, 0.55);
+}
+
+.first-turn-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.first-turn-header h2 {
+  margin: 0;
+}
+
+.first-turn-dialog > p {
+  margin: 6px 0 12px;
+}
+
+.first-turn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.first-turn-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto 2.2em;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--player);
+  border-radius: 10px;
+  background: var(--surface);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.first-turn-row .die {
+  width: 32px;
+  height: 32px;
+}
+
+.first-turn-row.up {
+  box-shadow: 4px 4px 0 var(--player);
+  transform: translate(-2px, -2px);
+}
+
+.first-turn-row.out {
+  opacity: 0.45;
+}
+
+.first-turn-row.winner {
+  box-shadow: 5px 5px 0 var(--gold);
+  transform: translate(-2px, -2px);
+}
+
+.first-turn-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.first-turn-total {
+  font-size: 1.3rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.first-turn-message {
+  min-height: 1.5em;
+  margin: 12px 0 4px;
+  text-align: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+
+.first-turn-order {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  counter-reset: order;
+}
+
+.first-turn-order li {
+  counter-increment: order;
+  padding: 2px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.first-turn-order li::before {
+  content: counter(order) '. ';
+  font-weight: 800;
+}
+
+.first-turn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* ===== Music: a button in the corner and a small Spotify player above it ===== */
+.music {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.music-button {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  background-image: var(--paper);
+  box-shadow: var(--print-shadow);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.music-button.open {
+  background: var(--gold);
+}
+
+.music-panel {
+  width: min(360px, calc(100vw - 32px));
+  padding: 12px 14px 14px;
+  background: var(--surface);
+  background-image: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 5px 5px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.music-panel[hidden] {
+  display: none;
+}
+
+.music-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.music-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.music-player {
+  width: 100%;
+  height: 352px;
+  border: 0;
+  border-radius: 12px;
+}
+
+.music-hint {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.music-own {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.music-own-row {
+  display: flex;
+  gap: 6px;
+}
+
+.music-own input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.music-own input.invalid {
+  border-color: var(--danger);
+}
+
+.music-own .link {
+  align-self: flex-start;
+}
+
+/* The page leaves room at the bottom so the button never hides the last thing on it. */
+body {
+  padding-bottom: 76px;
+}
+
+@media (max-width: 520px) {
+  .music {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .music-button {
+    width: 46px;
+    height: 46px;
+  }
+
+  .music-player {
+    height: 152px;
+  }
 }
 
 /* Phones: the middle of the board is small, so the panel is slimmer and cards show without

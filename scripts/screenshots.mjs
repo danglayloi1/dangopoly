@@ -17,6 +17,12 @@ const mobile = flags.includes('--mobile');
 const dark = flags.includes('--dark');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}${dark ? '-dark' : ''}`);
 
+/** Starts the game from the setup form with the players in the listed order (no first-turn dice). */
+async function startInListedOrder(p) {
+  await p.getByRole('radio', { name: /Theo thứ tự trên/ }).click();
+  await p.getByRole('button', { name: /Bắt đầu chơi/ }).click();
+}
+
 const scenes = {
   /** Checks the published site with real buttons only (no dev helpers there):
    *  DANGOPOLY_URL=https://danglayloi1.github.io/dangopoly/ npm run shots -- live */
@@ -49,7 +55,12 @@ const scenes = {
     await inputs.nth(0).fill('Đăng');
     await inputs.nth(1).fill('Lan');
     await click(/Bắt đầu chơi/);
-    await page.waitForSelector('.board');
+    // Who goes first: the players roll (again after a tie) until one is highest, then start.
+    for (let i = 0; i < 12 && !(await page.locator('.board').count()); i++) {
+      await page.locator('.first-turn-actions .primary').click();
+      await page.waitForTimeout(900);
+    }
+    check((await page.locator('.board').count()) === 1, 'dice decide who goes first, then the game starts');
     const order = ['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Bỏ qua'];
     for (let i = 0; i < 30; i++) {
       await page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
@@ -111,8 +122,9 @@ const scenes = {
     await themeButton.click(); // → auto again
     const backToAuto = await bg();
     console.log(`auto=${auto} light=${light} dark=${dark}`);
-    const LIGHT = 'rgb(246, 241, 231)';
-    const DARK = 'rgb(23, 26, 33)';
+    // The --bg colors of the light and dark themes in src/styles.css
+    const LIGHT = 'rgb(239, 228, 204)';
+    const DARK = 'rgb(27, 21, 18)';
     const ok =
       auto === (dark ? (flags.includes('--dark') ? DARK : LIGHT) : LIGHT) &&
       light === LIGHT &&
@@ -180,7 +192,7 @@ const scenes = {
     await click(/Thêm người chơi/);
     for (const [i, name] of ['Đăng', 'Lan', 'Minh'].entries()) await inputs.nth(i).fill(name);
     await page.locator('.cash-field input').fill('5');
-    await click(/Bắt đầu chơi/);
+    await startInListedOrder(page);
     const order = ['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Tuyên bố', 'Bỏ qua'];
     let moves = 0;
     for (; moves < 400; moves++) {
@@ -344,7 +356,7 @@ const scenes = {
     const inputs = calmPage.locator('.player-row input');
     await inputs.nth(0).fill('Đăng');
     await inputs.nth(1).fill('Lan');
-    await calmPage.getByRole('button', { name: /Bắt đầu chơi/ }).click();
+    await startInListedOrder(calmPage);
     await calmPage.waitForSelector('.board');
     await calmPage.evaluate(() => window.__dangopoly.dispatch({ type: 'ROLL', dice: [1, 2] }));
     await calmPage.waitForTimeout(60);
@@ -552,7 +564,7 @@ async function main() {
     while ((await inputs.count()) < names.length) await click(/Thêm người chơi/);
     for (const [i, name] of names.entries()) await inputs.nth(i).fill(name);
     await page.locator('.cash-field input').fill(startingMillions);
-    await click(/Bắt đầu chơi/);
+    await startInListedOrder(page);
     await page.waitForSelector('.board');
   };
   /** Changes the running game directly (dev-server helper), e.g. to hand out properties. */

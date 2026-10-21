@@ -4,7 +4,7 @@ import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { holdingsOf } from './holdings';
 import { Icon } from './icons';
-import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { groupFill, playerColor, spaceIcon } from './look';
 import { Buildings, PropertyButtons } from './PropertyButtons';
 import { useModalDialog } from './useModalDialog';
 
@@ -24,7 +24,7 @@ export function ManageDialog({ game, player, dispatch, onShowSpace, onClose }: P
 
   return (
     <dialog {...dialogProps} className="manage-dialog" aria-labelledby="manage-title">
-      <header className="manage-header" style={{ borderTopColor: PLAYER_COLORS[player] }}>
+      <header className="manage-header" style={{ borderTopColor: playerColor(p) }}>
         <h2 id="manage-title">{t.manageFor(p.name)}</h2>
         <span className="manage-cash">
           {t.cash}: <strong>{formatMoney(p.cash)}</strong>
@@ -42,7 +42,7 @@ export function ManageDialog({ game, player, dispatch, onShowSpace, onClose }: P
                   <Icon name={h.kind === 'transport' ? 'train' : 'power'} />
                 </span>
               ) : (
-                <span className="holding-swatch" style={{ background: GROUP_COLORS[h.kind] }} />
+                <span className="holding-swatch" style={{ background: groupFill(h.kind) }} />
               )}
               {t.groupNames[h.kind]}{' '}
               <span className="holding-count">

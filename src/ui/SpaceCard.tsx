@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { BOARD, JAIL_FINE, START_SALARY, TRANSPORT_RENT } from '../data/board';
 import { DECK_NAMES } from '../data/cards';
 import { mortgageValue } from '../engine/buildings';
@@ -6,7 +6,7 @@ import { formatMoney } from '../engine/money';
 import { ownsWholeGroup } from '../engine/rent';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
-import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
+import { groupFill, playerColor, spaceIcon } from './look';
 import { Buildings, PropertyButtons } from './PropertyButtons';
 import { useModalDialog } from './useModalDialog';
 
@@ -34,7 +34,7 @@ export function SpaceCard({ index, game, dispatch, onClose }: Props) {
   const own = game.ownership[index];
   const otherLang = lang === 'vi' ? 'en' : 'vi';
 
-  const headerColor = space.kind === 'property' ? GROUP_COLORS[space.group] : 'var(--surface-2)';
+  const band = space.kind === 'property' ? groupFill(space.group) : undefined;
   const icon = spaceIcon(index);
 
   // Which rent row applies right now: base, full set, 1–4 houses, or hotel (-1: none / mortgaged).
@@ -114,7 +114,7 @@ export function SpaceCard({ index, game, dispatch, onClose }: Props) {
 
   return (
     <dialog {...dialogProps} className="space-card" aria-labelledby="space-card-title">
-      <div className="deed-header" style={{ borderTopColor: headerColor }}>
+      <div className="deed-header" style={{ '--band': band } as CSSProperties}>
         {icon && <span className="deed-icon">{icon}</span>}
         <h2 id="space-card-title">{space.name[lang]}</h2>
         {space.name[otherLang] !== space.name[lang] && <p className="deed-subtitle">{space.name[otherLang]}</p>}
@@ -130,7 +130,7 @@ export function SpaceCard({ index, game, dispatch, onClose }: Props) {
           <div className="deed-owner">
             {own ? (
               <>
-                <span className="owner-dot" style={{ background: PLAYER_COLORS[own.owner] }} />
+                <span className="owner-dot" style={{ background: playerColor(game.players[own.owner]) }} />
                 {t.ownedBy(game.players[own.owner].name)}
                 {own.mortgaged && <span className="mortgaged-tag">{t.mortgaged}</span>}
                 {own.houses > 0 && (
