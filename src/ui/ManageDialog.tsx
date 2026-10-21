@@ -3,6 +3,7 @@ import { formatMoney } from '../engine/money';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { holdingsOf } from './holdings';
+import { Icon } from './icons';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
 import { Buildings, PropertyButtons } from './PropertyButtons';
 import { useModalDialog } from './useModalDialog';
@@ -37,7 +38,9 @@ export function ManageDialog({ game, player, dispatch, onShowSpace, onClose }: P
           <section key={h.kind} className="manage-group">
             <h3>
               {h.kind === 'transport' || h.kind === 'utility' ? (
-                <span className="holding-swatch icon">{h.kind === 'transport' ? '🚆' : '⚡'}</span>
+                <span className="holding-swatch icon">
+                  <Icon name={h.kind === 'transport' ? 'train' : 'power'} />
+                </span>
               ) : (
                 <span className="holding-swatch" style={{ background: GROUP_COLORS[h.kind] }} />
               )}

@@ -6,7 +6,8 @@ import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import type { SaveFile } from '../engine/save';
 import { LangSwitch, ThemeButton } from './Header';
-import { GROUP_COLORS, PLAYER_COLORS } from './look';
+import bannerArt from '../assets/art/banner.webp';
+import { PLAYER_COLORS } from './look';
 import { SavedGameCard } from './SavedGameCard';
 import { millionsText, parseMillions } from './startingCash';
 import { TokenIcon } from './TokenIcon';
@@ -65,11 +66,7 @@ export function SetupScreen({ onStart, onTutorial, saved, onContinue, onDiscard 
       </div>
 
       <section className="hero">
-        <div className="color-strip" aria-hidden="true">
-          {Object.values(GROUP_COLORS).map((c) => (
-            <span key={c} className="chip" style={{ background: c }} />
-          ))}
-        </div>
+        <img className="hero-art" src={bannerArt} alt={t.heroAlt} width={1600} height={900} />
         <h1>Dangopoly</h1>
         <p className="edition">{t.edition}</p>
         <p className="tagline">{t.tagline}</p>

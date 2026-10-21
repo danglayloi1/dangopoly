@@ -3,6 +3,7 @@ import type { Lang } from '../data/text';
 const vi = {
   edition: 'Phiên bản Nghệ Tĩnh',
   tagline: 'Từ quê nhà Hà Tĩnh, qua cầu Bến Thủy, đến thành Vinh.',
+  heroAlt: 'Tranh làng quê xứ Nghệ: vườn bưởi, trẻ em thả diều, con trâu, dòng sông và làng ven biển',
   footer: 'Một trò chơi của Đăng',
 
   // Setup
@@ -194,6 +195,7 @@ export type Strings = typeof vi;
 const en: Strings = {
   edition: 'Nghệ Tĩnh Edition',
   tagline: 'From hometown Hà Tĩnh, across Bến Thủy bridge, to Vinh city.',
+  heroAlt: 'Folk print of village life: pomelo trees, children flying a kite, a water buffalo, the river and a seaside village',
   footer: 'A game by Đăng',
 
   players: 'Players',

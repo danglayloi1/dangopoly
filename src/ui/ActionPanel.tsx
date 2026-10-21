@@ -7,6 +7,7 @@ import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { Dice } from './Dice';
 import { DrawnCard } from './DrawnCard';
+import { Icon } from './icons';
 import { describeLog } from './logText';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
@@ -80,7 +81,9 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
 
       {waitingInJail && (
         <div className="jail-box">
-          <strong>🔒 {t.inJailTitle(player.name)}</strong>
+          <strong>
+            <Icon name="jail" /> {t.inJailTitle(player.name)}
+          </strong>
           <span>{t.jailAttempt(player.jailAttempts)}</span>
         </div>
       )}
@@ -126,7 +129,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
         )}
         {allowed.includes('USE_JAIL_CARD') && (
           <button className="secondary" onClick={() => dispatch({ type: 'USE_JAIL_CARD' })}>
-            🎫 {t.useJailCard}
+            <Icon name="ticket" /> {t.useJailCard}
           </button>
         )}
         {offer && (

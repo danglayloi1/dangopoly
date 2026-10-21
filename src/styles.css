@@ -1,18 +1,24 @@
-/* ===== Theme ===== */
+/* ===== Theme =====
+   Light: tranh Đông Hồ — natural pigments on cream dó paper, with charcoal ink outlines.
+   Dark: sơn mài (Vietnamese lacquer) — deep black-brown with gold lines. */
 :root {
-  --bg: #f6f1e7;
-  --surface: #ffffff;
-  --surface-2: #efe8da;
-  --text: #1f2430;
-  --muted: #6b7280;
-  --accent: #d64545;
-  --border: #e5ddcc;
-  --board-bg: #e6f0e1;
-  --board-line: #9fb39a;
-  --cell-bg: #fbfaf5;
-  --danger: #b42318;
+  --bg: #efe4cc; /* dó paper */
+  --surface: #f8f0dd;
+  --surface-2: #e7d9b9;
+  --text: #2b2420; /* đen than */
+  --muted: #6a5946;
+  --accent: #b8322a; /* son đỏ */
+  --gold: #c99a2e; /* vàng hoè */
+  --border: #c9b48a;
+  --ink: #2b2420; /* outlines */
+  --board-bg: #e6d8b6;
+  --board-line: #2b2420;
+  --cell-bg: #f6ecd4;
+  --danger: #a3271f;
+  --print-shadow: 3px 3px 0 var(--ink); /* like a block print slightly off register */
+  --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .32 0 0 0 0 .18 0 0 0 .10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
   color-scheme: light;
@@ -21,31 +27,41 @@
 /* Dark colors: chosen with the theme button (data-theme="dark"), or by the device when the
    button is on "auto" (no data-theme). data-theme="light" keeps the light colors above. */
 :root[data-theme='dark'] {
-  --bg: #171a21;
-  --surface: #222631;
-  --surface-2: #2b3040;
-  --text: #eef0f4;
-  --muted: #9aa1ad;
-  --border: #333947;
-  --board-bg: #1c2620;
-  --board-line: #3d4f42;
-  --cell-bg: #242a33;
-  --danger: #f97066;
+  --bg: #1b1512; /* lacquer */
+  --surface: #261d18;
+  --surface-2: #33271f;
+  --text: #f3e7cc;
+  --muted: #bca98a;
+  --accent: #d64a3c;
+  --gold: #d9ae4f;
+  --border: #4d3c2d;
+  --ink: #d9ae4f; /* gold lines on lacquer */
+  --board-bg: #221a15;
+  --board-line: #8a6a2f;
+  --cell-bg: #2b211b;
+  --danger: #ff7a6b;
+  --print-shadow: 3px 3px 0 #000;
+  --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .85 0 0 0 0 .68 0 0 0 0 .31 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #171a21;
-    --surface: #222631;
-    --surface-2: #2b3040;
-    --text: #eef0f4;
-    --muted: #9aa1ad;
-    --border: #333947;
-    --board-bg: #1c2620;
-    --board-line: #3d4f42;
-    --cell-bg: #242a33;
-    --danger: #f97066;
+    --bg: #1b1512;
+    --surface: #261d18;
+    --surface-2: #33271f;
+    --text: #f3e7cc;
+    --muted: #bca98a;
+    --accent: #d64a3c;
+    --gold: #d9ae4f;
+    --border: #4d3c2d;
+    --ink: #d9ae4f;
+    --board-bg: #221a15;
+    --board-line: #8a6a2f;
+    --cell-bg: #2b211b;
+    --danger: #ff7a6b;
+    --print-shadow: 3px 3px 0 #000;
+    --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .85 0 0 0 0 .68 0 0 0 0 .31 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
 }

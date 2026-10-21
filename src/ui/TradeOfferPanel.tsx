@@ -3,6 +3,7 @@ import { BOARD } from '../data/board';
 import { formatMoney } from '../engine/money';
 import type { Action, GameState, TradeOffer, TradeSide } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
+import { Icon } from './icons';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
 
@@ -37,13 +38,17 @@ function SideList({ side, onShowSpace }: { side: TradeSide; onShowSpace: (index:
       })}
       {side.jailCards > 0 && (
         <li>
-          <span className="holding-swatch icon">🎫</span>
+          <span className="holding-swatch icon">
+            <Icon name="ticket" />
+          </span>
           {side.jailCards > 1 ? t.jailCards(side.jailCards) : t.jailCardName}
         </li>
       )}
       {side.cash > 0 && (
         <li className="offer-cash">
-          <span className="holding-swatch icon">💰</span>
+          <span className="holding-swatch icon">
+            <Icon name="coins" />
+          </span>
           {formatMoney(side.cash)}
         </li>
       )}

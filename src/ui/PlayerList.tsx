@@ -4,6 +4,7 @@ import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { holdingsOf, type Holding } from './holdings';
+import { Icon } from './icons';
 import { GROUP_COLORS, PLAYER_COLORS } from './look';
 import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
@@ -13,13 +14,13 @@ interface Props {
   onShowSpace: (index: number) => void;
 }
 
-const SET_ICONS = { transport: '🚆', utility: '⚡' } as const;
+const SET_ICONS = { transport: 'train', utility: 'power' } as const;
 
 function Swatch({ kind }: { kind: Holding['kind'] }) {
   if (kind === 'transport' || kind === 'utility') {
     return (
       <span className="holding-swatch icon" aria-hidden="true">
-        {SET_ICONS[kind]}
+        <Icon name={SET_ICONS[kind]} />
       </span>
     );
   }
@@ -75,12 +76,12 @@ export function PlayerList({ game, onShowSpace }: Props) {
                 {p.name}
                 {p.inJail && (
                   <span className="badge-jail" title={t.inJailBadge}>
-                    🔒 {t.inJailBadge}
+                    <Icon name="jail" /> {t.inJailBadge}
                   </span>
                 )}
                 {p.jailCards.length > 0 && (
                   <span className="badge-card" title={t.jailCards(p.jailCards.length)}>
-                    🎫×{p.jailCards.length}
+                    <Icon name="ticket" />×{p.jailCards.length}
                   </span>
                 )}
               </span>

@@ -5,6 +5,7 @@ import { canTradeSpace, tradeProblem } from '../engine/trading';
 import type { Action, GameState, TradeOffer } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { holdingsOf } from './holdings';
+import { Icon } from './icons';
 import { GROUP_COLORS, PLAYER_COLORS, spaceIcon } from './look';
 import { parseMoney } from './moneyInput';
 import { TokenIcon } from './TokenIcon';
@@ -75,7 +76,9 @@ function TradeSideEditor({ game, player, selected, onToggle, cashText, onCashTex
           <li key={`card-${i}`}>
             <label className="trade-space">
               <input type="checkbox" checked={i < cards} onChange={(e) => onCards(e.target.checked ? i + 1 : i)} />
-              <span className="holding-swatch icon">🎫</span>
+              <span className="holding-swatch icon">
+                <Icon name="ticket" />
+              </span>
               <span className="trade-space-name">{t.jailCardName}</span>
             </label>
           </li>

@@ -34,6 +34,16 @@ npm run shots -- audit --dark        # every main screen in dark mode, plus a lo
 The app icons and the link-preview picture in `public/` are made by `node scripts/make-assets.mjs`
 (also needs `npm run dev` running); run it again only when the look changes.
 
+### Artwork
+
+The look follows Đông Hồ folk prints (tranh Đông Hồ): paper texture, ink outlines, and in dark
+mode, lacquer (sơn mài). The four pictures in `src/assets/art/` (the start-screen banner, the
+middle of the board, and the two card decks) were made with an AI image tool, then shrunk to WebP:
+
+```bash
+node scripts/optimize-art.mjs <folder with board.png, banner.png, chance.png, community.png>
+```
+
 ## Deploying
 
 Every push to the `main` branch runs the tests, builds the site, and publishes it to GitHub Pages
@@ -48,6 +58,7 @@ automatically (see [.github/workflows/deploy.yml](.github/workflows/deploy.yml))
 | `src/ui/` | React screens: setup, board, player list, history |
 | `src/i18n/` | Vietnamese and English text |
 | `src/tutorial/` | The guided first game: its steps and the hint card |
-| `scripts/` | The screenshot tool |
+| `src/assets/art/` | The folk-art pictures |
+| `scripts/` | The screenshot tool, and helpers for icons and artwork |
 | `tests/` | Unit tests (Vitest) |
 | `public/` | Static files such as the icon |
