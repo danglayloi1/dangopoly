@@ -7,7 +7,7 @@
 //
 // Pictures go to screenshots/<scene>[-mobile]/. Needs Microsoft Edge (installed on Windows).
 
-import { mkdir, rm } from 'node:fs/promises';
+import { mkdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
@@ -33,7 +33,9 @@ const scenes = {
     check(response?.ok(), `page loads (${response?.status()})`);
     check((await page.title()) === 'Dangopoly: Nghệ Tĩnh Edition', 'page title');
     const footer = await page.locator('footer').innerText();
-    check(footer.includes('v1.0.0'), `version on the start screen ("${footer}")`);
+    // The site should show the version in package.json, so a new release needs no change here.
+    const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+    check(footer.includes(`v${version}`), `version v${version} on the start screen ("${footer}")`);
     for (const file of ['manifest.webmanifest', 'og-image.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon.svg']) {
       const r = await page.request.get(new URL(file, BASE_URL).href);
       check(r.ok(), `${file} is served (${r.status()})`);
