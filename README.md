@@ -48,10 +48,22 @@ middle of the board, and the two card decks) were made with an AI image tool, th
 node scripts/optimize-art.mjs <folder with board.png, banner.png, chance.png, community.png>
 ```
 
+### The online room server
+
+Online play goes through a small server in `server/` (a Cloudflare Worker; see SPEC.md §10).
+To run it on this computer and check it with three pretend phones:
+
+```bash
+npm run server         # starts it at http://localhost:8787 (leave it running)
+npm run server:check   # in another terminal: plays a short online game against it
+```
+
 ## Deploying
 
 Every push to the `main` branch runs the tests, builds the site, and publishes it to GitHub Pages
 automatically (see [.github/workflows/deploy.yml](.github/workflows/deploy.yml)).
+The room server deploys to Cloudflare the same way once the Cloudflare secrets are set
+(see [.github/workflows/server.yml](.github/workflows/server.yml)).
 
 ## Project layout
 
@@ -63,6 +75,8 @@ automatically (see [.github/workflows/deploy.yml](.github/workflows/deploy.yml))
 | `src/i18n/` | Vietnamese and English text |
 | `src/tutorial/` | The guided first game: its steps and the hint card |
 | `src/assets/art/` | The folk-art pictures |
+| `src/net/` | Messages between phones and the room server |
+| `server/` | The online room server (Cloudflare Worker + Durable Object) |
 | `scripts/` | The screenshot tool, and helpers for icons and artwork |
 | `tests/` | Unit tests (Vitest) |
 | `public/` | Static files such as the icon |
