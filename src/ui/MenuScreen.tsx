@@ -12,14 +12,18 @@ interface Props {
   onOnline: () => void;
   onTutorial: () => void;
   onSettings: () => void;
+  onBack: () => void; // to the entry screen
 }
 
 /** The main menu: continue a saved game, or choose how to play. */
-export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onOnline, onTutorial, onSettings }: Props) {
+export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onOnline, onTutorial, onSettings, onBack }: Props) {
   const { t } = useLang();
   return (
     <main className="setup menu">
       <header className="menu-top">
+        <button className="secondary small back-button" onClick={onBack} aria-label={t.back}>
+          ← <span className="back-text">{t.back}</span>
+        </button>
         <span className="logo-word">Dangopoly</span>
         <span className="spacer" />
         <ThemeButton />

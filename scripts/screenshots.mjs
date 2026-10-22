@@ -583,6 +583,9 @@ const scenes = {
     check((await page.locator('.screen-transition.forward').count()) === 1, 'a screen slides in going forward');
     await click(/Quay lại|←/);
     check((await page.locator('.screen-transition.back').count()) === 1, 'and from the other side going back');
+    await shot('menu');
+    await page.locator('.menu-top .back-button').click();
+    check(await page.getByRole('button', { name: /Vào chơi/ }).isVisible(), 'the menu goes back to the entry screen');
 
     await startGame(['Đăng', 'Lan', 'Minh', 'Hoa']);
     // Land on Cơ hội with the longest chance card showing and a space for sale.
@@ -598,15 +601,21 @@ const scenes = {
            game.phase = { kind: 'awaitBuy', space: 39 };`,
         ),
       );
+    // Waits (up to a few seconds) for the page to settle into the expected state.
+    const settles = (test) =>
+      page.waitForFunction(test, null, { timeout: 5000 }).then(
+        () => true,
+        () => false,
+      );
     const fits = () =>
-      page.evaluate(() => {
+      settles(() => {
         const middle = document.querySelector('.board-center');
         return middle.scrollHeight <= middle.clientHeight + 1;
       });
     await showCard('chance');
     await page.waitForTimeout(300);
-    const art = await page.evaluate(() => document.querySelector('.drawn-card-art img')?.naturalWidth ?? 0);
-    check(art > 0, 'the Cơ hội picture shows');
+    const art = await settles(() => document.querySelector('.drawn-card-art img')?.naturalWidth > 0);
+    check(art, 'the Cơ hội picture shows');
     check(await fits(), 'the card and the space for sale fit inside the board');
     await shot('card-and-offer');
 

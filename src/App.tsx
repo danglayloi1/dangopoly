@@ -84,6 +84,13 @@ function Screens() {
     setScreen('menu');
   };
 
+  /** From the menu to the entry screen, without leaving the site even if the menu was opened first. */
+  const toTitle = () => {
+    direction.current = 'back';
+    history.replaceState({ dangopoly: 'screen', screen: 'title' } satisfies NavState, '', location.pathname);
+    setScreen('title');
+  };
+
   /** Back one screen; if there's nothing of ours behind (opened from a link), to the menu. */
   const back = () => {
     if (navState()?.dangopoly && history.length > 1) history.back();
@@ -206,6 +213,7 @@ function Screens() {
             onOnline={() => go('online')}
             onTutorial={() => play(createTutorialGame(lang), true)}
             onSettings={() => go('settings')}
+            onBack={toTitle}
           />
         );
     }

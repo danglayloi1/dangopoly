@@ -1127,6 +1127,7 @@ button.secondary:disabled {
 }
 
 @media (max-width: 400px) {
+  .menu-top .back-text,
   .screen-top .back-text {
     display: none;
   }
