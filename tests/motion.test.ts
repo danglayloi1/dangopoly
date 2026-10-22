@@ -24,7 +24,16 @@ describe('newLogEntries', () => {
   it('is empty when nothing changed or the history is unknown', () => {
     const game = newGame();
     expect(newLogEntries(game.log, game.log)).toEqual([]);
-    expect(newLogEntries(structuredClone(game.log), applyAction(game, { type: 'ROLL', dice: [1, 2] }).log)).toEqual([]);
+    expect(newLogEntries(game.log, structuredClone(game.log))).toEqual([]);
+    const other = applyAction(newGame(), { type: 'ROLL', dice: [2, 3] });
+    const elsewhere = applyAction(applyAction(other, { type: 'DECLINE' }), { type: 'END_TURN' });
+    expect(newLogEntries(elsewhere.log, applyAction(game, { type: 'ROLL', dice: [1, 2] }).log)).toEqual([]);
+  });
+
+  it('finds what an action added when the game arrives as a copy (online)', () => {
+    const before = newGame();
+    const after = structuredClone(applyAction(before, { type: 'ROLL', dice: [1, 2] }));
+    expect(newLogEntries(structuredClone(before.log), after.log).map((e) => e.type)).toEqual(['rolled', 'moved']);
   });
 
   it('still works once the log is trimmed to its limit', () => {
@@ -37,6 +46,7 @@ describe('newLogEntries', () => {
     }
     const next = applyAction(game, { type: 'ROLL', dice: [1, 2] });
     expect(newLogEntries(game.log, next.log)[0].type).toBe('rolled');
+    expect(newLogEntries(structuredClone(game.log), structuredClone(next.log))[0].type).toBe('rolled');
   });
 });
 

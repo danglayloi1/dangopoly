@@ -1,9 +1,8 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { START_SALARY, STARTING_CASH } from '../data/board';
+import { STARTING_CASH } from '../data/board';
 import { defaultPlayerColor, PLAYER_COLORS, type PlayerColorId } from '../data/colors';
 import { TOKENS, type TokenId } from '../data/tokens';
 import { CLASSIC_RULES, MAX_PLAYERS, MIN_PLAYERS, type NewPlayer, type RulesChoice } from '../engine/game';
-import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import type { SaveFile } from '../engine/save';
 import { FirstTurnDialog } from './FirstTurnDialog';
@@ -12,10 +11,9 @@ import { colorHex } from './look';
 import { millionsText, parseMillions } from './startingCash';
 import { ColorPicker, TokenPicker } from './Pickers';
 import { RulesPicker } from './RulesPicker';
+import { StartingCashPicker } from './StartingCashPicker';
 import { TokenIcon } from './TokenIcon';
 import { Icon } from './icons';
-
-const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
 interface Props {
   onStart: (players: NewPlayer[], startingCash: number, rules: RulesChoice) => void;
@@ -126,42 +124,7 @@ export function SetupScreen({ onStart, onBack, saved }: Props) {
           </button>
         )}
 
-        <div className="starting-cash">
-          <h2 id="starting-cash-label">{t.startingMoney}</h2>
-          <div className="segmented" role="radiogroup" aria-labelledby="starting-cash-label">
-            {STARTING_CASH_CHOICES.map((amount) => (
-              <button
-                key={amount}
-                type="button"
-                role="radio"
-                aria-checked={amount === startingCash}
-                className={amount === startingCash ? 'selected' : ''}
-                onClick={() => setCashText(millionsText(amount, lang))}
-              >
-                {formatMoney(amount)}
-              </button>
-            ))}
-          </div>
-          <label className="cash-input">
-            <span>{t.startingMoneyCustom}</span>
-            <span className="cash-field">
-              <input
-                className={startingCash === null ? 'invalid' : ''}
-                value={cashText}
-                inputMode="decimal"
-                maxLength={6}
-                aria-invalid={startingCash === null}
-                aria-describedby="starting-cash-help"
-                onChange={(e) => setCashText(e.target.value)}
-              />
-              <span className="unit">{t.millionUnit}</span>
-            </span>
-            {startingCash !== null && <span className="cash-preview">= {formatMoney(startingCash)}</span>}
-          </label>
-          <p id="starting-cash-help" className={startingCash === null ? 'form-error' : 'muted'}>
-            {startingCash === null ? t.startingMoneyInvalid : t.startingMoneyHint(formatMoney(START_SALARY))}
-          </p>
-        </div>
+        <StartingCashPicker text={cashText} onText={setCashText} />
 
         <RulesPicker rules={rules} onChange={setRules} />
 

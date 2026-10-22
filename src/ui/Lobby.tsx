@@ -3,7 +3,6 @@ import { STARTING_CASH } from '../data/board';
 import { PLAYER_COLORS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
 import { CLASSIC_RULES, MAX_PLAYERS, MIN_PLAYERS, type RulesChoice } from '../engine/game';
-import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import { roomLink } from '../net/config';
 import type { FirstTurn, Profile } from '../net/protocol';
@@ -15,10 +14,10 @@ import { colorHex } from './look';
 import { ColorPicker, TokenPicker } from './Pickers';
 import { QrCode } from './QrCode';
 import { RulesPicker } from './RulesPicker';
+import { millionsText, parseMillions } from './startingCash';
+import { StartingCashPicker } from './StartingCashPicker';
 import { TokenIcon } from './TokenIcon';
 import { Icon } from './icons';
-
-const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
 interface Props {
   code: string;
@@ -29,7 +28,7 @@ interface Props {
 
 /** Before an online game: invite friends, everyone picks a name, token and color, the host starts. */
 export function Lobby({ code, creating, state, onLeave }: Props) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { room, send, error, status } = state;
   const me = room?.you ?? null;
   const mine = me !== null ? room!.seats[me] : null;
@@ -41,7 +40,8 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
 
   const [profile, setProfile] = useState<Profile>({ name: '', token: 'nonLa', color: 'red' });
   const [nameMissing, setNameMissing] = useState(false);
-  const [startingCash, setStartingCash] = useState(STARTING_CASH);
+  const [cashText, setCashText] = useState(() => millionsText(STARTING_CASH, lang));
+  const startingCash = parseMillions(cashText);
   const [firstTurn, setFirstTurn] = useState<FirstTurn>('roll');
   const [rules, setRules] = useState<RulesChoice>(CLASSIC_RULES);
 
@@ -157,23 +157,7 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
 
       {isHost && room && (
         <section className="setup-card">
-          <div className="starting-cash">
-            <h2 id="online-cash-label">{t.startingMoney}</h2>
-            <div className="segmented" role="radiogroup" aria-labelledby="online-cash-label">
-              {STARTING_CASH_CHOICES.map((amount) => (
-                <button
-                  key={amount}
-                  type="button"
-                  role="radio"
-                  aria-checked={amount === startingCash}
-                  className={amount === startingCash ? 'selected' : ''}
-                  onClick={() => setStartingCash(amount)}
-                >
-                  {formatMoney(amount)}
-                </button>
-              ))}
-            </div>
-          </div>
+          <StartingCashPicker text={cashText} onText={setCashText} />
           <RulesPicker rules={rules} onChange={setRules} />
           <div className="first-turn-choice">
             <h2 id="online-first-label">{t.whoFirst}</h2>
@@ -200,8 +184,8 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
           </div>
           <button
             className="primary big"
-            disabled={room.seats.length < MIN_PLAYERS || status !== 'open'}
-            onClick={() => send({ t: 'start', startingCash, firstTurn, rules })}
+            disabled={room.seats.length < MIN_PLAYERS || status !== 'open' || startingCash === null}
+            onClick={() => startingCash !== null && send({ t: 'start', startingCash, firstTurn, rules })}
           >
             {t.startOnline} →
           </button>
