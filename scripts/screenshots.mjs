@@ -898,13 +898,18 @@ const scenes = {
     check(true, 'Lan and Minh join from the link; everyone sees 3 players');
     await together('lobby');
 
-    // Đăng starts; the server rolls for who goes first and every phone shows the same dice.
+    // Đăng types his own starting money, then starts; the server rolls for who goes first and every
+    // phone shows the same dice.
+    await dang.page.locator('.cash-field input').fill('12');
     await button(dang, /Bắt đầu ván/).click();
     for (const p of phones) await p.page.waitForSelector('.first-turn-dialog');
     const order = await Promise.all(phones.map((p) => p.page.locator('.first-turn-order').textContent()));
     check(order.every((o) => o === order[0]), `every phone shows the same playing order (${order[0]})`);
     await together('who-goes-first');
     for (const p of phones) await button(p, /Vào chơi/).click();
+    for (const p of phones) await p.page.waitForSelector('.board[data-busy="false"]');
+    const cash = await Promise.all(phones.map((p) => p.page.locator('.player-card .player-cash').allTextContents()));
+    check(cash.flat().every((c) => c === '12tr'), `everyone starts with the amount the host typed (${cash[0].join(', ')})`);
 
     // Whose phone has buttons right now (once the board has settled)?
     // Over the internet the phones get each move a moment apart, so first wait until all of them
@@ -943,6 +948,7 @@ const scenes = {
     // A few turns, always pressed on the phone that has the buttons.
     const prefer = ['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Bỏ qua'];
     let oneAtATime = true;
+    let othersSawRoll = null; // checked on the first roll: the other phones play the dice too
     for (let move = 0; move < 14; move++) {
       const has = await withButtons();
       if (has.length !== 1) oneAtATime = false;
@@ -951,7 +957,14 @@ const scenes = {
       for (const word of prefer) {
         const b = buttons.filter({ hasText: word }).first();
         if (await b.count()) {
+          const watch =
+            word === 'Gieo' && othersSawRoll === null
+              ? phones
+                  .filter((p) => p !== has[0])
+                  .map((p) => p.page.waitForSelector('.die-cube.rolling', { timeout: 5000 }).then(() => true, () => false))
+              : null;
           await b.click();
+          if (watch) othersSawRoll = (await Promise.all(watch)).every(Boolean);
           break;
         }
       }
@@ -959,6 +972,7 @@ const scenes = {
       await has[0].page.waitForTimeout(250);
     }
     check(oneAtATime, 'at every step exactly one phone has buttons');
+    check(othersSawRoll === true, 'the other phones see the dice roll and the token hop, not just the result');
 
     // A quick reaction from Lan floats up on every phone.
     await button(lan, 'Thả cảm xúc').click();

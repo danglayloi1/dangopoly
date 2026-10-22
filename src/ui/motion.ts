@@ -5,16 +5,30 @@ import { CARDS } from '../data/cards';
 import type { Festival, GameState, LogEntry } from '../engine/types';
 import type { SoundName } from './sound';
 
+/** How many old entries must match, and how far back from the end of the new log to look for them. */
+const MATCH_ENTRIES = 6;
+const MATCH_WINDOW = 100;
+
 /**
- * Entries added to the log since `prev`. Log entries are never copied (only appended), so the last
- * old entry can be found by identity. Unknown history (a different game) gives nothing.
+ * Entries added to the log since `prev`. On one device entries are never copied (only appended), so
+ * the last old entry is found by identity. Online, every update arrives as a fresh copy, so then the
+ * last few old entries are looked for by value near the end of the new log. Unknown history (a
+ * different game) gives nothing.
  */
 export function newLogEntries(prev: readonly LogEntry[], next: readonly LogEntry[]): LogEntry[] {
   if (prev === next) return [];
   const last = prev[prev.length - 1];
   if (!last) return [];
   const i = next.lastIndexOf(last);
-  return i >= 0 ? next.slice(i + 1) : [];
+  if (i >= 0) return next.slice(i + 1);
+
+  const k = Math.min(prev.length, MATCH_ENTRIES);
+  const tail = prev.slice(-k).map((e) => JSON.stringify(e));
+  const lowest = Math.max(k - 1, next.length - 1 - MATCH_WINDOW);
+  for (let end = next.length - 1; end >= lowest; end--) {
+    if (tail.every((key, j) => JSON.stringify(next[end - k + 1 + j]) === key)) return next.slice(end + 1);
+  }
+  return [];
 }
 
 /** One token's trip: the spaces it visits one by one, or a jump straight to the end (going to jail). */

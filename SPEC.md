@@ -140,7 +140,7 @@ They can still appear respectfully in cards and the tutorial, e.g. *"Visit Ngã 
 - The last player who isn't bankrupt **wins**.
 
 ### Starting money
-**15tr** per player by default (the classic amount). The setup screen also offers **10tr / 20tr** or any typed amount from 1 to 100 triệu.
+**15tr** per player by default (the classic amount). The setup screen, and the host in an online room, can also pick **10tr / 20tr** or type any amount from 1 to 100 triệu.
 
 ### Simplifications compared with the classic rules
 - **No auctions:** a property nobody buys stays with the bank.
