@@ -710,8 +710,21 @@ const scenes = {
     for (const p of phones) await button(p, /Vào chơi/).click();
 
     // Whose phone has buttons right now (once the board has settled)?
+    // Over the internet the phones get each move a moment apart, so first wait until all of them
+    // show the same game: boards settled and the same history. (Not the turn banner: it says
+    // "your turn" on one phone and the player's name on the others.)
+    const inStep = async () => {
+      const shown = (p) => p.page.locator('.game-log').textContent();
+      for (let tries = 0; tries < 100; tries++) {
+        for (const p of phones) await p.page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
+        const states = await Promise.all(phones.map(shown));
+        if (states.every((st) => st === states[0])) return;
+        await phones[0].page.waitForTimeout(100);
+      }
+      throw new Error('the phones never showed the same game');
+    };
     const withButtons = async () => {
-      for (const p of phones) await p.page.waitForSelector('.board[data-busy="false"]', { timeout: 10_000 });
+      await inStep();
       const has = [];
       for (const p of phones) if (await p.page.locator('.action-panel .action-buttons button').count()) has.push(p);
       return has;
