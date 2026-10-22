@@ -550,37 +550,84 @@ button.secondary:disabled {
   transition: none;
 }
 
-/* Drawn card: its artwork on top. */
+/* Drawn card: printed like a folk card, the picture on the left and the words in a gold frame on the
+   right, so it stays short enough for the middle of a small board. */
 .drawn-card {
+  --deck: #b8322a;
+  display: grid;
+  grid-template-columns: clamp(52px, 15cqw, 104px) 1fr;
+  width: min(100%, 360px);
   border: 2px solid var(--ink);
   border-radius: 10px;
   box-shadow: 4px 4px 0 var(--ink);
   background: var(--surface);
 }
 
+.drawn-card.deck-community {
+  --deck: #2f4f6f;
+}
+
+/* Behind the picture (and in its place if it can't load): the deck color with gold stripes. */
 .drawn-card-art {
-  display: block;
+  position: relative;
+  border-right: 2px solid var(--ink);
+  background:
+    radial-gradient(circle, var(--gold) 0 18%, transparent 19%) center / 100% 40% no-repeat,
+    repeating-linear-gradient(45deg, transparent 0 7px, rgba(217, 174, 79, 0.35) 7px 9px),
+    var(--deck);
+}
+
+.drawn-card-art img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  max-height: clamp(70px, 16cqw, 150px);
+  height: 100%;
   object-fit: cover;
-  border-bottom: 2px solid var(--ink);
+}
+
+.drawn-card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 4px;
+  border: 1.5px solid var(--gold);
+  border-radius: 6px;
+  /* little gold corners, like the printed ornaments on a card */
+  background:
+    radial-gradient(circle at 0 0, var(--gold) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 100% 0, var(--gold) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 0 100%, var(--gold) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 100% 100%, var(--gold) 0 5px, transparent 5.5px);
 }
 
 .drawn-card-head {
+  margin: 4px 4px 0;
+  padding: 3px 8px;
+  border-radius: 4px;
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.05em;
-  letter-spacing: 0.04em;
+  font-size: 1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-bottom: 2px solid var(--ink);
+  text-align: center;
 }
 
-.drawn-card.deck-chance .drawn-card-head {
-  background: #b8322a;
+.drawn-card-head::before,
+.drawn-card-head::after {
+  content: '◆';
+  margin: 0 0.5em;
+  font-size: 0.55em;
+  vertical-align: 0.25em;
+  color: var(--gold);
 }
 
+.drawn-card.deck-chance .drawn-card-head,
 .drawn-card.deck-community .drawn-card-head {
-  background: #2f4f6f;
+  background: var(--deck);
+}
+
+.drawn-card p {
+  padding: 5px 10px 7px;
+  text-align: center;
 }
 
 .offer,
@@ -594,6 +641,11 @@ button.secondary:disabled {
 
 .offer {
   border-top-width: 12px;
+}
+
+/* The turn and the dice: one above the other, except on small boards (see the end of this file). */
+.panel-top {
+  display: contents;
 }
 
 .turn-events {
@@ -671,6 +723,28 @@ button.secondary:disabled {
 
 .deed-header h2 {
   font-size: 1.35rem;
+}
+
+/* Printed touches like the Cơ hội cards: a gold mark on the rule under the name, and gold dots on the
+   lower corners of the inner frame. */
+.deed-header::after {
+  content: '◆';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+  padding: 0 6px;
+  background: var(--surface);
+  color: var(--gold);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.space-card {
+  background-image:
+    radial-gradient(circle at 9px calc(100% - 9px), var(--gold) 0 4px, transparent 4.5px),
+    radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), var(--gold) 0 4px, transparent 4.5px),
+    var(--paper);
 }
 
 .manage-row,
@@ -2497,6 +2571,23 @@ body {
     gap: 6px;
   }
 
+  /* The turn and the dice share one line. */
+  .panel-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 12px;
+  }
+
+  /* The space for sale on one line: icon, name, price. */
+  .offer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: 8px;
+  }
+
   .turn-banner svg {
     width: 22px;
     height: 22px;
@@ -2554,12 +2645,18 @@ body {
     box-shadow: 2px 2px 0 var(--ink);
   }
 
-  .drawn-card-art {
-    display: none;
+  .drawn-card {
+    grid-template-columns: 44px 1fr;
+    box-shadow: 2px 2px 0 var(--ink);
   }
 
-  .drawn-card {
-    box-shadow: 2px 2px 0 var(--ink);
+  .drawn-card-body {
+    margin: 3px;
+  }
+
+  .drawn-card-head::before,
+  .drawn-card-head::after {
+    display: none;
   }
 
   .action-panel .primary,
@@ -2567,4 +2664,157 @@ body {
   .action-panel .danger {
     box-shadow: 2px 2px 0 var(--ink);
   }
+}
+
+/* ===== Players under the board (one-column layout) ===== */
+.player-more {
+  display: none;
+}
+
+/* Tablets: the full player cards two by two. */
+@media (min-width: 601px) and (max-width: 880px) {
+  .player-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+/* Phones: a strip of small chips (token, name, money and a dot per set they own); tapping the
+   dots opens that player's places across the whole width. */
+@media (max-width: 600px) {
+  .player-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+  }
+
+  .player-card {
+    gap: 4px 8px;
+    padding: 6px 8px;
+    border-left-width: 6px;
+  }
+
+  .player-card.current {
+    box-shadow: 3px 3px 0 var(--player);
+  }
+
+  .player-card > .token-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .player-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .player-name {
+    max-width: 100%;
+    font-size: 0.95rem;
+  }
+
+  .player-cash {
+    font-size: 1rem;
+  }
+
+  .player-card .holdings {
+    display: none;
+  }
+
+  .player-card.open {
+    grid-column: 1 / -1;
+  }
+
+  .player-card.open .holdings {
+    display: flex;
+  }
+
+  .player-more {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    min-height: 30px;
+    padding: 3px 8px;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    background: var(--surface-2, var(--surface));
+    box-shadow: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .holding-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .holding-dot .holding-swatch {
+    width: 12px;
+    height: 12px;
+  }
+
+  .player-more .chevron {
+    margin-left: auto;
+    transition: transform 0.2s;
+  }
+
+  .player-card.open .chevron {
+    transform: rotate(180deg);
+  }
+}
+
+/* ===== Moving between screens ===== */
+/* Only opacity and a small shift, and nothing is left behind once it ends (no transform that would
+   change how fixed pop-ups inside are placed). */
+.screen-transition {
+  animation: screen-forward calc(0.26s / var(--fx, 1)) ease-out backwards;
+  overflow-x: clip;
+}
+
+.screen-transition.back {
+  animation-name: screen-back;
+}
+
+.screen-transition.rise {
+  animation-name: screen-rise;
+}
+
+@keyframes screen-forward {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+
+@keyframes screen-back {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+
+@keyframes screen-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-transition {
+    animation: none;
+  }
+}
+
+:root[data-anim='off'] .screen-transition {
+  animation: none;
 }

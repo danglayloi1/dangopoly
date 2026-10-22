@@ -64,8 +64,10 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
   if (busy) {
     return (
       <div className="action-panel" aria-busy="true">
-        {turnBanner}
-        <Dice dice={game.dice} rolling={rolling} />
+        <div className="panel-top">
+          {turnBanner}
+          <Dice dice={game.dice} rolling={rolling} />
+        </div>
       </div>
     );
   }
@@ -80,9 +82,10 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
 
   return (
     <div className="action-panel">
-      {turnBanner}
-
-      <Dice dice={game.dice} />
+      <div className="panel-top">
+        {turnBanner}
+        <Dice dice={game.dice} />
+      </div>
 
       {game.lastCard && <DrawnCard deck={game.lastCard.deck} card={game.lastCard.card} />}
 

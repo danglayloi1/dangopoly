@@ -3,6 +3,7 @@ import { actingPlayer } from '../engine/buildings';
 import type { Action, GameState } from '../engine/types';
 import { ActionPanel } from './ActionPanel';
 import { Board } from './Board';
+import { preloadCardArt } from './DrawnCard';
 import { ScreenEffects } from './Effects';
 import { GameLog } from './GameLog';
 import { GameHeader } from './Header';
@@ -42,6 +43,8 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
   useEffect(() => {
     if (over) setSummary(true);
   }, [over]);
+
+  useEffect(preloadCardArt, []);
 
   return (
     <div className="game">

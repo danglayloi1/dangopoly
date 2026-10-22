@@ -58,6 +58,8 @@ function Cash({ cash }: { cash: number }) {
 export function PlayerList({ game, onShowSpace }: Props) {
   const { t, lang } = useLang();
   const viewer = useViewer();
+  // Phones show each player as a small chip; tapping one opens its places (one at a time).
+  const [open, setOpen] = useState<number | null>(null);
 
   return (
     <ul className="player-list">
@@ -68,7 +70,7 @@ export function PlayerList({ game, onShowSpace }: Props) {
         return (
           <li
             key={p.id}
-            className={`player-card${isCurrent ? ' current' : ''}${p.bankrupt ? ' bankrupt' : ''}`}
+            className={`player-card${isCurrent ? ' current' : ''}${p.bankrupt ? ' bankrupt' : ''}${open === p.id ? ' open' : ''}`}
             style={{ '--player': playerColor(p) } as CSSProperties}
             aria-current={isCurrent ? 'true' : undefined}
           >
@@ -93,6 +95,25 @@ export function PlayerList({ game, onShowSpace }: Props) {
               </span>
               {p.bankrupt ? <span className="player-cash">{t.bankrupt}</span> : <Cash cash={p.cash} />}
             </div>
+
+            {!p.bankrupt && holdings.length > 0 && (
+              <button
+                className="player-more"
+                aria-expanded={open === p.id}
+                aria-label={t.holdingsOf(p.name)}
+                onClick={() => setOpen(open === p.id ? null : p.id)}
+              >
+                {holdings.map((h) => (
+                  <span key={h.kind} className="holding-dot">
+                    <Swatch kind={h.kind} />
+                    {h.owned.length}
+                  </span>
+                ))}
+                <span className="chevron" aria-hidden="true">
+                  ▾
+                </span>
+              </button>
+            )}
 
             {!p.bankrupt && (
               <ul className="holdings">
