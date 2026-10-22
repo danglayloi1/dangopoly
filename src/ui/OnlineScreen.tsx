@@ -14,13 +14,19 @@ import { ViewerProvider } from './viewer';
 interface Props {
   code: string;
   creating: boolean;
+  onCreated: () => void; // the new room now exists, so its link can go in the address
   onLeave: () => void;
 }
 
 /** An online room: the lobby until the host starts, then the game. */
-export function OnlineScreen({ code, creating, onLeave }: Props) {
+export function OnlineScreen({ code, creating, onCreated, onLeave }: Props) {
   const { t } = useLang();
   const state = useRoom(code, creating);
+  const exists = state.room !== null;
+
+  useEffect(() => {
+    if (creating && exists) onCreated();
+  }, [creating, exists]);
 
   if (state.missing) {
     return (

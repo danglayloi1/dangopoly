@@ -6,12 +6,9 @@ import { MAX_PLAYERS, MIN_PLAYERS, type NewPlayer } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import type { SaveFile } from '../engine/save';
-import { LangSwitch, ThemeButton } from './Header';
-import bannerArt from '../assets/art/banner.webp';
 import { FirstTurnDialog } from './FirstTurnDialog';
+import { ScreenTop } from './Header';
 import { colorHex } from './look';
-import { OnlineCard } from './OnlineCard';
-import { SavedGameCard } from './SavedGameCard';
 import { millionsText, parseMillions } from './startingCash';
 import { ColorPicker, TokenPicker } from './Pickers';
 import { TokenIcon } from './TokenIcon';
@@ -20,12 +17,8 @@ const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
 interface Props {
   onStart: (players: NewPlayer[], startingCash: number) => void;
-  onCreateRoom: () => void;
-  onJoinRoom: (code: string) => void;
-  onTutorial: () => void;
-  saved: SaveFile | null;
-  onContinue: () => void;
-  onDiscard: () => void;
+  onBack: () => void;
+  saved: SaveFile | null; // a new game replaces it, so ask first
 }
 
 function firstFreeToken(used: TokenId[]): TokenId {
@@ -41,7 +34,8 @@ type SetupPlayer = NewPlayer & { color: PlayerColorId };
 
 type FirstTurn = 'roll' | 'inOrder';
 
-export function SetupScreen({ onStart, onCreateRoom, onJoinRoom, onTutorial, saved, onContinue, onDiscard }: Props) {
+/** A game on this one device: names, tokens and colors, starting money, who goes first. */
+export function SetupScreen({ onStart, onBack, saved }: Props) {
   const { t, lang } = useLang();
   const [players, setPlayers] = useState<SetupPlayer[]>([
     { name: '', token: 'nonLa', color: defaultPlayerColor(0) },
@@ -80,28 +74,7 @@ export function SetupScreen({ onStart, onCreateRoom, onJoinRoom, onTutorial, sav
 
   return (
     <main className="setup">
-      <div className="setup-top">
-        <ThemeButton />
-        <LangSwitch />
-      </div>
-
-      <section className="hero">
-        <img className="hero-art" src={bannerArt} alt={t.heroAlt} width={1600} height={900} />
-        <h1>Dangopoly</h1>
-        <p className="edition">{t.edition}</p>
-        <p className="tagline">{t.tagline}</p>
-      </section>
-
-      {saved && <SavedGameCard saved={saved} onContinue={onContinue} onDiscard={onDiscard} />}
-
-      <section className="tutorial-card">
-        <p>{t.tutorialIntro}</p>
-        <button className={saved ? 'secondary' : 'primary'} onClick={onTutorial}>
-          🎓 {t.tutorialStart}
-        </button>
-      </section>
-
-      <OnlineCard onCreateRoom={onCreateRoom} onJoinRoom={onJoinRoom} />
+      <ScreenTop title={t.playLocal} onBack={onBack} />
 
       <form className="setup-card" onSubmit={submit} noValidate>
         <h2>{t.players}</h2>
@@ -225,9 +198,6 @@ export function SetupScreen({ onStart, onCreateRoom, onJoinRoom, onTutorial, sav
         />
       )}
 
-      <footer>
-        {t.footer} · v{__APP_VERSION__}
-      </footer>
     </main>
   );
 }

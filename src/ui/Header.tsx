@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLang } from '../i18n/LangContext';
-import { isMuted, setMuted } from './sound';
+import { getVolume, isMuted, playSound, setMuted, setVolume } from './sound';
 import { applyTheme, nextTheme, savedTheme, type Theme } from './theme';
 
 export function LangSwitch() {
@@ -16,23 +16,112 @@ export function LangSwitch() {
   );
 }
 
-/** Turns sound effects on or off; the choice is remembered. */
-export function MuteButton() {
+/** Sound effects on or off, and their volume; both are remembered. Used in the top bar and in Settings. */
+export function SoundSettings({ onChange }: { onChange?: (silent: boolean) => void }) {
   const { t } = useLang();
   const [muted, setMutedState] = useState(isMuted);
+  const [volume, setVolumeState] = useState(getVolume);
+  useEffect(() => onChange?.(muted || volume === 0), [muted, volume, onChange]);
+
   const toggle = () => {
     setMuted(!muted);
     setMutedState(!muted);
   };
-  const label = muted ? t.soundOn : t.soundOff;
   return (
-    <button className="secondary small icon-only" onClick={toggle} aria-label={label} title={label} aria-pressed={muted}>
-      {muted ? '🔇' : '🔊'}
-    </button>
+    <div className="sound-settings">
+      <button type="button" className="secondary small" onClick={toggle} aria-pressed={muted}>
+        {muted ? `🔇 ${t.soundOn}` : `🔊 ${t.soundOff}`}
+      </button>
+      <label className="volume">
+        <span>{t.effectsVolume}</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={volume}
+          disabled={muted}
+          onChange={(e) => {
+            setVolume(Number(e.target.value));
+            setVolumeState(Number(e.target.value));
+          }}
+        />
+        <output>{volume}%</output>
+      </label>
+      <button type="button" className="secondary small" disabled={muted} onClick={() => playSound('coins')}>
+        ▶ {t.testSound}
+      </button>
+      <p className="muted small-note">{t.musicVolumeNote}</p>
+    </div>
+  );
+}
+
+/** The 🔊 button in the top bar: opens a small panel with SoundSettings. */
+export function SoundButton() {
+  const { t } = useLang();
+  const [open, setOpen] = useState(false);
+  const [silent, setSilent] = useState(() => isMuted() || getVolume() === 0);
+  const box = useRef<HTMLDivElement>(null);
+
+  // Close when tapping anywhere else, or with Esc.
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+
+  return (
+    <div className="sound-control" ref={box}>
+      <button
+        className="secondary small icon-only"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={t.soundSettings}
+        title={t.soundSettings}
+        aria-expanded={open}
+      >
+        {silent ? '🔇' : '🔊'}
+      </button>
+      {open && (
+        <div className="sound-popover" role="group" aria-label={t.soundSettings}>
+          <SoundSettings onChange={setSilent} />
+        </div>
+      )}
+    </div>
   );
 }
 
 const THEME_ICONS: Record<Theme, string> = { auto: '🌓', light: '☀️', dark: '🌙' };
+
+/** For Settings: the three color choices side by side. */
+export function ThemePicker() {
+  const { t } = useLang();
+  const [theme, setTheme] = useState(savedTheme);
+  return (
+    <div className="segmented" role="radiogroup" aria-label={t.theme}>
+      {(['auto', 'light', 'dark'] as const).map((choice) => (
+        <button
+          key={choice}
+          type="button"
+          role="radio"
+          aria-checked={theme === choice}
+          className={theme === choice ? 'selected' : ''}
+          onClick={() => {
+            applyTheme(choice);
+            setTheme(choice);
+          }}
+        >
+          {THEME_ICONS[choice]} {t.themeNames[choice]}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Cycles the colors: follow the device → light → dark. The choice is remembered. */
 export function ThemeButton() {
@@ -51,6 +140,25 @@ export function ThemeButton() {
   );
 }
 
+/** Top bar of the menu's screens: back to the menu, the screen's name, then colors and language. */
+export function ScreenTop({ title, onBack, controls = true }: { title: string; onBack: () => void; controls?: boolean }) {
+  const { t } = useLang();
+  return (
+    <header className="screen-top">
+      <button className="secondary small back-button" onClick={onBack}>
+        ← <span className="back-text">{t.back}</span>
+      </button>
+      <h1 className="screen-title">{title}</h1>
+      {controls && (
+        <div className="screen-top-actions">
+          <ThemeButton />
+          <LangSwitch />
+        </div>
+      )}
+    </header>
+  );
+}
+
 /** Top bar used during a game: back button, small logo, extra buttons, sound, theme and language. */
 export function GameHeader({ children, onBack }: { children?: ReactNode; onBack: () => void }) {
   const { t } = useLang();
@@ -65,7 +173,7 @@ export function GameHeader({ children, onBack }: { children?: ReactNode; onBack:
       </div>
       <div className="header-actions">
         {children}
-        <MuteButton />
+        <SoundButton />
         <ThemeButton />
         <LangSwitch />
       </div>

@@ -3,7 +3,7 @@ import { useLang } from '../i18n/LangContext';
 import { isRoomCode, normalizeRoomCode } from '../net/protocol';
 import { lastRoom } from '../net/seats';
 
-/** On the start screen: create a room for an online game, or join one with its code. */
+/** Create a room for an online game, or join one with its code. */
 export function OnlineCard({ onCreateRoom, onJoinRoom }: { onCreateRoom: () => void; onJoinRoom: (code: string) => void }) {
   const { t } = useLang();
   const [text, setText] = useState('');
@@ -19,7 +19,6 @@ export function OnlineCard({ onCreateRoom, onJoinRoom }: { onCreateRoom: () => v
 
   return (
     <section className="setup-card online-card">
-      <h2>🌐 {t.online}</h2>
       <p className="muted">{t.onlineIntro}</p>
       <div className="online-actions">
         <button type="button" className="primary" onClick={onCreateRoom}>

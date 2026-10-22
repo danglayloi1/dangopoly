@@ -22,6 +22,11 @@ export function parseSpotifyLink(text: string): SpotifySource | null {
   return m ? { kind: m[1] as SpotifyKind, id: m[2] } : null;
 }
 
+/** The page for the same music on Spotify; on phones it opens the Spotify app, which plays whole songs. */
+export const openUrl = ({ kind, id }: SpotifySource): string => `https://open.spotify.com/${kind}/${id}`;
+
+export const SPOTIFY_LOGIN = 'https://accounts.spotify.com/login';
+
 export const embedUrl = ({ kind, id }: SpotifySource): string =>
   `https://open.spotify.com/embed/${kind}/${id}?utm_source=generator&theme=0`;
 

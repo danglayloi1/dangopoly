@@ -13,17 +13,45 @@ export type SoundName =
   | 'unlock'
   | 'trade'
   | 'bankrupt'
-  | 'win';
+  | 'win'
+  | 'enter';
 
 const MUTE_KEY = 'dangopoly.muted';
+const VOLUME_KEY = 'dangopoly.volume';
 let context: AudioContext | null = null;
+let master: GainNode | null = null; // every sound goes through this, so one setting sets the volume
 let muted = readMuted();
+let volume = readVolume();
 
 function readMuted(): boolean {
   try {
     return localStorage.getItem(MUTE_KEY) === '1';
   } catch {
     return false;
+  }
+}
+
+function readVolume(): number {
+  try {
+    const v = Number(localStorage.getItem(VOLUME_KEY));
+    return localStorage.getItem(VOLUME_KEY) !== null && v >= 0 && v <= 100 ? v : 80;
+  } catch {
+    return 80;
+  }
+}
+
+/** Sound effects volume, 0–100. */
+export function getVolume(): number {
+  return volume;
+}
+
+export function setVolume(value: number): void {
+  volume = Math.round(Math.min(100, Math.max(0, value)));
+  if (master) master.gain.value = volume / 100;
+  try {
+    localStorage.setItem(VOLUME_KEY, String(volume));
+  } catch {
+    // the choice just won't be remembered
   }
 }
 
@@ -42,7 +70,12 @@ export function setMuted(value: boolean): void {
 
 function audio(): AudioContext | null {
   try {
-    context ??= new AudioContext();
+    if (!context) {
+      context = new AudioContext();
+      master = context.createGain();
+      master.gain.value = volume / 100;
+      master.connect(context.destination);
+    }
     if (context.state === 'suspended') void context.resume();
     return context;
   } catch {
@@ -60,7 +93,7 @@ function tone(c: AudioContext, at: number, freq: number, dur: number, opts: { ty
   gain.gain.setValueAtTime(0.0001, at);
   gain.gain.exponentialRampToValueAtTime(opts.gain ?? 0.18, at + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  osc.connect(gain).connect(c.destination);
+  osc.connect(gain).connect(master ?? c.destination);
   osc.start(at);
   osc.stop(at + dur + 0.02);
 }
@@ -78,7 +111,7 @@ function noise(c: AudioContext, at: number, dur: number, opts: { freq?: number; 
   filter.frequency.value = opts.freq ?? 2000;
   filter.Q.value = opts.q ?? 1;
   gain.gain.value = opts.gain ?? 0.3;
-  source.connect(filter).connect(gain).connect(c.destination);
+  source.connect(filter).connect(gain).connect(master ?? c.destination);
   source.start(at);
 }
 
@@ -134,6 +167,10 @@ const SOUNDS: Record<SoundName, (c: AudioContext, t: number) => void> = {
   win: (c, t) => {
     [523, 659, 784, 1047].forEach((f, i) => tone(c, t + i * 0.13, f, i === 3 ? 0.6 : 0.18, { type: 'square', gain: 0.06 }));
   },
+  // Entering the game: a plucked five-note run, like a đàn tranh
+  enter: (c, t) => {
+    [392, 440, 523, 587, 659].forEach((f, i) => tone(c, t + i * 0.07, f, 0.5, { type: 'triangle', gain: 0.1 }));
+  },
 };
 
 /** Development only: the names of sounds played, so test scripts can check them. */
@@ -141,7 +178,7 @@ const devLog: SoundName[] | null = import.meta.env.DEV ? [] : null;
 if (devLog) (window as unknown as { __dangopolySounds: SoundName[] }).__dangopolySounds = devLog;
 
 export function playSound(name: SoundName): void {
-  if (muted) return;
+  if (muted || volume === 0) return;
   devLog?.push(name);
   const c = audio();
   if (!c) return;
