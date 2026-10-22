@@ -1,5 +1,6 @@
-import type { Lang } from '../data/text';
+import type { UiLang } from '../data/text';
 import type { ErrorCode } from '../net/protocol';
+import { ngheStrings } from './nghe';
 
 const vi = {
   edition: 'Phiên bản Nghệ Tĩnh',
@@ -549,4 +550,4 @@ const en: Strings = {
   },
 };
 
-export const STRINGS: Record<Lang, Strings> = { vi, en };
+export const STRINGS: Record<UiLang, Strings> = { vi, en, nghe: ngheStrings(vi) };

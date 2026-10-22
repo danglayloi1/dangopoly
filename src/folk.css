@@ -1202,9 +1202,10 @@ a.secondary {
   white-space: nowrap;
 }
 
-/* Phones: with the room code in the top bar, the back button shows just its arrow. */
+/* Phones: the top bar holds the language switch (three choices), sound and colors, so the back
+   button shows just its arrow. */
 @media (max-width: 480px) {
-  .game-header:has(.room-chip) .back-text {
+  .game-header .back-text {
     display: none;
   }
 

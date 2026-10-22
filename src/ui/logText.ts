@@ -1,21 +1,22 @@
 import { BOARD, JAIL_FINE } from '../data/board';
 import { CARDS, DECK_NAMES } from '../data/cards';
-import type { Lang } from '../data/text';
+import { dataLang, type UiLang } from '../data/text';
 import { formatMoney } from '../engine/money';
 import type { GameState, LogEntry, TradeSide } from '../engine/types';
 import { STRINGS } from '../i18n/strings';
 
 /** One side of a trade as text: "Hồ Kẻ Gỗ + Kỳ Anh + 500k", or "nothing". */
-export function describeTradeSide(side: TradeSide, lang: Lang): string {
-  const parts = side.spaces.map((i) => BOARD[i].name[lang]);
-  if (side.jailCards > 0) parts.push(STRINGS[lang].jailCards(side.jailCards));
+export function describeTradeSide(side: TradeSide, ui: UiLang): string {
+  const parts = side.spaces.map((i) => BOARD[i].name[dataLang(ui)]);
+  if (side.jailCards > 0) parts.push(STRINGS[ui].jailCards(side.jailCards));
   if (side.cash > 0) parts.push(formatMoney(side.cash));
-  return parts.length > 0 ? parts.join(' + ') : STRINGS[lang].log.nothing;
+  return parts.length > 0 ? parts.join(' + ') : STRINGS[ui].log.nothing;
 }
 
 /** One log entry as a sentence in the chosen language. */
-export function describeLog(entry: LogEntry, state: GameState, lang: Lang): string {
-  const t = STRINGS[lang].log;
+export function describeLog(entry: LogEntry, state: GameState, ui: UiLang): string {
+  const t = STRINGS[ui].log;
+  const lang = dataLang(ui);
   const name = (id: number) => state.players[id].name;
   const space = (index: number) => BOARD[index].name[lang];
 
@@ -50,7 +51,7 @@ export function describeLog(entry: LogEntry, state: GameState, lang: Lang): stri
     case 'tradeAccepted': {
       const { from, to, give, take } = entry.offer;
       const describe = entry.type === 'tradeProposed' ? t.tradeProposed : t.tradeAccepted;
-      return describe(name(from), name(to), describeTradeSide(give, lang), describeTradeSide(take, lang));
+      return describe(name(from), name(to), describeTradeSide(give, ui), describeTradeSide(take, ui));
     }
     case 'tradeRejected':
       return t.tradeRejected(name(entry.offer.from), name(entry.offer.to));
