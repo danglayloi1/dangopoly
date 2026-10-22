@@ -504,7 +504,7 @@ const scenes = {
     await click(/Dùng thẻ Ra tù/);
     await shot('lan-uses-jail-card');
 
-    await page.getByRole('button', { name: 'EN', exact: true }).click();
+    await page.getByRole('button', { name: 'English', exact: true }).click();
     await shot('english');
   },
 

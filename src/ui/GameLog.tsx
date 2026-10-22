@@ -4,7 +4,7 @@ import { describeLog } from './logText';
 
 /** Full history of the game, newest first. */
 export function GameLog({ game }: { game: GameState }) {
-  const { t, lang } = useLang();
+  const { t, uiLang } = useLang();
   const entries = game.log
     .map((entry, i) => ({ entry, i }))
     .reverse()
@@ -16,7 +16,7 @@ export function GameLog({ game }: { game: GameState }) {
       <ol>
         {entries.map(({ entry, i }) => (
           <li key={i} className={`log-${entry.type}`}>
-            {describeLog(entry, game, lang)}
+            {describeLog(entry, game, uiLang)}
           </li>
         ))}
       </ol>

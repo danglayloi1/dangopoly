@@ -1,7 +1,8 @@
 # Dangopoly: Nghệ Tĩnh Edition
 
 A property-trading board game set in Hà Tĩnh and Nghệ An, played in the browser.
-2–4 players take turns on one device, or play online from their own phones, in Vietnamese or English.
+2–4 players take turns on one device, or play online from their own phones, in Vietnamese,
+Tiếng Nghệ (the Nghệ Tĩnh dialect: *mi, răng, rứa, nỏ, nhởi…*) or English.
 
 **Play:** https://danglayloi1.github.io/dangopoly/
 
@@ -76,7 +77,7 @@ The room server deploys to Cloudflare the same way once the Cloudflare secrets a
 | `src/engine/` | Game rules, with no UI code |
 | `src/data/` | The board, tokens, and other fixed game data |
 | `src/ui/` | React screens: setup, board, player list, history |
-| `src/i18n/` | Vietnamese and English text |
+| `src/i18n/` | Vietnamese, Tiếng Nghệ (`nghe.ts`) and English text |
 | `src/tutorial/` | The guided first game: its steps and the hint card |
 | `src/assets/art/` | The folk-art pictures |
 | `src/net/` | Messages between phones and the room server |

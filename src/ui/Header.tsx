@@ -1,15 +1,30 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { UiLang } from '../data/text';
 import { useLang } from '../i18n/LangContext';
 import { getVolume, isMuted, playSound, setMuted, setVolume } from './sound';
 import { applyTheme, nextTheme, savedTheme, type Theme } from './theme';
 
+const LANG_LABELS: Record<UiLang, { short: string; full: string }> = {
+  vi: { short: 'VI', full: 'Tiếng Việt' },
+  nghe: { short: 'NGHỆ', full: 'Tiếng Nghệ' },
+  en: { short: 'EN', full: 'English' },
+};
+
+/** Tiếng Việt, Tiếng Nghệ (the local dialect) or English; the choice is remembered. */
 export function LangSwitch() {
-  const { lang, setLang } = useLang();
+  const { uiLang, setLang } = useLang();
   return (
     <div className="lang-switch" role="group" aria-label="Language / Ngôn ngữ">
-      {(['vi', 'en'] as const).map((l) => (
-        <button key={l} className={l === lang ? 'active' : ''} aria-pressed={l === lang} onClick={() => setLang(l)}>
-          {l.toUpperCase()}
+      {(['vi', 'nghe', 'en'] as const).map((l) => (
+        <button
+          key={l}
+          className={l === uiLang ? 'active' : ''}
+          aria-pressed={l === uiLang}
+          aria-label={LANG_LABELS[l].full}
+          title={LANG_LABELS[l].full}
+          onClick={() => setLang(l)}
+        >
+          {LANG_LABELS[l].short}
         </button>
       ))}
     </div>
@@ -165,7 +180,7 @@ export function GameHeader({ children, onBack }: { children?: ReactNode; onBack:
   return (
     <header className="game-header">
       <div className="logo-small">
-        <button className="secondary small back-button" onClick={onBack} title={t.backToMenuHint}>
+        <button className="secondary small back-button" onClick={onBack} title={t.backToMenuHint} aria-label={t.backToMenu}>
           ← <span className="back-text">{t.backToMenu}</span>
         </button>
         <span className="logo-word">Dangopoly</span>

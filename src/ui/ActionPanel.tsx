@@ -28,7 +28,7 @@ interface Props {
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
 export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, onNewGame, busy, rolling }: Props) {
-  const { t, lang } = useLang();
+  const { t, lang, uiLang } = useLang();
   const { phase } = game;
   const player = game.players[game.current];
   const allowed = legalActions(game);
@@ -97,7 +97,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
       {events.length > 0 && (
         <ul className="turn-events" aria-live="polite">
           {events.map((e, i) => (
-            <li key={i}>{describeLog(e, game, lang)}</li>
+            <li key={i}>{describeLog(e, game, uiLang)}</li>
           ))}
         </ul>
       )}
