@@ -2,7 +2,7 @@
 
 import { BOARD, GROUP_SPACES, isOwnable } from '../data/board';
 import { ownsWholeGroup } from './rent';
-import { buildingBlocked } from './rounds';
+import { buildCost, buildingBlocked, unmortgagePrice } from './rounds';
 import type { GameState, PropertyAction } from './types';
 
 /** `houses` value meaning a hotel (4 houses, then one more step). */
@@ -12,11 +12,6 @@ export const HOTEL = 5;
 export function mortgageValue(space: number): number {
   const s = BOARD[space];
   return isOwnable(s) ? s.price / 2 : 0;
-}
-
-/** Cost to lift a mortgage: the mortgage value plus 10% interest. */
-export function unmortgageCost(space: number): number {
-  return Math.round((mortgageValue(space) * 11) / 10);
 }
 
 /** Cost of one house (a hotel costs one more house on top of 4). */
@@ -76,7 +71,7 @@ export function canBuildHouse(state: GameState, space: number): boolean {
   if (group.some((i) => state.ownership[i].mortgaged)) return false;
   if (own.houses >= HOTEL) return false;
   if (own.houses > Math.min(...housesIn(state, group))) return false;
-  return state.players[own.owner].cash >= s.houseCost;
+  return state.players[own.owner].cash >= buildCost(state, space);
 }
 
 /** Sell one house (or turn a hotel back into 4 houses), selling evenly across the set. */
@@ -98,7 +93,7 @@ export function canMortgage(state: GameState, space: number): boolean {
 export function canUnmortgage(state: GameState, space: number): boolean {
   if (state.phase.kind === 'inDebt' || !ownedByActor(state, space)) return false;
   const own = state.ownership[space];
-  return own.mortgaged && state.players[own.owner].cash >= unmortgageCost(space);
+  return own.mortgaged && state.players[own.owner].cash >= unmortgagePrice(state, space);
 }
 
 export function isPropertyActionAllowed(state: GameState, action: PropertyAction): boolean {

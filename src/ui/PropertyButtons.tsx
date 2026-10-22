@@ -5,13 +5,12 @@ import {
   canSellHouse,
   canUnmortgage,
   HOTEL,
-  houseCost,
   houseRefund,
   mortgageValue,
-  unmortgageCost,
 } from '../engine/buildings';
 import { BOARD } from '../data/board';
 import { formatMoney } from '../engine/money';
+import { buildCost, unmortgagePrice } from '../engine/rounds';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { useMayAct } from './viewer';
@@ -37,7 +36,7 @@ export function PropertyButtons({ game, space, dispatch }: Props) {
 
   if (isProperty && !own.mortgaged) {
     if (own.houses < HOTEL) {
-      const cost = formatMoney(houseCost(space));
+      const cost = formatMoney(buildCost(game, space));
       buttons.push(
         <button
           key="build"
@@ -73,7 +72,7 @@ export function PropertyButtons({ game, space, dispatch }: Props) {
         disabled={!canUnmortgage(game, space)}
         onClick={() => dispatch({ type: 'UNMORTGAGE', space })}
       >
-        {t.unmortgage(formatMoney(unmortgageCost(space)))}
+        {t.unmortgage(formatMoney(unmortgagePrice(game, space)))}
       </button>,
     );
   } else {

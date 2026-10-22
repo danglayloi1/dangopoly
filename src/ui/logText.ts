@@ -2,7 +2,7 @@ import { BOARD, JAIL_FINE } from '../data/board';
 import { CARDS, DECK_NAMES } from '../data/cards';
 import { dataLang, type UiLang } from '../data/text';
 import { formatMoney } from '../engine/money';
-import { FESTIVAL_GIFT } from '../engine/rounds';
+import { FESTIVAL_BONUS, FESTIVAL_GIFT, FESTIVAL_LEVY, FESTIVAL_SHARE } from '../engine/rounds';
 import type { Festival, GameState, LogEntry, TradeSide } from '../engine/types';
 import { STRINGS } from '../i18n/strings';
 
@@ -84,6 +84,16 @@ export function describeLog(entry: LogEntry, state: GameState, ui: UiLang): stri
       return t.festival(STRINGS[ui].festivalNames[entry.festival.id], festivalText(entry.festival, ui));
     case 'festivalGift':
       return t.festivalGift(formatMoney(entry.amount));
+    case 'festivalBonus':
+      return t.festivalBonus(name(entry.player), formatMoney(entry.amount), entry.reason);
+    case 'festivalTaxFree':
+      return t.festivalTaxFree(name(entry.player), space(entry.space));
+    case 'festivalAmnesty':
+      return t.festivalAmnesty(entry.players.map(name).join(', '));
+    case 'festivalLevy':
+      return t.festivalLevy(formatMoney(entry.total));
+    case 'festivalShare':
+      return t.festivalShare(name(entry.to), formatMoney(entry.total));
     case 'limitReached':
       return t.limitReached(entry.reason);
   }
@@ -92,5 +102,10 @@ export function describeLog(entry: LogEntry, state: GameState, ui: UiLang): stri
 /** What a festival does, e.g. "Rent on the Red set is doubled this round." */
 export function festivalText(festival: Festival, ui: UiLang): string {
   const s = STRINGS[ui];
-  return s.festivalEffect(festival.id, festival.group ? s.groupNames[festival.group] : '', formatMoney(FESTIVAL_GIFT));
+  return s.festivalEffect(festival.id, festival.group ? s.groupNames[festival.group] : '', {
+    gift: formatMoney(FESTIVAL_GIFT),
+    bonus: formatMoney(FESTIVAL_BONUS),
+    levy: formatMoney(FESTIVAL_LEVY),
+    share: formatMoney(FESTIVAL_SHARE),
+  });
 }

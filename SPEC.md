@@ -284,11 +284,26 @@ Friends play from their own phones. One player creates a room and shares its cod
 - **Round limit** (10/15/20/30): a round ends when play comes back to the first player. After the last round, the richest player wins.
 - **Time limit** (20/30/45/60 min): when time is up, the game ends at the start of the next turn and the richest player wins. A saved local game's clock doesn't run while it's closed. Online, only the room server's clock decides.
 - **Wealth** = cash + land at its price (half if mortgaged) + houses at their cost. Ties go to more cash.
-- **Festivals** (optional): rounds 3, 6, 9… each have one, picked by the game's seeded random numbers. It lasts that round.
-  - **Lễ hội Đền Cuông:** rent ×2 on one random color set.
-  - **Lễ hội Làng Sen:** double salary at Xuất phát.
-  - **Mùa gió Lào:** no building.
-  - **Lễ hội Đền Chiêu Trưng:** the bank gives everyone 1tr.
+- **Festivals** (optional): rounds 3, 6, 9… each have one of 16, picked by the game's seeded random numbers. It lasts that round.
+
+  | Festival | Effect |
+  |---|---|
+  | Lễ hội Đền Cuông | rent ×2 on one random color set |
+  | Lễ hội Làng Sen | double salary at Xuất phát |
+  | Mùa gió Lào | no building |
+  | Lễ hội Đền Chiêu Trưng | the bank gives everyone 1tr |
+  | Lễ hội du lịch biển Cửa Lò | rent ×2 on the six beaches |
+  | Mùa cưới | transport rent ×2 |
+  | Nắng nóng tháng Sáu | utility rent ×2 |
+  | Mùa mưa bão | all rent halved |
+  | Chợ phiên | houses cost half |
+  | Hội vật làng | rolling doubles wins 500k |
+  | Lễ ân xá | everyone in jail is set free |
+  | Năm được mùa | no taxes |
+  | Lễ hội Đền Hồng Sơn | drawing a card also gives 500k |
+  | Góp tiền sửa đình làng | everyone gives 500k to the bank (or what they have) |
+  | Tương thân tương ái | everyone gives 300k to the poorest player |
+  | Mùa lúa chín | lifting a mortgage costs no interest |
 - **Summary** at the end:
   - how the game ended, and the ranking by wealth;
   - a chart of each player's wealth at the start of every round;
