@@ -568,6 +568,92 @@ const scenes = {
   },
 
   /**
+   * Small screens (run with and without --mobile): a drawn card and a space for sale fit inside the
+   * board, a card whose picture can't load keeps its drawn pattern, players sit two by two on a
+   * phone, and screens slide in.
+   */
+  async layout({ page, shot, click, startGame, setup, act }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    // The Khí vận picture never arrives, like a page left open across a new release.
+    await page.route('**/community*.webp', (route) => route.abort());
+
+    await openFromMenu(page, /Cài đặt/);
+    check((await page.locator('.screen-transition.forward').count()) === 1, 'a screen slides in going forward');
+    await click(/Quay lại|←/);
+    check((await page.locator('.screen-transition.back').count()) === 1, 'and from the other side going back');
+    await shot('menu');
+    await page.locator('.menu-top .back-button').click();
+    check(await page.getByRole('button', { name: /Vào chơi/ }).isVisible(), 'the menu goes back to the entry screen');
+
+    await startGame(['Đăng', 'Lan', 'Minh', 'Hoa']);
+    // Land on Cơ hội with the longest chance card showing and a space for sale.
+    await act({ type: 'ROLL', dice: [3, 4] });
+    const showCard = (deck) =>
+      setup(
+        new Function(
+          'game',
+          `const cards = window.__dangopoly.cards[${JSON.stringify(deck)}];
+           let longest = 0;
+           cards.forEach((c, i) => { if (c.text.vi.length > cards[longest].text.vi.length) longest = i; });
+           game.lastCard = { deck: ${JSON.stringify(deck)}, card: longest };
+           game.phase = { kind: 'awaitBuy', space: 39 };`,
+        ),
+      );
+    // Waits (up to a few seconds) for the page to settle into the expected state.
+    const settles = (test) =>
+      page.waitForFunction(test, null, { timeout: 5000 }).then(
+        () => true,
+        () => false,
+      );
+    const fits = () =>
+      settles(() => {
+        const middle = document.querySelector('.board-center');
+        return middle.scrollHeight <= middle.clientHeight + 1;
+      });
+    await showCard('chance');
+    await page.waitForTimeout(300);
+    const art = await settles(() => document.querySelector('.drawn-card-art img')?.naturalWidth > 0);
+    check(art, 'the Cơ hội picture shows');
+    check(await fits(), 'the card and the space for sale fit inside the board');
+    await shot('card-and-offer');
+
+    if (!mobile) {
+      await page.setViewportSize({ width: 1280, height: 650 }); // a short laptop screen
+      await page.waitForTimeout(300);
+      check(await fits(), 'they still fit on a short laptop screen');
+      await shot('short-laptop');
+      await page.setViewportSize({ width: 1280, height: 860 });
+    }
+
+    await showCard('community');
+    await page.waitForTimeout(500);
+    const broken = await page.evaluate(() => ({
+      img: document.querySelectorAll('.drawn-card-art img').length,
+      pattern: getComputedStyle(document.querySelector('.drawn-card-art')).backgroundImage.includes('gradient'),
+    }));
+    check(broken.img === 0 && broken.pattern, 'a picture that fails to load leaves the drawn pattern, not a broken image');
+    await shot('card-without-picture');
+
+    if (mobile) {
+      await setup((game) => {
+        for (const s of [1, 3, 5, 6]) game.ownership[s] = { owner: 0, houses: 0, mortgaged: false };
+      });
+      const tops = await page.locator('.player-card').evaluateAll((cards) => cards.map((c) => c.getBoundingClientRect().top));
+      // (the current player's card is lifted a little)
+      const sameRow = (a, b) => Math.abs(a - b) < 5;
+      check(sameRow(tops[0], tops[1]) && sameRow(tops[2], tops[3]) && tops[2] > tops[0] + 20, 'players sit two by two under the board');
+      await page.locator('.player-more').first().click();
+      const open = await page.locator('.player-card.open .holdings').isVisible();
+      check(open, 'tapping a player shows their places');
+      await page.locator('.player-card.open').scrollIntoViewIfNeeded();
+      await shot('players-open');
+    }
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
+  /**
    * The effects after a move, each caught mid-way: the page's clock is under the script's control
    * (page.clock), so a move plays out exactly as far as needed and then everything is frozen.
    */
@@ -934,7 +1020,7 @@ async function main() {
 
   let count = 0;
   const shot = async (name) => {
-    await page.waitForTimeout(150); // let the screen settle
+    await page.waitForTimeout(350); // let the screen settle (screens slide in for 0.26 s)
     const file = path.join(outDir, `${String(++count).padStart(2, '0')}-${name}.png`);
     await page.screenshot({ path: file, fullPage: mobile });
     console.log('saved', file);

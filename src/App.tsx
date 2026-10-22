@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createGame, type NewPlayer, type RulesChoice } from './engine/game';
 import { isRoomCode, newRoomCode, normalizeRoomCode } from './net/protocol';
 import type { SaveFile } from './engine/save';
@@ -54,6 +54,9 @@ interface OnlineRoom {
   creating: boolean;
 }
 
+/** How the next screen comes in: from the right going forward, from the left going back, rising for a game or room. */
+type Direction = 'forward' | 'back' | 'rise';
+
 function Screens() {
   const { t, lang } = useLang();
   const [screen, setScreen] = useState<Screen>(screenInHistory);
@@ -67,14 +70,25 @@ function Screens() {
     return code ? { code, creating: false } : null;
   });
 
+  const direction = useRef<Direction>('forward');
+
   const go = (next: Screen) => {
+    direction.current = 'forward';
     history.pushState({ dangopoly: 'screen', screen: next } satisfies NavState, '', location.pathname);
     setScreen(next);
   };
 
   const toMenu = () => {
+    direction.current = 'back';
     history.replaceState({ dangopoly: 'screen', screen: 'menu' } satisfies NavState, '', location.pathname);
     setScreen('menu');
+  };
+
+  /** From the menu to the entry screen, without leaving the site even if the menu was opened first. */
+  const toTitle = () => {
+    direction.current = 'back';
+    history.replaceState({ dangopoly: 'screen', screen: 'title' } satisfies NavState, '', location.pathname);
+    setScreen('title');
   };
 
   /** Back one screen; if there's nothing of ours behind (opened from a link), to the menu. */
@@ -89,6 +103,7 @@ function Screens() {
     const entry: NavState = { dangopoly: 'game' };
     if (screenInHistory() === 'menu') history.pushState(entry, '');
     else history.replaceState(entry, '');
+    direction.current = 'rise';
     setTutorial(asTutorial);
     setGame(next);
     setGameNumber((n) => n + 1);
@@ -99,6 +114,7 @@ function Screens() {
 
   // A new room's link only goes in the address once the room exists (see onCreated).
   const openRoom = (code: string, creating: boolean) => {
+    direction.current = 'rise';
     history.pushState({ dangopoly: 'room' } satisfies NavState, '', creating ? location.pathname : `?room=${code}`);
     setOnline({ code, creating });
   };
@@ -111,6 +127,8 @@ function Screens() {
   // Back/forward (phone or browser): show whatever the history entry is for.
   useEffect(() => {
     const onPop = () => {
+      // The browser's back and forward buttons look the same from here; most presses are "back".
+      direction.current = 'back';
       setGame(null);
       setSaved(loadSavedGame());
       const code = roomInUrl();
@@ -145,44 +163,59 @@ function Screens() {
     }
   };
 
+  // Each screen slides or rises in when it changes (see .screen-transition).
+  const shown = (view: string, content: ReactNode) => (
+    <div key={view} className={`screen-transition ${direction.current}`}>
+      {content}
+    </div>
+  );
+
   if (online) {
-    return (
+    return shown(
+      `room-${online.code}`,
       <OnlineScreen
         key={online.code}
         code={online.code}
         creating={online.creating}
         onCreated={() => history.replaceState(history.state, '', `?room=${online.code}`)}
         onLeave={leaveRoom}
-      />
+      />,
     );
   }
-  if (game) return <GameScreen key={gameNumber} initialGame={game} onLeave={leaveGame} tutorial={tutorial} />;
+  if (game) {
+    return shown(`game-${gameNumber}`, <GameScreen initialGame={game} onLeave={leaveGame} tutorial={tutorial} />);
+  }
+  return shown(screen, menuScreen());
 
-  switch (screen) {
-    case 'title':
-      return <TitleScreen onEnter={() => go('menu')} />;
-    case 'local':
-      return <SetupScreen onStart={start} onBack={back} saved={saved} />;
-    case 'online':
-      return (
-        <main className="setup">
-          <ScreenTop title={t.online} onBack={back} />
-          <OnlineCard onCreateRoom={() => openRoom(newRoomCode(), true)} onJoinRoom={(code) => openRoom(code, false)} />
-        </main>
-      );
-    case 'settings':
-      return <SettingsScreen onBack={back} />;
-    case 'menu':
-      return (
-        <MenuScreen
-          saved={saved}
-          onContinue={() => saved && play(resumeClock(saved))}
-          onDiscard={discardSaved}
-          onLocal={() => go('local')}
-          onOnline={() => go('online')}
-          onTutorial={() => play(createTutorialGame(lang), true)}
-          onSettings={() => go('settings')}
-        />
-      );
+  /** The screen picked from the menu. */
+  function menuScreen(): ReactNode {
+    switch (screen) {
+      case 'title':
+        return <TitleScreen onEnter={() => go('menu')} />;
+      case 'local':
+        return <SetupScreen onStart={start} onBack={back} saved={saved} />;
+      case 'online':
+        return (
+          <main className="setup">
+            <ScreenTop title={t.online} onBack={back} />
+            <OnlineCard onCreateRoom={() => openRoom(newRoomCode(), true)} onJoinRoom={(code) => openRoom(code, false)} />
+          </main>
+        );
+      case 'settings':
+        return <SettingsScreen onBack={back} />;
+      case 'menu':
+        return (
+          <MenuScreen
+            saved={saved}
+            onContinue={() => saved && play(resumeClock(saved))}
+            onDiscard={discardSaved}
+            onLocal={() => go('local')}
+            onOnline={() => go('online')}
+            onTutorial={() => play(createTutorialGame(lang), true)}
+            onSettings={() => go('settings')}
+            onBack={toTitle}
+          />
+        );
+    }
   }
 }

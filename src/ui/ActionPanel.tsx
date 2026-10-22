@@ -43,11 +43,12 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
 
   // What happened since this turn started (most recent last).
   const turnStart = game.log.findLastIndex((e) => e.type === 'turnStarted');
-  // The drawn card is shown on its own, so leave it out of this short list.
+  // The drawn card is shown on its own, so leave it out of this short list; with a card on show
+  // (which tells most of the story) two lines are enough, so both fit on a small board.
   const events = game.log
     .slice(turnStart + 1)
     .filter((e) => e.type !== 'drewCard')
-    .slice(-3);
+    .slice(game.lastCard ? -2 : -3);
   const waitingInJail = phase.kind === 'awaitRoll' && player.inJail;
 
   const offerSpace = phase.kind === 'awaitBuy' ? BOARD[phase.space] : null;
@@ -64,8 +65,10 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
   if (busy) {
     return (
       <div className="action-panel" aria-busy="true">
-        {turnBanner}
-        <Dice dice={game.dice} rolling={rolling} />
+        <div className="panel-top">
+          {turnBanner}
+          <Dice dice={game.dice} rolling={rolling} />
+        </div>
       </div>
     );
   }
@@ -80,9 +83,10 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
 
   return (
     <div className="action-panel">
-      {turnBanner}
-
-      <Dice dice={game.dice} />
+      <div className="panel-top">
+        {turnBanner}
+        <Dice dice={game.dice} />
+      </div>
 
       {game.lastCard && <DrawnCard deck={game.lastCard.deck} card={game.lastCard.card} />}
 

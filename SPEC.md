@@ -348,3 +348,17 @@ winner, the festival banner) are written in a brush font (Water Brush). Every sy
 drawn icon in the folk colors instead of an emoji. On the board picture, birds cross the sky and light
 glints on the Lam River (still when motion is off).
 
+## 14. Small screens, cards and moving between screens
+
+- **Cơ hội / Khí vận cards** are printed like folk cards: the picture on the left, the words in a gold
+  frame with gold corners on the right, so a card and a space for sale fit inside the board even on a
+  phone or a short laptop screen. Both pictures load when a game opens; if one still can't load (for
+  example a page left open across a new release), the card shows a drawn pattern in the deck's color
+  instead of a broken image. Property cards get the same gold corners and a mark under the name.
+- **On a small board** the turn and the dice share one line, and the space for sale fits on one line.
+- **Phones:** the players sit two by two under the board as small chips (token, name, money, and a
+  colored dot with a count for each set they own). Tapping the dots opens that player's places across
+  the whole width. Tablets show the full player cards two by two.
+- **Moving between screens:** a new screen slides in from the right, going back slides in from the
+  left, and a game or room rises into place. It follows the animation speed setting.
+

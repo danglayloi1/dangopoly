@@ -214,6 +214,7 @@ const vi = {
   ownedBy: (name: string) => `Chủ: ${name}`,
   unowned: 'Chưa có chủ',
   noProperties: 'Chưa có tài sản',
+  holdingsOf: (name: string) => `Tài sản của ${name}`,
   fullSet: 'Đủ bộ',
   groupNames: {
     brown: 'Nâu',
@@ -598,6 +599,7 @@ const en: Strings = {
   ownedBy: (name) => `Owner: ${name}`,
   unowned: 'For sale',
   noProperties: 'No properties yet',
+  holdingsOf: (name) => `${name}'s properties`,
   fullSet: 'Full set',
   groupNames: {
     brown: 'Brown',
