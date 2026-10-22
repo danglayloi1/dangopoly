@@ -28,7 +28,7 @@ richest player wins. Turn on **🏮 Lễ hội xứ Nghệ** and every 3rd round
 that round. At the end, a summary shows the ranking, a chart of everyone's wealth, titles and stats.
 
 After **Vào chơi**, the menu offers: play on one device, play online, the guided practice game
-(**🎓 Hướng dẫn chơi**), and settings (language, colors, sound volume).
+(**🎓 Hướng dẫn chơi**), and settings (language, six color themes with previews, effect speed, sound volume).
 
 **Music:** the 🎵 button in the corner opens a Spotify player with Nghệ Tĩnh folk songs (dân ca ví giặm),
 or any Spotify playlist you paste in. Nothing is loaded from Spotify until you open it. The player in

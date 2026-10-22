@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { UiLang } from '../data/text';
 import { useLang } from '../i18n/LangContext';
 import { getVolume, isMuted, playSound, setMuted, setVolume } from './sound';
-import { applyTheme, nextTheme, savedTheme, type Theme } from './theme';
+import { applyTheme, nextTheme, savedTheme, THEMES, type Theme } from './theme';
+import { Icon, type IconName } from './icons';
 
 const LANG_LABELS: Record<UiLang, { short: string; full: string }> = {
   vi: { short: 'VI', full: 'Tiếng Việt' },
@@ -45,7 +46,7 @@ export function SoundSettings({ onChange }: { onChange?: (silent: boolean) => vo
   return (
     <div className="sound-settings">
       <button type="button" className="secondary small" onClick={toggle} aria-pressed={muted}>
-        {muted ? `🔇 ${t.soundOn}` : `🔊 ${t.soundOff}`}
+        <Icon name={muted ? 'mute' : 'speaker'} /> {muted ? t.soundOn : t.soundOff}
       </button>
       <label className="volume">
         <span>{t.effectsVolume}</span>
@@ -100,7 +101,7 @@ export function SoundButton() {
         title={t.soundSettings}
         aria-expanded={open}
       >
-        {silent ? '🔇' : '🔊'}
+        <Icon name={silent ? 'mute' : 'speaker'} size={20} />
       </button>
       {open && (
         <div className="sound-popover" role="group" aria-label={t.soundSettings}>
@@ -111,27 +112,57 @@ export function SoundButton() {
   );
 }
 
-const THEME_ICONS: Record<Theme, string> = { auto: '🌓', light: '☀️', dark: '🌙' };
+const THEME_ICONS: Record<Theme, IconName> = {
+  auto: 'autoTheme',
+  light: 'sun',
+  dark: 'moon',
+  tet: 'blossom',
+  cham: 'wave',
+  contrast: 'contrast',
+};
 
-/** For Settings: the three color choices side by side. */
+/** For Settings: a tile for each theme, showing its paper, a card, its ink and colors. */
 export function ThemePicker() {
   const { t } = useLang();
   const [theme, setTheme] = useState(savedTheme);
+  const card = (
+    <span className="mini-card">
+      <span className="mini-button" />
+      <span className="mini-dot" />
+      <span className="mini-line" />
+    </span>
+  );
   return (
-    <div className="segmented" role="radiogroup" aria-label={t.theme}>
-      {(['auto', 'light', 'dark'] as const).map((choice) => (
+    <div className="theme-picker" role="radiogroup" aria-label={t.theme}>
+      {THEMES.map((choice) => (
         <button
           key={choice}
           type="button"
           role="radio"
           aria-checked={theme === choice}
-          className={theme === choice ? 'selected' : ''}
+          className={`theme-choice${theme === choice ? ' selected' : ''}`}
           onClick={() => {
             applyTheme(choice);
             setTheme(choice);
           }}
         >
-          {THEME_ICONS[choice]} {t.themeNames[choice]}
+          {choice === 'auto' ? (
+            <span className="theme-preview split" aria-hidden="true">
+              <span className="theme-preview" data-preview="light">
+                {card}
+              </span>
+              <span className="theme-preview" data-preview="dark">
+                {card}
+              </span>
+            </span>
+          ) : (
+            <span className="theme-preview" data-preview={choice} aria-hidden="true">
+              {card}
+            </span>
+          )}
+          <span>
+            <Icon name={THEME_ICONS[choice]} /> {t.themeNames[choice]}
+          </span>
         </button>
       ))}
     </div>
@@ -150,7 +181,7 @@ export function ThemeButton() {
   const label = t.themeLabel(t.themeNames[theme]);
   return (
     <button className="secondary small icon-only" onClick={change} aria-label={label} title={label}>
-      {THEME_ICONS[theme]}
+      <Icon name={THEME_ICONS[theme]} size={20} />
     </button>
   );
 }

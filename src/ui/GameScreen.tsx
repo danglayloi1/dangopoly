@@ -9,6 +9,7 @@ import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
 import { TutorialBubble } from '../tutorial/TutorialBubble';
 import { useTutorial } from '../tutorial/useTutorial';
+import { Icon } from './icons';
 
 interface Props {
   initialGame: GameState;
@@ -75,7 +76,7 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
 
   const autosave = saving && !tutorial.active && game.phase.kind !== 'gameOver' && (
     <span className="autosave muted" title={t.autoSaved}>
-      💾 <span className="autosave-text">{t.autoSaved}</span>
+      <Icon name="save" /> <span className="autosave-text">{t.autoSaved}</span>
     </span>
   );
 

@@ -4,6 +4,7 @@ import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { playerColor } from './look';
 import { TokenIcon } from './TokenIcon';
+import { Icon } from './icons';
 
 // Paper confetti (pháo giấy) in the folk-print colors.
 const CONFETTI_COLORS = ['#b8322a', '#d9ae4f', '#2f4f6f', '#4f7a3a', '#c95b7b', '#f6ecd4'];
@@ -54,12 +55,13 @@ export function WinnerPanel({ game, winner, next, onSummary }: Props) {
           <p className="winner-reason">{t.endByRounds(game.rules.mode.rounds)}</p>
         )}
         {game.endReason === 'time' && <p className="winner-reason">{t.endByTime}</p>}
-        <p className="winner-text">🏆 {game.endReason === 'lastStanding' || !game.endReason ? t.winner(player.name) : t.richestWins(player.name)}</p>
+        <p className="winner-text">
+          <Icon name="trophy" /> {game.endReason === 'lastStanding' || !game.endReason ? t.winner(player.name) : t.richestWins(player.name)}</p>
         <p className="winner-stats">{t.winnerStats(formatMoney(player.cash), owned.length, houses)}</p>
       </div>
       <div className="action-buttons">
         <button className="primary big" onClick={onSummary} autoFocus>
-          📊 {t.showSummary}
+          <Icon name="chart" /> {t.showSummary}
         </button>
         {'note' in next ? (
           <p className="waiting-note">{next.note}</p>

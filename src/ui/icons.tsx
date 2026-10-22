@@ -29,7 +29,50 @@ export type IconName =
   | 'police'
   | 'coins'
   | 'ticket'
-  | 'music';
+  | 'music'
+  // Interface icons (replacing emoji, so everything is drawn in the same style)
+  | 'dice'
+  | 'house'
+  | 'handshake'
+  | 'scroll'
+  | 'gear'
+  | 'globe'
+  | 'speaker'
+  | 'mute'
+  | 'sun'
+  | 'moon'
+  | 'autoTheme'
+  | 'save'
+  | 'trophy'
+  | 'chart'
+  | 'lantern'
+  | 'chat'
+  | 'eye'
+  | 'clock'
+  | 'medalGold'
+  | 'medalSilver'
+  | 'medalBronze'
+  | 'purse'
+  | 'blossom'
+  | 'wave'
+  | 'contrast';
+
+const SILVER = '#c0c7cf';
+const BRONZE = '#c27a3a';
+
+/** A medal on a red and indigo ribbon. */
+function medal(color: string, rank: string): ReactNode {
+  return (
+    <>
+      <path d="M10 3 L14 13 M22 3 L18 13" fill="none" strokeWidth={3.2} stroke={RED} />
+      <path d="M10 3 L14 13 M22 3 L18 13" fill="none" strokeWidth={1} />
+      <circle cx="16" cy="20" r="8.5" fill={color} />
+      <text x="16" y="24" textAnchor="middle" fontSize="10" fontWeight="900" fill="currentColor" stroke="none">
+        {rank}
+      </text>
+    </>
+  );
+}
 
 const DRAWINGS: Record<IconName, ReactNode> = {
   bus: (
@@ -150,6 +193,169 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <path d="M12 23 V9 L25 6 V20 M12 13 L25 10" fill="none" strokeWidth={2.2} />
       <ellipse cx="8.6" cy="23" rx="4" ry="3" fill={RED} />
       <ellipse cx="21.6" cy="20" rx="4" ry="3" fill={RED} />
+    </>
+  ),
+  dice: (
+    <>
+      <rect x="5" y="5" width="22" height="22" rx="5" fill={CREAM} />
+      <circle cx="11" cy="11" r="2.3" fill={RED} stroke="none" />
+      <circle cx="16" cy="16" r="2.3" fill="currentColor" stroke="none" />
+      <circle cx="21" cy="21" r="2.3" fill="currentColor" stroke="none" />
+    </>
+  ),
+  house: (
+    <>
+      <rect x="7.5" y="14" width="17" height="12" fill={CREAM} />
+      <path d="M4 15 L16 5 L28 15 Z" fill={RED} />
+      <rect x="14" y="18.5" width="4.5" height="7.5" fill={BROWN} />
+    </>
+  ),
+  handshake: (
+    <>
+      <path d="M2.5 13 L8 10 L13 12 L19 9.5 L24 10 L29.5 13 V18.5 L23 21 L17 25.5 Q15.5 26.5 14 25.5 L8 21 L2.5 18.5 Z" fill={YELLOW} />
+      <path d="M13 12 L10 16 Q11.5 17.5 13.5 15.5 L16 13.5 L22.5 19 M17 25.5 L12.5 21.5 M20 23.3 L15.5 19.3" fill="none" />
+    </>
+  ),
+  // The tutorial: an unrolled scroll
+  scroll: (
+    <>
+      <rect x="8" y="6" width="17" height="20" fill={CREAM} />
+      <rect x="5" y="4" width="22" height="4" rx="2" fill={RED} />
+      <rect x="5" y="24" width="22" height="4" rx="2" fill={RED} />
+      <path d="M11.5 12 H21.5 M11.5 16 H21.5 M11.5 20 H18" fill="none" />
+    </>
+  ),
+  gear: (
+    <>
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+        <rect key={a} x="14" y="3" width="4" height="6" rx="1" fill={SKY} transform={`rotate(${a} 16 16)`} />
+      ))}
+      <circle cx="16" cy="16" r="9" fill={SKY} />
+      <circle cx="16" cy="16" r="3.5" fill={CREAM} />
+    </>
+  ),
+  globe: (
+    <>
+      <circle cx="16" cy="16" r="11" fill={SKY} />
+      <ellipse cx="16" cy="16" rx="4.5" ry="11" fill="none" />
+      <path d="M5 16 H27 M7 10 H25 M7 22 H25" fill="none" strokeWidth={1.4} />
+    </>
+  ),
+  speaker: (
+    <>
+      <path d="M4 12 H9.5 L16.5 6 V26 L9.5 20 H4 Z" fill={YELLOW} />
+      <path d="M20.5 11.5 Q23.5 16 20.5 20.5 M24 8 Q29.5 16 24 24" fill="none" />
+    </>
+  ),
+  mute: (
+    <>
+      <path d="M4 12 H9.5 L16.5 6 V26 L9.5 20 H4 Z" fill={YELLOW} />
+      <path d="M20.5 12 L28 20 M28 12 L20.5 20" fill="none" stroke={RED} strokeWidth={2.4} />
+    </>
+  ),
+  sun: (
+    <>
+      <path d="M16 2.5 V7 M16 25 V29.5 M2.5 16 H7 M25 16 H29.5 M6.5 6.5 L9.5 9.5 M22.5 22.5 L25.5 25.5 M25.5 6.5 L22.5 9.5 M9.5 22.5 L6.5 25.5" fill="none" />
+      <circle cx="16" cy="16" r="6.5" fill={YELLOW} />
+    </>
+  ),
+  moon: <path d="M19 4 A12 12 0 1 0 28 21 A9.5 9.5 0 1 1 19 4 Z" fill={YELLOW} />,
+  // Follow the device: the sun by day, the moon by night
+  autoTheme: (
+    <>
+      <path d="M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M5 5 L7 7 M17 5 L15 7 M5 19 L7 17" fill="none" />
+      <circle cx="12" cy="12" r="5.5" fill={YELLOW} />
+      <path d="M22 13 A8 8 0 1 0 30 25 A6 6 0 1 1 22 13 Z" fill={INDIGO} />
+    </>
+  ),
+  save: (
+    <>
+      <path d="M5 5 H23 L27 9 V27 H5 Z" fill={INDIGO} />
+      <rect x="9" y="5" width="12" height="7" fill={CREAM} />
+      <rect x="9" y="17" width="14" height="10" fill={CREAM} />
+    </>
+  ),
+  trophy: (
+    <>
+      <path d="M9 5 H23 V11 Q23 19 16 19 Q9 19 9 11 Z" fill={YELLOW} />
+      <path d="M9 8 H5 Q5 14 10 14 M23 8 H27 Q27 14 22 14" fill="none" />
+      <path d="M14 19 H18 V23 H14 Z" fill={YELLOW} />
+      <rect x="10" y="23" width="12" height="4" rx="1" fill={BROWN} />
+    </>
+  ),
+  chart: (
+    <>
+      <path d="M5 4 V27 H28" fill="none" />
+      <rect x="9" y="16" width="4" height="11" fill={RED} />
+      <rect x="15" y="10" width="4" height="17" fill={YELLOW} />
+      <rect x="21" y="6" width="4" height="21" fill={GREEN} />
+    </>
+  ),
+  // Đèn lồng: a festival lantern
+  lantern: (
+    <>
+      <path d="M16 1.5 V5" fill="none" />
+      <rect x="11" y="5" width="10" height="3" rx="1" fill={YELLOW} />
+      <ellipse cx="16" cy="15" rx="10" ry="7.5" fill={RED} />
+      <path d="M16 7.5 V22.5 M11 8.5 Q8 15 11 21.5 M21 8.5 Q24 15 21 21.5" fill="none" strokeWidth={1.2} />
+      <rect x="11" y="22" width="10" height="3" rx="1" fill={YELLOW} />
+      <path d="M14 25 V30 M16 25 V30.5 M18 25 V30" fill="none" stroke={RED} />
+    </>
+  ),
+  chat: (
+    <>
+      <path d="M5 6 H27 V21 H14 L8 27 V21 H5 Z" fill={CREAM} />
+      <circle cx="11" cy="13.5" r="1.8" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="13.5" r="1.8" fill="currentColor" stroke="none" />
+      <circle cx="21" cy="13.5" r="1.8" fill="currentColor" stroke="none" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2.5 16 Q16 3 29.5 16 Q16 29 2.5 16 Z" fill={CREAM} />
+      <circle cx="16" cy="16" r="5" fill={INDIGO} />
+      <circle cx="17.5" cy="14.5" r="1.4" fill={CREAM} stroke="none" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="16" cy="17" r="11" fill={CREAM} />
+      <path d="M16 10 V17 L21 20" fill="none" strokeWidth={2.2} />
+      <path d="M13 3.5 H19" fill="none" strokeWidth={2.4} />
+    </>
+  ),
+  medalGold: medal(YELLOW, '1'),
+  medalSilver: medal(SILVER, '2'),
+  medalBronze: medal(BRONZE, '3'),
+  // Hoa mai, for the Tết theme
+  blossom: (
+    <>
+      {[0, 72, 144, 216, 288].map((a) => (
+        <circle key={a} cx="16" cy="8.5" r="6" fill={YELLOW} transform={`rotate(${a} 16 16)`} />
+      ))}
+      <circle cx="16" cy="16" r="3.5" fill={RED} />
+    </>
+  ),
+  // Waves, for the Chàm theme
+  wave: (
+    <>
+      <path d="M3 19 Q9 11 15 19 T27 19 V27 H3 Z" fill={INDIGO} />
+      <path d="M3 12 Q9 4 15 12 T27 12" fill="none" />
+    </>
+  ),
+  contrast: (
+    <>
+      <circle cx="16" cy="16" r="11" fill="#fff" />
+      <path d="M16 5 A11 11 0 0 1 16 27 Z" fill="#000" />
+    </>
+  ),
+  // Bankrupt: an empty purse
+  purse: (
+    <>
+      <path d="M8 12 Q4 27 16 27 Q28 27 24 12 Z" fill={BROWN} />
+      <path d="M8 12 Q16 8 24 12" fill="none" />
+      <path d="M12 9 Q16 3 20 9" fill="none" />
+      <path d="M13 19 L19 19" fill="none" stroke={CREAM} strokeWidth={2} />
     </>
   ),
   // The get-out-of-jail card: a ticket with notched sides

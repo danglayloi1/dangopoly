@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLang } from '../i18n/LangContext';
 import { CHAT_MAX_LENGTH, type RoomView } from '../net/protocol';
 import { colorHex } from './look';
+import { Icon } from './icons';
 
 interface Props {
   room: RoomView;
@@ -87,7 +88,7 @@ export function ChatBox({ room, onSend, besideReactions }: Props) {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        💬
+        <Icon name="chat" size={26} />
         {unread > 0 && !open && <span className="chat-unread">{unread > 9 ? '9+' : unread}</span>}
       </button>
     </div>

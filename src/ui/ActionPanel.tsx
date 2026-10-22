@@ -128,7 +128,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
         <div className="action-buttons">
           {allowed.includes('ROLL') && (
             <button className="primary big" data-tutorial="roll" onClick={() => dispatch({ type: 'ROLL' })} autoFocus>
-              🎲{' '}
+              <Icon name="dice" />{' '}
               {waitingInJail ? t.rollForDoubles : game.dice && game.dice[0] === game.dice[1] ? t.rollAgain : t.roll}
             </button>
           )}
@@ -187,12 +187,12 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
               data-tutorial="manage"
               onClick={onManage}
             >
-              🏠 {t.manage}
+              <Icon name="house" /> {t.manage}
             </button>
           )}
           {canStartTrade(game) && (
             <button className="secondary small" data-tutorial="trade" onClick={onTrade}>
-              🤝 {t.trade}
+              <Icon name="handshake" /> {t.trade}
             </button>
           )}
         </div>

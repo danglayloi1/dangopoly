@@ -320,14 +320,61 @@ button.secondary:disabled {
   position: relative;
 }
 
+/* Sơn mài (dark): the picture turns to evening, with a sunset glow and the moon. */
 :root[data-theme='dark'] .board-center {
-  background-image: linear-gradient(rgba(27, 21, 18, 0.62), rgba(27, 21, 18, 0.62)), url('./assets/art/board.webp');
+  background-image:
+    radial-gradient(circle at 82% 13%, #fbe9b0 0 3.2%, rgba(251, 233, 176, 0.35) 3.6%, transparent 7%),
+    linear-gradient(rgba(214, 120, 60, 0.32), rgba(48, 26, 44, 0.55) 45%, rgba(20, 15, 25, 0.68)),
+    url('./assets/art/board.webp');
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .board-center {
-    background-image: linear-gradient(rgba(27, 21, 18, 0.62), rgba(27, 21, 18, 0.62)), url('./assets/art/board.webp');
+    background-image:
+      radial-gradient(circle at 82% 13%, #fbe9b0 0 3.2%, rgba(251, 233, 176, 0.35) 3.6%, transparent 7%),
+    linear-gradient(rgba(214, 120, 60, 0.32), rgba(48, 26, 44, 0.55) 45%, rgba(20, 15, 25, 0.68)),
+    url('./assets/art/board.webp');
   }
+}
+
+/* Life on the picture: birds crossing the sky and light glinting on the Lam River. */
+.board-center::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='50' fill='none' stroke='%233b3530' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M20 22 q5 -6 10 0 q5 -6 10 0'/%3E%3Cpath d='M48 14 q4 -5 8 0 q4 -5 8 0'/%3E%3Cpath d='M150 30 q4 -5 8 0 q4 -5 8 0'/%3E%3C/svg%3E")
+      repeat-x 0 16% / 34% auto,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='30' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-opacity='.55'%3E%3Cpath d='M10 10 h18 M60 20 h12 M110 8 h22 M160 22 h14'/%3E%3C/svg%3E")
+      repeat-x 0 64% / 40% auto;
+  opacity: 0.8;
+  animation: board-life calc(70s / var(--fx, 1)) linear infinite;
+}
+
+/* One bird tile is 34% wide (34/66 of the leftover per tile); the glints drift slowly the other way. */
+@keyframes board-life {
+  from {
+    background-position: 0% 16%, 0% 64%;
+  }
+  to {
+    background-position: -515.15% 16%, 133.33% 64%;
+  }
+}
+
+:root[data-theme='dark'] .board-center::after {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-center::after {
+    animation: none;
+  }
+}
+
+:root[data-anim='off'] .board-center::after,
+:root[data-anim='off'] .board-center::before {
+  animation: none;
 }
 
 /* Clouds drifting slowly across the top of the picture (still when motion is reduced). */
@@ -365,6 +412,7 @@ button.secondary:disabled {
 
 .action-panel {
   position: relative;
+  z-index: 1; /* above the clouds, birds and river glints of the picture */
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   background-image: var(--paper);
   border: 2px solid var(--ink);
@@ -2246,6 +2294,63 @@ a.secondary {
 
 :root[data-anim='off'] .building {
   animation: none;
+}
+
+/* ===== Calligraphy (thư pháp) for the name and big titles; headings in cards stay Playfair ===== */
+.logo-word,
+.title-screen h1,
+.hero h1,
+.lobby-title,
+.menu-title,
+.screen-title,
+.winner-text,
+.summary-header h2,
+.fx-festival-scroll strong,
+.first-turn-message {
+  font-family: 'Water Brush', 'Playfair Display', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.title-screen h1 {
+  font-size: clamp(4rem, 19vw, 7.5rem);
+  line-height: 0.95;
+  text-shadow: 3px 3px 0 var(--gold);
+}
+
+.logo-word {
+  font-size: 2rem;
+}
+
+.lobby-title {
+  font-size: clamp(2.6rem, 11vw, 3.6rem);
+}
+
+.menu-title {
+  font-size: 2.2rem;
+  color: var(--accent);
+}
+
+.screen-title {
+  font-size: 2.5rem;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.winner-text {
+  font-size: 2em;
+}
+
+.summary-header h2 {
+  font-size: 2rem;
+}
+
+.fx-festival-scroll strong {
+  font-size: clamp(1.8rem, 8vw, 2.4rem);
+}
+
+.first-turn-message {
+  font-size: 1.8rem;
 }
 
 /* ===== Music: a button in the corner and a small Spotify player above it ===== */

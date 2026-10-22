@@ -111,14 +111,14 @@ export function ScreenEffects({ effects }: { effects: ShownEffect[] }) {
             <div key={id} className="fx-festival" role="status">
               <div className="fx-festival-scroll">
                 <span className="fx-lantern" aria-hidden="true">
-                  🏮
+                  <Icon name="lantern" />
                 </span>
                 <div>
                   <strong>{t.festivalNames[e.festival.id]}</strong>
                   <span>{festivalText(e.festival, uiLang)}</span>
                 </div>
                 <span className="fx-lantern" aria-hidden="true">
-                  🏮
+                  <Icon name="lantern" />
                 </span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../i18n/LangContext';
 import type { Tutorial } from './useTutorial';
+import { Icon } from '../ui/icons';
 
 const NO_TARGETS: string[] = [];
 
@@ -72,7 +73,9 @@ export function TutorialBubble({ tutorial, onExit }: Props) {
       aria-labelledby="tutorial-title"
     >
       <div className="tutorial-head">
-        <span className="tutorial-badge">🎓 {t.tutorial}</span>
+        <span className="tutorial-badge">
+            <Icon name="scroll" /> {t.tutorial}
+          </span>
         <span className="muted">
           {index + 1}/{total}
         </span>

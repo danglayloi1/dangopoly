@@ -3,6 +3,7 @@ import type { SaveFile } from '../engine/save';
 import { useLang } from '../i18n/LangContext';
 import { playerColor } from './look';
 import { TokenIcon } from './TokenIcon';
+import { Icon } from './icons';
 
 interface Props {
   saved: SaveFile;
@@ -24,7 +25,9 @@ export function SavedGameCard({ saved, onContinue, onDiscard }: Props) {
   return (
     <section className="saved-card" aria-labelledby="saved-title">
       <div className="saved-head">
-        <h2 id="saved-title">💾 {t.savedGameTitle}</h2>
+        <h2 id="saved-title">
+          <Icon name="save" /> {t.savedGameTitle}
+        </h2>
         <span className="muted">{t.savedAt(when)}</span>
       </div>
 

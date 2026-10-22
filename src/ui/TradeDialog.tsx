@@ -157,7 +157,9 @@ export function TradeDialog({ game, dispatch, onClose }: Props) {
   return (
     <dialog {...dialogProps} className="trade-dialog" aria-labelledby="trade-title">
       <header className="trade-header" style={{ borderTopColor: playerColor(game.players[me]) }}>
-        <h2 id="trade-title">🤝 {t.trade}</h2>
+        <h2 id="trade-title">
+          <Icon name="handshake" /> {t.trade}
+        </h2>
         {partners.length > 1 && (
           <div className="partner-picker" role="radiogroup" aria-label={t.tradeWith}>
             <span className="muted">{t.tradeWith}</span>

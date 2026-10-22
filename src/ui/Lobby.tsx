@@ -16,6 +16,7 @@ import { ColorPicker, TokenPicker } from './Pickers';
 import { QrCode } from './QrCode';
 import { RulesPicker } from './RulesPicker';
 import { TokenIcon } from './TokenIcon';
+import { Icon } from './icons';
 
 const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
@@ -186,7 +187,13 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
                   className={firstTurn === choice ? 'selected' : ''}
                   onClick={() => setFirstTurn(choice)}
                 >
-                  {choice === 'roll' ? `🎲 ${t.firstByRoll}` : t.firstInOrder}
+                  {choice === 'roll' ? (
+                    <>
+                      <Icon name="dice" /> {t.firstByRoll}
+                    </>
+                  ) : (
+                    t.firstInOrder
+                  )}
                 </button>
               ))}
             </div>

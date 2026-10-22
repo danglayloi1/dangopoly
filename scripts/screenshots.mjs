@@ -131,6 +131,13 @@ const scenes = {
     await themeButton.click(); // → dark
     const dark = await bg();
     await shot('game-dark');
+    await themeButton.click(); // → Tết
+    const tet = await bg();
+    await shot('game-tet');
+    await themeButton.click(); // → Chàm
+    await shot('game-cham');
+    await themeButton.click(); // → high contrast
+    await shot('game-contrast');
     await themeButton.click(); // → auto again
     const backToAuto = await bg();
     console.log(`auto=${auto} light=${light} dark=${dark}`);
@@ -142,6 +149,7 @@ const scenes = {
       light === LIGHT &&
       lightAfterReload === LIGHT &&
       dark === DARK &&
+      tet === 'rgb(246, 226, 192)' &&
       backToAuto === auto;
     console.log(ok ? 'CHECK OK: theme switches, is remembered after reload, and goes back to auto' : 'CHECK FAILED: theme');
   },

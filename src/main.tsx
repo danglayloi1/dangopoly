@@ -4,6 +4,7 @@ import App from './App';
 import { applyAnimSpeed } from './ui/animation';
 import './styles.css';
 import './folk.css';
+import './themes.css';
 
 applyAnimSpeed();
 
