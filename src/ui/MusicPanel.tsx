@@ -1,7 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { useLang } from '../i18n/LangContext';
 import { Icon } from './icons';
-import { DEFAULT_MUSIC, embedUrl, loadMusic, parseSpotifyLink, saveMusic, type SpotifySource } from './spotify';
+import {
+  DEFAULT_MUSIC,
+  embedUrl,
+  loadMusic,
+  openUrl,
+  parseSpotifyLink,
+  saveMusic,
+  SPOTIFY_LOGIN,
+  type SpotifySource,
+} from './spotify';
 
 /**
  * A music button in the corner of every screen. It opens a small Spotify player; the player is only
@@ -55,7 +64,15 @@ export function MusicPanel() {
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy"
           />
-          <p className="muted music-hint">{t.musicHint}</p>
+          <p className="muted music-hint">{t.musicLoginHelp}</p>
+          <div className="music-links">
+            <a className="secondary small" href={openUrl(source)} target="_blank" rel="noopener noreferrer">
+              {t.musicOpenApp} ↗
+            </a>
+            <a className="secondary small" href={SPOTIFY_LOGIN} target="_blank" rel="noopener noreferrer">
+              {t.musicLogin} ↗
+            </a>
+          </div>
           <form className="music-own" onSubmit={submit} noValidate>
             <label htmlFor="music-link">{t.musicOwn}</label>
             <div className="music-own-row">

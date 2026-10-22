@@ -18,11 +18,14 @@ npm test         # runs the rule tests
 npm run build    # builds the final website into dist/
 ```
 
-New to the game? Press **🎓 Hướng dẫn chơi** on the start screen for a guided practice game.
+After **Vào chơi**, the menu offers: play on one device, play online, the guided practice game
+(**🎓 Hướng dẫn chơi**), and settings (language, colors, sound volume).
 
 **Music:** the 🎵 button in the corner opens a Spotify player with Nghệ Tĩnh folk songs (dân ca ví giặm),
-or any Spotify playlist you paste in. Nothing is loaded from Spotify until you open it. Without a
-Spotify login, each song plays for 30 seconds.
+or any Spotify playlist you paste in. Nothing is loaded from Spotify until you open it. The player in
+the page plays whole songs only when this browser is logged in to Spotify and lets it use that login
+inside other sites (many phone browsers don't); otherwise 30-second previews. **Mở trong app Spotify**
+plays it in the Spotify app instead.
 
 ### Screenshots of a scene
 

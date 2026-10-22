@@ -17,6 +17,15 @@ const mobile = flags.includes('--mobile');
 const dark = flags.includes('--dark');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}${dark ? '-dark' : ''}`);
 
+/** From the entry screen, through the menu, to one of its screens (e.g. /Chơi trên một máy/). */
+async function openFromMenu(p, choice) {
+  // Loading the same address again keeps the remembered screen, so start from a blank page.
+  await p.goto('about:blank');
+  await p.goto(BASE_URL);
+  await p.getByRole('button', { name: /Vào chơi/ }).click();
+  await p.getByRole('button', { name: choice }).click();
+}
+
 /** Starts the game from the setup form with the players in the listed order (no first-turn dice). */
 async function startInListedOrder(p) {
   await p.getByRole('radio', { name: /Theo thứ tự trên/ }).click();
@@ -48,9 +57,12 @@ const scenes = {
     }
     const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content');
     check(ogImage === 'https://danglayloi1.github.io/dangopoly/og-image.png', 'link preview picture is set');
-    await shot('start-screen');
+    await shot('entry-screen');
 
     // A short real game with the real buttons.
+    await click(/Vào chơi/);
+    await shot('menu');
+    await click(/Chơi trên một máy/);
     const inputs = page.locator('.player-row input');
     await inputs.nth(0).fill('Đăng');
     await inputs.nth(1).fill('Lan');
@@ -90,7 +102,7 @@ const scenes = {
     await page.getByRole('button', { name: /Giao diện/ }).click(); // auto → light → dark
     const after = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     check(before !== after, 'theme button changes the colors');
-    await shot('start-screen-dark-with-saved-game');
+    await shot('menu-dark-with-saved-game');
 
     // The tutorial starts.
     await click(/Hướng dẫn chơi/);
@@ -137,7 +149,17 @@ const scenes = {
   /** A look at every main screen (use --dark for dark mode), the winner screen, and a long random game. */
   async audit({ page, shot, startGame, setup, act, click }) {
     await page.goto(BASE_URL);
+    await shot('entry');
+    await click(/Vào chơi/);
+    await shot('menu');
+    await click(/Chơi trên một máy/);
     await shot('setup');
+    await page.goBack();
+    await click(/Cài đặt/);
+    await shot('settings');
+    await page.goBack();
+    await click(/Chơi online/);
+    await shot('online');
     await startGame(['Đăng', 'Lan', 'Minh', 'Hoa']);
     await setup((game) => {
       const give = (owner, ...spaces) => {
@@ -188,6 +210,7 @@ const scenes = {
     page.on('pageerror', () => errors++);
     page.on('console', (m) => m.type() === 'error' && errors++);
     await click(/Chơi ván mới/);
+    await click(/Chơi trên một máy/);
     const inputs = page.locator('.player-row input');
     await click(/Thêm người chơi/);
     for (const [i, name] of ['Đăng', 'Lan', 'Minh'].entries()) await inputs.nth(i).fill(name);
@@ -218,8 +241,7 @@ const scenes = {
 
   /** The whole tutorial, played with the real buttons (and one wrong click on purpose). */
   async tutorial({ page, shot, click }) {
-    await page.goto(BASE_URL);
-    await click(/Hướng dẫn chơi/);
+    await openFromMenu(page, /Hướng dẫn chơi/);
     const bubble = page.locator('.tutorial-bubble');
     const step = (title) => bubble.locator('h2', { hasText: title }).waitFor({ timeout: 20_000 });
     const next = async () => {
@@ -342,6 +364,7 @@ const scenes = {
     await page.waitForSelector('.board[data-busy="false"]');
 
     const before = (await sounds()).length;
+    await page.getByRole('button', { name: /Âm thanh/ }).click();
     await page.getByRole('button', { name: /Tắt âm thanh/ }).click();
     await shot('muted');
     await act({ type: 'END_TURN' });
@@ -352,7 +375,7 @@ const scenes = {
     // A device set to "reduce motion": results appear at once, nothing waits.
     const calm = await browser.newContext({ viewport: { width: 1280, height: 860 }, reducedMotion: 'reduce' });
     const calmPage = await calm.newPage();
-    await calmPage.goto(BASE_URL);
+    await openFromMenu(calmPage, /Chơi trên một máy/);
     const inputs = calmPage.locator('.player-row input');
     await inputs.nth(0).fill('Đăng');
     await inputs.nth(1).fill('Lan');
@@ -414,7 +437,7 @@ const scenes = {
 
     await page.evaluate(() => localStorage.setItem('dangopoly.savedGame', '{"version":1,"game":{"players":"broken"'));
     await page.reload();
-    await page.waitForSelector('.setup-card');
+    await page.waitForSelector('.menu-choices');
     const ignored = (await page.locator('.saved-card').count()) === 0;
     console.log(ignored ? 'CHECK OK: damaged save ignored, setup works' : 'CHECK FAILED: damaged save shown');
     await shot('damaged-save-ignored');
@@ -580,12 +603,16 @@ const scenes = {
     };
 
     // Đăng creates the room.
-    await dang.page.goto(BASE_URL);
+    await openFromMenu(dang.page, /Chơi online/);
     await button(dang, 'Tạo phòng').click();
+    await dang.page.getByPlaceholder('Tên').waitFor();
+    check(!dang.page.url().includes('room='), 'no room link in the address before the room exists');
     await dang.page.getByPlaceholder('Tên').fill('Đăng');
     await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
     const code = (await dang.page.locator('.room-code').textContent()).trim();
     check(/^[A-Z2-9]{6}$/.test(code), `a room is created (${code})`);
+    await dang.page.waitForURL((url) => url.search === `?room=${code}`);
+    check(true, 'once it exists, the address is the room link');
 
     // Lan and Minh open the link and join.
     for (const p of [lan, minh]) {
@@ -692,7 +719,7 @@ async function main() {
   };
   const click = (name) => page.getByRole('button', { name }).first().click();
   const startGame = async (names, startingMillions = '15') => {
-    await page.goto(BASE_URL);
+    await openFromMenu(page, /Chơi trên một máy/);
     const inputs = page.locator('.player-row input');
     while ((await inputs.count()) < names.length) await click(/Thêm người chơi/);
     for (const [i, name] of names.entries()) await inputs.nth(i).fill(name);
