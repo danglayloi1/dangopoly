@@ -16,7 +16,7 @@ import {
   type RulesChoice,
 } from '../src/engine/game';
 import type { Action, Dice, GameState } from '../src/engine/types';
-import type { ErrorCode, FirstTurn, FirstTurnRound, Profile, RoomView } from '../src/net/protocol';
+import { CHAT_KEEP, CHAT_MAX_LENGTH, type ChatMessage, type ErrorCode, type FirstTurn, type FirstTurnRound, type Profile, type RoomView } from '../src/net/protocol';
 import { orderFrom } from '../src/ui/firstTurn';
 
 export interface Seat extends Profile {
@@ -30,6 +30,7 @@ export interface RoomState {
   seats: Seat[];
   game: GameState | null;
   firstTurn: FirstTurnRound[] | null;
+  chat?: ChatMessage[]; // missing in rooms saved before chat
 }
 
 /** Random numbers come from outside, so tests can fix them. */
@@ -156,6 +157,27 @@ export function start(
   return ok({ ...room, seats, host, game, firstTurn: firstTurn === 'roll' ? rounds : null });
 }
 
+/**
+ * Chat text, tidied: control characters dropped, spaces collapsed, at most CHAT_MAX_LENGTH
+ * characters. Null if nothing is left. (It's shown as plain text, never as HTML.)
+ */
+export function cleanChat(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const text = raw.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (text === '') return null;
+  return [...text].slice(0, CHAT_MAX_LENGTH).join('');
+}
+
+/** A chat message from the phone in `seat`; the room keeps the last CHAT_KEEP. */
+export function chat(room: RoomState, seat: number, raw: unknown, now: number = Date.now()): Result<RoomState> {
+  const text = cleanChat(raw);
+  if (!text) return fail('badMessage');
+  const old = room.chat ?? [];
+  const { name, color } = room.seats[seat];
+  const message: ChatMessage = { id: (old.at(-1)?.id ?? 0) + 1, seat, name, color, text, at: now };
+  return ok({ ...room, chat: [...old, message].slice(-CHAT_KEEP) });
+}
+
 /** After a game, the host takes the room back to the lobby: same seats, choices and host; a new game can start. */
 export function rematch(room: RoomState, seat: number): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
@@ -198,6 +220,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
     you,
     game: room.game,
     firstTurn: room.firstTurn,
+    chat: room.chat ?? [],
   };
 }
 

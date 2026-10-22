@@ -19,6 +19,7 @@ interface Connection {
   windowStart: number; // for the message rate limit
   count: number;
   lastReaction?: number; // reactions: at most one every REACTION_GAP_MS
+  lastChat?: number; // chat: at most one message every CHAT_GAP_MS
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -26,6 +27,7 @@ const MAX_CONNECTIONS = 12;
 const RATE_WINDOW_MS = 10_000;
 const MAX_MESSAGES_PER_WINDOW = 40;
 const REACTION_GAP_MS = 1_200;
+const CHAT_GAP_MS = 1_000;
 
 /** Dice, seeds and seat keys from the platform's secure random numbers. */
 const RANDOM: Room.Randomness = {
@@ -140,6 +142,12 @@ export class GameRoom extends DurableObject<Env> {
       case 'rematch':
         if (!room || seat === null) return this.error(ws, 'badMessage');
         return this.apply(ws, Room.rematch(room, seat));
+      case 'chat': {
+        if (!room || seat === null) return this.error(ws, 'badMessage');
+        if (conn.lastChat && now - conn.lastChat < CHAT_GAP_MS) return this.error(ws, 'tooFast');
+        ws.serializeAttachment({ ...(ws.deserializeAttachment() as Connection), lastChat: now });
+        return this.apply(ws, Room.chat(room, seat, msg.text, now));
+      }
       case 'react': {
         // Not stored: just passed on to every phone in the room, the sender's too.
         if (!room || seat === null || !isReactionId(msg.reaction)) return this.error(ws, 'badMessage');

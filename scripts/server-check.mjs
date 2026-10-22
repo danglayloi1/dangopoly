@@ -123,7 +123,20 @@ await new Promise((r) => setTimeout(r, 1300));
 c.send({ t: 'react', reaction: 'hack' });
 check((await c.next(errorOf)).code === 'badMessage', 'unknown reactions are refused');
 
-for (const p of [a, b2, c]) p.close();
+// Chat: messages reach everyone and stay in the room for phones that come back.
+b2.send({ t: 'chat', text: '  Chào   cả nhà!  ' });
+const chatted = await a.next(roomWhere((r) => r.chat.some((m) => m.text === 'Chào cả nhà!')), 'chat message');
+check(chatted.room.chat.at(-1).name === 'Lan', 'a chat message from Lan reaches the others, tidied');
+b2.send({ t: 'chat', text: 'again' });
+check((await b2.next(errorOf)).code === 'tooFast', 'chat messages sent too fast are refused');
+b2.close();
+const b3 = phone('Lan once more');
+await b3.opened;
+b3.send({ t: 'rejoin', key: bWelcome.key });
+const history = await b3.next(roomWhere((r) => r.you !== null), 'room after rejoining');
+check(history.room.chat.some((m) => m.text === 'Chào cả nhà!'), 'a phone that comes back sees the chat so far');
+
+for (const p of [a, b3, c]) p.close();
 
 // A one-round game, then a new game in the same room.
 const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';

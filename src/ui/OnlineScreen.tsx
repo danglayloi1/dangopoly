@@ -4,6 +4,7 @@ import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import type { RoomView } from '../net/protocol';
 import { useRoom, type RoomState } from '../net/useRoom';
+import { ChatBox } from './ChatBox';
 import { FirstTurnResult } from './FirstTurnResult';
 import { GameTable } from './GameTable';
 import { LangSwitch, ThemeButton } from './Header';
@@ -104,6 +105,7 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
           reactions={state.reactions}
           onSend={seat === null ? null : (reaction) => state.send({ t: 'react', reaction })}
         />
+        <ChatBox room={room} onSend={seat === null ? null : (text) => state.send({ t: 'chat', text })} besideReactions={seat !== null} />
         {showFirstTurn && room.firstTurn && (
           <FirstTurnResult rounds={room.firstTurn} seats={room.seats} onClose={() => setShowFirstTurn(false)} />
         )}

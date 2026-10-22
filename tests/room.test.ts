@@ -4,6 +4,8 @@ import { isReactionId, isRoomCode, newRoomCode, normalizeRoomCode } from '../src
 import {
   act,
   changeProfile,
+  chat,
+  cleanChat,
   cleanAction,
   cleanProfile,
   join,
@@ -238,5 +240,32 @@ describe('after the game', () => {
     expect(isReactionId('rangRua')).toBe(true);
     expect(isReactionId('toString')).toBe(false);
     expect(isReactionId('<script>')).toBe(false);
+  });
+});
+
+describe('chat', () => {
+  it('keeps messages with the sender as they were, the last 30 only', () => {
+    let room = lobby(DANG, LAN);
+    room = must(chat(room, 1, 'Răng rứa?', 1_000));
+    expect(view(room, 0, new Set()).chat).toEqual([{ id: 1, seat: 1, name: 'Lan', color: 'indigo', text: 'Răng rứa?', at: 1_000 }]);
+    for (let i = 0; i < 40; i++) room = must(chat(room, 0, `tin ${i}`, 2_000 + i));
+    const kept = view(room, 0, new Set()).chat;
+    expect(kept).toHaveLength(30);
+    expect(kept.at(-1)).toMatchObject({ id: 41, text: 'tin 39' });
+  });
+
+  it('tidies text and refuses empty messages', () => {
+    expect(cleanChat('  xin   chào\n\nbạn  ')).toBe('xin chào bạn');
+    expect(cleanChat('a‮b​c')).toBe('a b c'); // invisible direction and zero-width characters
+    expect(cleanChat('x'.repeat(300))).toHaveLength(200);
+    expect(cleanChat('   ')).toBeNull();
+    expect(cleanChat(42)).toBeNull();
+    expect(chat(lobby(DANG), 0, '')).toEqual({ ok: false, error: 'badMessage' });
+  });
+
+  it('survives a rematch', () => {
+    const room = must(chat(must(start(lobby(DANG, LAN), 0, 15_000_000, 'inOrder', fakeRandom())), 0, 'gg'));
+    room.game!.phase = { kind: 'gameOver', winner: 0 };
+    expect(must(rematch(room, room.host)).chat).toHaveLength(1);
   });
 });

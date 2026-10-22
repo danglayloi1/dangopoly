@@ -757,6 +757,22 @@ const scenes = {
     check(true, "Lan's reaction shows on every phone");
     await together('reaction');
 
+    // Chat: Minh writes; Đăng sees a count on 💬 and opens it.
+    await button(minh, 'Trò chuyện').click();
+    await minh.page.getByPlaceholder('Nhắn gì đó…').fill('Đăng ơi, đổi Cảng Vũng Áng không?');
+    await minh.page.getByRole('button', { name: 'Gửi' }).click();
+    await dang.page.locator('.chat-unread', { hasText: '1' }).waitFor();
+    check(true, "Đăng's 💬 button shows 1 unread message");
+    await dang.page.getByRole('button', { name: /Trò chuyện/ }).click();
+    await dang.page.locator('.chat-message', { hasText: 'đổi Cảng Vũng Áng' }).waitFor();
+    await dang.page.getByPlaceholder('Nhắn gì đó…').fill('Răng rứa? Đưa 3tr đã 😂');
+    await dang.page.getByRole('button', { name: 'Gửi' }).click();
+    await minh.page.locator('.chat-message', { hasText: 'Đưa 3tr đã' }).waitFor();
+    check(true, 'chat messages go both ways');
+    await together('chat');
+    await dang.page.locator('.chat-panel').getByRole('button', { name: 'Đóng' }).click();
+    await minh.page.locator('.chat-panel').getByRole('button', { name: 'Đóng' }).click();
+
     // Lan's phone drops out; the others see it; she comes back to her seat from the link.
     await lan.page.close();
     await dang.page.waitForSelector('.badge-away');

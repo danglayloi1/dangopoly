@@ -26,6 +26,7 @@ export type ClientMessage =
   | { t: 'start'; startingCash: number; firstTurn: FirstTurn; rules: RulesChoice } // host only
   | { t: 'act'; action: Action }
   | { t: 'react'; reaction: ReactionId } // a quick reaction, shown on every phone
+  | { t: 'chat'; text: string } // a chat message (kept: the last CHAT_KEEP of them)
   | { t: 'rematch' }; // host, after the game: back to the lobby with everyone still seated
 
 /** One round of the "who goes first" dice; seats are numbered in the final playing order. */
@@ -34,6 +35,19 @@ export type FirstTurnRound = { seat: number; dice: Dice }[];
 export interface SeatView extends Profile {
   online: boolean;
 }
+
+/** A chat message; the name and color are kept as they were when it was sent. */
+export interface ChatMessage {
+  id: number;
+  seat: number;
+  name: string;
+  color: Profile['color'];
+  text: string;
+  at: number; // ms since 1970
+}
+
+export const CHAT_MAX_LENGTH = 200;
+export const CHAT_KEEP = 30;
 
 /** The room as one phone sees it. */
 export interface RoomView {
@@ -44,6 +58,7 @@ export interface RoomView {
   you: number | null; // this phone's seat, or null when only watching
   game: GameState | null;
   firstTurn: FirstTurnRound[] | null; // the dice that decided the order, if they were rolled
+  chat: ChatMessage[]; // the most recent messages, oldest first
 }
 
 export type ErrorCode =
@@ -69,17 +84,31 @@ export type ServerMessage =
   | { t: 'error'; code: ErrorCode }
   | { t: 'reaction'; seat: number; reaction: ReactionId };
 
-/** Quick reactions: a few emoji and some Nghệ phrases. */
+/** Quick reactions: emoji, then Nghệ phrases. */
 export const REACTIONS = {
   laugh: '😂',
   clap: '👏',
   shock: '😱',
   cry: '😭',
   fire: '🔥',
+  party: '🎉',
+  cool: '😎',
+  think: '🤔',
+  angry: '😤',
+  pray: '🙏',
+  money: '💸',
+  love: '❤️',
+  deal: '🤝',
+  thumbs: '👍',
+  sleepy: '😴',
   rangRua: 'Răng rứa?',
   gioiRua: 'Giỏi rứa!',
   meOi: 'Mệ ơi!',
   chiRua: 'Chi rứa trời!',
+  choChua: 'Chộ chưa!',
+  thoiChet: 'Thôi chết rồi!',
+  nhanhLen: 'Nhanh lên mi ơi!',
+  ngonLanh: 'Ngon lành!',
 } as const;
 
 export type ReactionId = keyof typeof REACTIONS;

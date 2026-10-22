@@ -100,6 +100,10 @@ const vi = {
   waitingAnswer: (name: string) => `Đang chờ ${name} trả lời…`,
   watching: 'Đang xem',
   reactionsLabel: 'Thả cảm xúc',
+  chatLabel: 'Trò chuyện',
+  chatPlaceholder: 'Nhắn gì đó…',
+  chatEmpty: 'Chưa có tin nhắn. Chào cả phòng đi!',
+  chatSend: 'Gửi',
   rematch: 'Ván mới cùng phòng',
   waitingRematch: (name: string) => `Chờ ${name} mở ván mới…`,
   onlineErrors: {
@@ -478,6 +482,10 @@ const en: Strings = {
   waitingAnswer: (name: string) => `Waiting for ${name} to answer…`,
   watching: 'Watching',
   reactionsLabel: 'React',
+  chatLabel: 'Chat',
+  chatPlaceholder: 'Say something…',
+  chatEmpty: 'No messages yet. Say hi to the room!',
+  chatSend: 'Send',
   rematch: 'New game, same room',
   waitingRematch: (name) => `Waiting for ${name} to start a new game…`,
   onlineErrors: {
