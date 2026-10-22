@@ -83,11 +83,16 @@ describe('random games', () => {
   it('keep every invariant for 200 games', () => {
     let finished = 0;
     let trades = 0;
+    let limited = 0;
     for (let seed = 1; seed <= 200; seed++) {
+      // Every game type: classic, a round limit, or a time limit; festivals in half the games.
+      const mode =
+        seed % 3 === 0 ? { kind: 'rounds' as const, rounds: 12 } : seed % 3 === 1 ? { kind: 'classic' as const } : { kind: 'time' as const, minutes: 30 };
       let s = createGame({
         players: PLAYERS.slice(0, 2 + (seed % 3)).map((p) => ({ ...p })),
         seed,
         startingCash: 3_000_000, // low cash so bankruptcies actually happen
+        rules: { mode, festivals: seed % 2 === 0 },
       });
       let choice = seed * 7919;
 
@@ -105,6 +110,8 @@ describe('random games', () => {
           const offer = randomOffer(s, choice);
           if (tradeProblem(s, offer) === null) action = { type: 'PROPOSE_TRADE', offer };
         }
+        // Timed games: say the time is up after a while, at the start of a turn.
+        if (mode.kind === 'time' && step > 600 && s.phase.kind === 'awaitRoll') action = { type: 'TIME_UP' };
         s = applyAction(s, action);
         if (action.type === 'ACCEPT_TRADE') trades++;
         const error = invariantError(s);
@@ -112,10 +119,13 @@ describe('random games', () => {
       }
       if (s.phase.kind === 'gameOver') {
         finished++;
-        expect(s.players.filter((p) => !p.bankrupt)).toHaveLength(1);
+        if (s.endReason === 'lastStanding') expect(s.players.filter((p) => !p.bankrupt)).toHaveLength(1);
+        else limited++;
+        expect(s.worth.length).toBeGreaterThan(0);
       }
     }
     expect(finished).toBeGreaterThan(50);
     expect(trades).toBeGreaterThan(100); // trades really happen in these games
-  }, 30_000); // a few seconds of random play
+    expect(limited).toBeGreaterThan(20); // and round or time limits end games
+  }, 60_000); // some seconds of random play (more on a busy machine)
 });

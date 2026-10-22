@@ -7,17 +7,29 @@ import {
   isOwnable,
   JAIL_FINE,
   JAIL_SPACE,
-  START_SALARY,
   STARTING_CASH,
   UTILITY_CARD_MULTIPLIER,
 } from '../data/board';
 import { CARDS, type CardDeck } from '../data/cards';
 import { defaultPlayerColor, type PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
-import { houseCost, houseRefund, isPropertyActionAllowed, mortgageValue, unmortgageCost } from './buildings';
+import { houseRefund, isPropertyActionAllowed, mortgageValue } from './buildings';
 import { jailFreeCardIndex, shuffledDeck } from './deck';
 import { rentFor } from './rent';
 import { rollDie } from './rng';
+import {
+  buildCost,
+  cardPrize,
+  doublesPrize,
+  emptyStats,
+  endByWorth,
+  festivalRentMultiplier,
+  salaryFor,
+  startNextRound,
+  taxFree,
+  unmortgagePrice,
+  worthOfAll,
+} from './rounds';
 import { normalizeOffer, offerProblem, tradeProblem } from './trading';
 import type {
   Action,
@@ -27,6 +39,7 @@ import type {
   PaymentReason,
   Player,
   PropertyAction,
+  Rules,
   TradeOffer,
   TurnActionType,
 } from './types';
@@ -39,10 +52,22 @@ export interface NewPlayer {
   color?: PlayerColorId; // the seat's default color if not given
 }
 
+/** How the game ends and whether festivals happen; the default is the classic game. */
+export interface RulesChoice {
+  mode: { kind: 'classic' } | { kind: 'rounds'; rounds: number } | { kind: 'time'; minutes: number };
+  festivals: boolean;
+}
+
+export const CLASSIC_RULES: RulesChoice = { mode: { kind: 'classic' }, festivals: false };
+export const MAX_ROUNDS = 100;
+export const MAX_MINUTES = 240;
+
 export interface NewGameOptions {
   players: NewPlayer[];
   seed?: number;
   startingCash?: number;
+  rules?: RulesChoice;
+  now?: number; // when the game starts (ms since 1970), for a time limit; defaults to the clock
 }
 
 export const MIN_PLAYERS = 2;
@@ -52,7 +77,7 @@ export const LOG_LIMIT = 200;
 /** Failed rolls for doubles allowed in jail; on the last one the fine must be paid. */
 export const MAX_JAIL_ATTEMPTS = 3;
 
-export function createGame({ players, seed, startingCash = STARTING_CASH }: NewGameOptions): GameState {
+export function createGame({ players, seed, startingCash = STARTING_CASH, rules = CLASSIC_RULES, now }: NewGameOptions): GameState {
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
     throw new GameError(`A game needs ${MIN_PLAYERS} to ${MAX_PLAYERS} players`);
   }
@@ -69,6 +94,18 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
   if (!Number.isInteger(startingCash) || startingCash <= 0) {
     throw new GameError(`Starting money must be a positive whole number of đồng, got ${startingCash}`);
   }
+
+  const { mode } = rules;
+  if (mode.kind === 'rounds' && !(Number.isInteger(mode.rounds) && mode.rounds >= 1 && mode.rounds <= MAX_ROUNDS)) {
+    throw new GameError(`A round limit must be 1 to ${MAX_ROUNDS}, got ${mode.rounds}`);
+  }
+  if (mode.kind === 'time' && !(Number.isInteger(mode.minutes) && mode.minutes >= 1 && mode.minutes <= MAX_MINUTES)) {
+    throw new GameError(`A time limit must be 1 to ${MAX_MINUTES} minutes, got ${mode.minutes}`);
+  }
+  const gameRules: Rules = {
+    mode: mode.kind === 'time' ? { ...mode, endsAt: (now ?? Date.now()) + mode.minutes * 60_000 } : { ...mode },
+    festivals: rules.festivals,
+  };
 
   let rngState = (seed ?? Date.now()) >>> 0;
   const [chance, afterChance] = shuffledDeck(CARDS.chance.length, rngState);
@@ -98,6 +135,12 @@ export function createGame({ players, seed, startingCash = STARTING_CASH }: NewG
     lastCard: null,
     rngState,
     log: [{ type: 'turnStarted', player: 0 }],
+    rules: gameRules,
+    round: 1,
+    festival: null,
+    stats: players.map(() => emptyStats()),
+    worth: [players.map(() => startingCash)],
+    endReason: null,
   };
 }
 
@@ -163,6 +206,7 @@ export function actorFor(state: GameState, action: Action): number | null {
 }
 
 function isAllowed(state: GameState, action: Action): boolean {
+  if (action.type === 'TIME_UP') return state.rules.mode.kind === 'time' && state.phase.kind === 'awaitRoll';
   if ('space' in action) return isPropertyActionAllowed(state, action);
   if (action.type === 'PROPOSE_TRADE') return tradeProblem(state, action.offer) === null;
   return legalActions(state).includes(action.type);
@@ -215,6 +259,9 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'REJECT_TRADE':
       rejectTrade(s);
       break;
+    case 'TIME_UP':
+      endByWorth(s, 'time');
+      break;
   }
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
   return s;
@@ -239,9 +286,15 @@ function roll(s: GameState, forced?: Dice): void {
 
   const player = s.players[s.current];
   const doubles = dice[0] === dice[1];
+  if (doubles) s.stats[player.id].doubles++;
   s.dice = dice;
   s.lastCard = null;
   s.log.push({ type: 'rolled', player: player.id, dice });
+  const prize = doubles ? doublesPrize(s) : 0;
+  if (prize > 0) {
+    player.cash += prize;
+    s.log.push({ type: 'festivalBonus', player: player.id, amount: prize, reason: 'doubles' });
+  }
 
   if (player.inJail) {
     rollInJail(s, player, doubles);
@@ -301,6 +354,7 @@ function buy(s: GameState): void {
   const player = s.players[s.current];
   player.cash -= space.price;
   s.ownership[index] = { owner: player.id, houses: 0, mortgaged: false };
+  s.stats[player.id].bought++;
   s.log.push({ type: 'bought', player: player.id, space: index, price: space.price });
   finishLanding(s);
 }
@@ -361,6 +415,9 @@ function declareBankruptcy(s: GameState): void {
 
   const remaining = s.players.filter((p) => !p.bankrupt);
   if (remaining.length === 1) {
+    s.worth.push(worthOfAll(s));
+    s.festival = null;
+    s.endReason = 'lastStanding';
     s.phase = { kind: 'gameOver', winner: remaining[0].id };
     s.log.push({ type: 'won', player: remaining[0].id });
   } else {
@@ -376,9 +433,10 @@ function manageProperty(s: GameState, action: PropertyAction): void {
 
   switch (action.type) {
     case 'BUILD_HOUSE': {
-      const cost = houseCost(space);
+      const cost = buildCost(s, space);
       player.cash -= cost;
       own.houses++;
+      s.stats[player.id].housesBuilt++;
       s.log.push({ type: 'builtHouse', player: player.id, space, houses: own.houses, cost });
       break;
     }
@@ -397,7 +455,7 @@ function manageProperty(s: GameState, action: PropertyAction): void {
       break;
     }
     case 'UNMORTGAGE': {
-      const amount = unmortgageCost(space);
+      const amount = unmortgagePrice(s, space);
       player.cash -= amount;
       own.mortgaged = false;
       s.log.push({ type: 'unmortgaged', player: player.id, space, amount });
@@ -427,6 +485,8 @@ function acceptTrade(s: GameState): void {
   for (const space of offer.take.spaces) s.ownership[space].owner = from.id;
   for (let i = 0; i < offer.give.jailCards; i++) to.jailCards.push(from.jailCards.pop()!);
   for (let i = 0; i < offer.take.jailCards; i++) from.jailCards.push(to.jailCards.pop()!);
+  s.stats[from.id].trades++;
+  s.stats[to.id].trades++;
 
   s.log.push({ type: 'tradeAccepted', offer });
   s.phase = resume;
@@ -443,6 +503,12 @@ function advanceTurn(s: GameState): void {
   do {
     next = (next + 1) % s.players.length;
   } while (s.players[next].bankrupt);
+
+  // Back around to the start of the playing order: a new round (which may end the game).
+  if (next <= s.current) {
+    startNextRound(s);
+    if (s.phase.kind === 'gameOver') return;
+  }
 
   s.current = next;
   s.phase = { kind: 'awaitRoll' };
@@ -461,6 +527,7 @@ function goToJail(s: GameState, player: Player, reason: JailReason): void {
   player.inJail = true;
   player.jailAttempts = 0;
   s.extraRoll = false; // going to jail ends the turn, even after doubles
+  s.stats[player.id].jailed++;
   s.log.push({ type: 'wentToJail', player: player.id, reason });
   s.phase = { kind: 'awaitEndTurn' };
 }
@@ -475,7 +542,13 @@ function drawCard(s: GameState, player: Player, deck: CardDeck): void {
   const card = s.decks[deck].shift()!;
   const { effect } = CARDS[deck][card];
   s.lastCard = { deck, card };
+  s.stats[player.id].cards++;
   s.log.push({ type: 'drewCard', player: player.id, deck, card });
+  const prize = cardPrize(s);
+  if (prize > 0) {
+    player.cash += prize;
+    s.log.push({ type: 'festivalBonus', player: player.id, amount: prize, reason: 'card' });
+  }
   if (effect.kind !== 'jailFree') s.decks[deck].push(card); // back under the deck
 
   const others = s.players.filter((p) => p.id !== player.id && !p.bankrupt);
@@ -552,6 +625,8 @@ function copyState(state: GameState): GameState {
   return {
     ...state,
     players: state.players.map((p) => ({ ...p, jailCards: [...p.jailCards] })),
+    stats: state.stats.map((st) => ({ ...st })),
+    worth: state.worth.slice(), // the rows themselves are never changed
     ownership,
     decks: { chance: [...state.decks.chance], community: [...state.decks.community] },
     log: state.log.slice(),
@@ -561,8 +636,10 @@ function copyState(state: GameState): GameState {
 function moveBy(s: GameState, player: Player, steps: number): void {
   const target = player.position + steps;
   if (target >= BOARD_SIZE) {
-    player.cash += START_SALARY;
-    s.log.push({ type: 'passedStart', player: player.id, amount: START_SALARY });
+    const salary = salaryFor(s);
+    player.cash += salary;
+    s.stats[player.id].laps++;
+    s.log.push({ type: 'passedStart', player: player.id, amount: salary });
   }
   player.position = target % BOARD_SIZE;
   s.log.push({ type: 'moved', player: player.id, to: player.position });
@@ -596,12 +673,16 @@ function resolveLanding(s: GameState, player: Player, options: RentOptions = {})
         const rent =
           space.kind === 'utility' && options.utilityPerPip
             ? diceTotal * options.utilityPerPip
-            : rentFor(s, index, diceTotal) * (options.rentMultiplier ?? 1);
+            : Math.round(rentFor(s, index, diceTotal) * (options.rentMultiplier ?? 1) * festivalRentMultiplier(s, index));
         if (rent > 0 && !charge(s, player.id, own.owner, rent, { kind: 'rent', space: index })) return;
       }
       break;
     }
     case 'tax':
+      if (taxFree(s)) {
+        s.log.push({ type: 'festivalTaxFree', player: player.id, space: index });
+        break;
+      }
       if (!charge(s, player.id, null, space.amount, { kind: 'tax', space: index })) return;
       break;
     case 'goToJail':
@@ -650,6 +731,8 @@ function transfer(
 
   switch (reason.kind) {
     case 'rent':
+      s.stats[debtor].rentPaid += amount;
+      s.stats[creditor!].rentReceived += amount;
       s.log.push({ type: 'paidRent', player: debtor, to: creditor!, space: reason.space, amount });
       break;
     case 'tax':

@@ -5,6 +5,7 @@ import { BOARD, BOARD_SIZE, isOwnable } from '../data/board';
 import { CARDS, type CardDeck } from '../data/cards';
 import { defaultPlayerColor, PLAYER_COLOR_IDS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
+import { emptyStats, FESTIVALS } from './rounds';
 import type { GameState } from './types';
 
 /** Bump this when GameState changes shape; older saves are then ignored. */
@@ -35,7 +36,19 @@ export function parseSave(text: string | null): SaveFile | null {
   // Saves from before players picked colors have none: give each seat its default color.
   const players = data.game.players.map((p) => ({ ...p, color: p.color ?? defaultPlayerColor(p.id) }));
   if (new Set(players.map((p) => p.color)).size !== players.length) return null;
-  return { version: data.version, savedAt: data.savedAt, game: { ...data.game, players } };
+  // Saves from before game modes are classic games, starting their round count and stats now.
+  const game = data.game as Partial<GameState> & GameState;
+  const upgraded: GameState = {
+    ...game,
+    players,
+    rules: game.rules ?? { mode: { kind: 'classic' }, festivals: false },
+    round: game.round ?? 1,
+    festival: game.festival ?? null,
+    stats: game.stats ?? players.map(() => emptyStats()),
+    worth: game.worth ?? [],
+    endReason: game.endReason ?? null,
+  };
+  return { version: data.version, savedAt: data.savedAt, game: upgraded };
 }
 
 // ---------------------------------------------------------------------------
@@ -104,5 +117,23 @@ function isValidGame(v: unknown): v is GameState {
   if (v.lastCard !== null && !(isRecord(v.lastCard) && isDeck(v.lastCard.deck) && Number.isInteger(v.lastCard.card))) {
     return false;
   }
-  return Array.isArray(v.log);
+  if (!Array.isArray(v.log)) return false;
+  return areValidModeFields(v, playerCount);
+}
+
+/** The game-mode fields; all missing is fine (a save from before game modes). */
+function areValidModeFields(v: Rec, playerCount: number): boolean {
+  if (v.rules === undefined) return v.round === undefined && v.stats === undefined;
+  const { rules } = v;
+  if (!isRecord(rules) || !isBool(rules.festivals) || !isRecord(rules.mode)) return false;
+  const mode = rules.mode;
+  const modeOk =
+    mode.kind === 'classic' ||
+    (mode.kind === 'rounds' && isInt(mode.rounds, 1, 100)) ||
+    (mode.kind === 'time' && isInt(mode.minutes, 1, 240) && isInt(mode.endsAt, 0, Number.MAX_SAFE_INTEGER));
+  if (!modeOk || !isInt(v.round, 1, 10_000)) return false;
+  if (v.festival !== null && !(isRecord(v.festival) && FESTIVALS.includes(v.festival.id as never))) return false;
+  if (!Array.isArray(v.stats) || v.stats.length !== playerCount || !v.stats.every(isRecord)) return false;
+  if (!Array.isArray(v.worth) || !v.worth.every((row) => Array.isArray(row) && row.length === playerCount)) return false;
+  return v.endReason === null || v.endReason === 'lastStanding' || v.endReason === 'rounds' || v.endReason === 'time';
 }

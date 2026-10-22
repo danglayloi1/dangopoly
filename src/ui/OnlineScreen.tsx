@@ -8,6 +8,7 @@ import { FirstTurnResult } from './FirstTurnResult';
 import { GameTable } from './GameTable';
 import { LangSwitch, ThemeButton } from './Header';
 import { Lobby } from './Lobby';
+import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
 import { ViewerProvider } from './viewer';
 
@@ -57,6 +58,15 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
   // The dice for who goes first are shown once, at the start (before anyone has moved).
   const [showFirstTurn, setShowFirstTurn] = useState(room.firstTurn !== null && game.log.length <= 1);
   const myMove = seat !== null && whoseMove(game) === seat;
+
+  // Timed games: when this phone's clock says time is up, ask the room to end the game (it checks
+  // its own clock; the room also ends it by itself after the next move).
+  const timed = game.rules.mode.kind === 'time' && game.phase.kind !== 'gameOver';
+  const now = useNow(timed);
+  const timeUp = game.rules.mode.kind === 'time' && now >= game.rules.mode.endsAt && game.phase.kind === 'awaitRoll';
+  useEffect(() => {
+    if (timeUp && seat !== null && !presentation.busy) state.send({ t: 'act', action: { type: 'TIME_UP' } });
+  }, [timeUp, seat, presentation.busy]);
 
   // When it becomes this phone's move: a short buzz, and a mark in the tab title.
   useEffect(() => {

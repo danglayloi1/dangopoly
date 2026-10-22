@@ -3,6 +3,7 @@
 
 import type { PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
+import type { RulesChoice } from '../engine/game';
 import type { Action, Dice, GameState } from '../engine/types';
 
 /** What a player chooses in the lobby. */
@@ -22,7 +23,7 @@ export type ClientMessage =
   | { t: 'rejoin'; key: string } // take back a seat after reconnecting
   | { t: 'profile'; profile: Profile } // change name, token or color in the lobby
   | { t: 'leave' } // give up the seat (lobby only)
-  | { t: 'start'; startingCash: number; firstTurn: FirstTurn } // host only
+  | { t: 'start'; startingCash: number; firstTurn: FirstTurn; rules: RulesChoice } // host only
   | { t: 'act'; action: Action };
 
 /** One round of the "who goes first" dice; seats are numbered in the final playing order. */

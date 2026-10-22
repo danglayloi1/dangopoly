@@ -29,7 +29,14 @@ function Confetti() {
   );
 }
 
-export function WinnerPanel({ game, winner, onNewGame }: { game: GameState; winner: number; onNewGame: () => void }) {
+interface Props {
+  game: GameState;
+  winner: number;
+  onNewGame: () => void;
+  onSummary: () => void;
+}
+
+export function WinnerPanel({ game, winner, onNewGame, onSummary }: Props) {
   const { t } = useLang();
   const player = game.players[winner];
   const owned = Object.values(game.ownership).filter((o) => o.owner === winner);
@@ -40,12 +47,21 @@ export function WinnerPanel({ game, winner, onNewGame }: { game: GameState; winn
       <Confetti />
       <div className="winner">
         <TokenIcon token={player.token} color={playerColor(player)} size={72} />
-        <p className="winner-text">🏆 {t.winner(player.name)}</p>
+        {game.endReason === 'rounds' && game.rules.mode.kind === 'rounds' && (
+          <p className="winner-reason">{t.endByRounds(game.rules.mode.rounds)}</p>
+        )}
+        {game.endReason === 'time' && <p className="winner-reason">{t.endByTime}</p>}
+        <p className="winner-text">🏆 {game.endReason === 'lastStanding' || !game.endReason ? t.winner(player.name) : t.richestWins(player.name)}</p>
         <p className="winner-stats">{t.winnerStats(formatMoney(player.cash), owned.length, houses)}</p>
       </div>
-      <button className="primary big" onClick={onNewGame} autoFocus>
-        {t.playAgain}
-      </button>
+      <div className="action-buttons">
+        <button className="primary big" onClick={onSummary} autoFocus>
+          📊 {t.showSummary}
+        </button>
+        <button className="secondary" onClick={onNewGame}>
+          {t.playAgain}
+        </button>
+      </div>
     </div>
   );
 }

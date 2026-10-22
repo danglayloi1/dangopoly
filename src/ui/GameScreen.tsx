@@ -5,6 +5,7 @@ import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { GameTable } from './GameTable';
 import { clearSavedGame, saveGame } from './savedGame';
+import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
 import { TutorialBubble } from '../tutorial/TutorialBubble';
 import { useTutorial } from '../tutorial/useTutorial';
@@ -35,6 +36,16 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
   }, []);
   // In the tutorial, every move goes through it: it only lets through what the lesson asks for.
   const tutorial = useTutorial(tutorialMode, play, presentation.busy);
+
+  // Timed games: once the time is up, the game ends at the start of the next turn.
+  const timed = game.rules.mode.kind === 'time' && game.phase.kind !== 'gameOver';
+  const now = useNow(timed);
+  useEffect(() => {
+    const { mode } = game.rules;
+    if (mode.kind === 'time' && now >= mode.endsAt && game.phase.kind === 'awaitRoll' && !presentation.busy) {
+      play({ type: 'TIME_UP' });
+    }
+  }, [now, game, presentation.busy, play]);
 
   // Auto-save after every change (not during the tutorial); a finished game is removed.
   useEffect(() => {

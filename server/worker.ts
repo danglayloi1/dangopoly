@@ -128,10 +128,13 @@ export class GameRoom extends DurableObject<Env> {
       }
       case 'start':
         if (!room || seat === null) return this.error(ws, 'badMessage');
-        return this.apply(ws, Room.start(room, seat, msg.startingCash, msg.firstTurn === 'roll' ? 'roll' : 'inOrder', RANDOM));
+        return this.apply(
+          ws,
+          Room.start(room, seat, msg.startingCash, msg.firstTurn === 'roll' ? 'roll' : 'inOrder', RANDOM, msg.rules ?? undefined, Date.now()),
+        );
       case 'act':
         if (!room || seat === null) return this.error(ws, 'badMessage');
-        return this.apply(ws, Room.act(room, seat, msg.action));
+        return this.apply(ws, Room.act(room, seat, msg.action, Date.now()));
       default:
         return this.error(ws, 'badMessage');
     }

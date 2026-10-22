@@ -1,5 +1,15 @@
 import type { UiLang } from '../data/text';
+import type { FestivalId, PlayerStats } from '../engine/types';
+
+/** Festival amounts, already formatted (e.g. "1tr"). */
+export interface FestivalMoney {
+  gift: string;
+  bonus: string;
+  levy: string;
+  share: string;
+}
 import type { ErrorCode } from '../net/protocol';
+import type { TitleId } from '../ui/summary';
 import { ngheStrings } from './nghe';
 
 const vi = {
@@ -235,6 +245,93 @@ const vi = {
   jailCardName: 'Thẻ Ra tù miễn phí',
   close: 'Đóng',
 
+  // Game modes and festivals
+  gameMode: 'Kiểu ván',
+  modeClassic: 'Cổ điển',
+  modeRounds: 'Giới hạn vòng',
+  modeTime: 'Giới hạn giờ',
+  modeHints: {
+    classic: 'Chơi đến khi chỉ còn một người chưa phá sản.',
+    rounds: 'Hết số vòng thì người giàu nhất thắng (tiền + đất + nhà).',
+    time: 'Hết giờ thì người giàu nhất thắng (tiền + đất + nhà). Ván kết thúc ở đầu lượt kế tiếp.',
+  },
+  roundsChoice: (n: number) => `${n} vòng`,
+  minutesChoice: (n: number) => `${n} phút`,
+  festivalsLabel: 'Lễ hội xứ Nghệ',
+  festivalsHint: 'Cứ 3 vòng có một lễ hội, đổi một luật trong vòng đó.',
+  roundOf: (round: number, total: number | null) => (total ? `Vòng ${round}/${total}` : `Vòng ${round}`),
+  timeLeft: 'Thời gian còn lại',
+  festivalNames: {
+    denCuong: 'Lễ hội Đền Cuông',
+    langSen: 'Lễ hội Làng Sen',
+    gioLao: 'Mùa gió Lào',
+    chieuTrung: 'Lễ hội Đền Chiêu Trưng',
+    cuaLo: 'Lễ hội du lịch biển Cửa Lò',
+    muaCuoi: 'Mùa cưới',
+    nangNong: 'Nắng nóng tháng Sáu',
+    muaBao: 'Mùa mưa bão',
+    choPhien: 'Chợ phiên',
+    hoiVat: 'Hội vật làng',
+    anXa: 'Lễ ân xá',
+    duocMua: 'Năm được mùa',
+    hongSon: 'Lễ hội Đền Hồng Sơn',
+    dongGop: 'Góp tiền sửa đình làng',
+    tuongThan: 'Tương thân tương ái',
+    luaChin: 'Mùa lúa chín',
+  } satisfies Record<FestivalId, string>,
+  festivalEffect: (id: FestivalId, group: string, m: FestivalMoney): string =>
+    ({
+      denCuong: `Tiền thuê bộ ${group} gấp đôi trong vòng này.`,
+      langSen: 'Qua Xuất phát nhận gấp đôi trong vòng này.',
+      gioLao: 'Nắng gió quá, không ai xây nhà được trong vòng này.',
+      chieuTrung: `Ngân hàng lì xì mỗi người ${m.gift}.`,
+      cuaLo: 'Khách đông: tiền thuê các bãi biển gấp đôi trong vòng này.',
+      muaCuoi: 'Ai cũng đi ăn cưới: tiền thuê bến xe, cảng, ga, sân bay gấp đôi.',
+      nangNong: 'Quạt chạy suốt ngày: tiền thuê điện nước gấp đôi.',
+      muaBao: 'Khách vắng: mọi tiền thuê giảm một nửa trong vòng này.',
+      choPhien: 'Vật liệu rẻ: xây nhà chỉ tốn nửa giá.',
+      hoiVat: `Ai đổ đôi trong vòng này được thưởng ${m.bonus}.`,
+      anXa: 'Mọi người trong nhà tạm giữ được thả ra.',
+      duocMua: 'Không ai phải nộp thuế trong vòng này.',
+      hongSon: `Rút thẻ Cơ hội hay Khí vận được thêm ${m.bonus}.`,
+      dongGop: `Mỗi người góp ${m.levy} cho ngân hàng (thiếu thì góp hết tiền mặt).`,
+      tuongThan: `Mỗi người giúp người nghèo nhất ${m.share}.`,
+      luaChin: 'Chuộc lại đất không mất lãi 10% trong vòng này.',
+    })[id],
+  endByRounds: (n: number) => `Hết ${n} vòng!`,
+  endByTime: 'Hết giờ!',
+  richestWins: (name: string) => `${name} giàu nhất nên thắng!`,
+
+  // End-of-game summary
+  showSummary: 'Xem tổng kết',
+  summaryTitle: 'Tổng kết ván',
+  summaryRounds: (n: number) => `${n} vòng`,
+  worthChart: 'Tài sản qua từng vòng',
+  worth: 'Tổng tài sản',
+  titlesHeading: 'Danh hiệu',
+  statsHeading: 'Số liệu',
+  statNames: {
+    rentReceived: 'Tiền thuê đã thu',
+    rentPaid: 'Tiền thuê đã trả',
+    bought: 'Đất đã mua',
+    housesBuilt: 'Nhà đã xây',
+    laps: 'Lần qua Xuất phát',
+    doubles: 'Lần đổ đôi',
+    jailed: 'Lần vào nhà tạm giữ',
+    trades: 'Giao dịch',
+    cards: 'Thẻ đã rút',
+  } satisfies Record<keyof PlayerStats, string>,
+  titles: {
+    rentKing: { name: 'Vua thu tô', why: 'thu tiền thuê nhiều nhất' },
+    landlord: { name: 'Đại địa chủ', why: 'mua nhiều đất nhất' },
+    builder: { name: 'Ông trùm xây dựng', why: 'xây nhiều nhà nhất' },
+    generous: { name: 'Mạnh thường quân', why: 'trả tiền thuê nhiều nhất' },
+    luckyDice: { name: 'Thần đổ đôi', why: 'đổ đôi nhiều nhất' },
+    jailRegular: { name: 'Khách quen nhà tạm giữ', why: 'vào nhà tạm giữ nhiều nhất' },
+    trader: { name: 'Thương lái', why: 'giao dịch nhiều nhất' },
+    traveller: { name: 'Đi khắp xứ Nghệ', why: 'qua Xuất phát nhiều nhất' },
+  } satisfies Record<TitleId, { name: string; why: string }>,
+
   // Log
   log: {
     turnStarted: (p: string) => `Lượt của ${p}`,
@@ -276,6 +373,16 @@ const vi = {
     bankruptToPlayer: (p: string, to: string) => `${p} phá sản! Toàn bộ tài sản về tay ${to}`,
     bankruptToBank: (p: string) => `${p} phá sản! Tài sản trả về ngân hàng`,
     won: (p: string) => `${p} chiến thắng! 🏆`,
+    roundStarted: (round: number) => `— Vòng ${round} —`,
+    festival: (name: string, effect: string) => `🏮 ${name}: ${effect}`,
+    festivalGift: (amount: string) => `Mọi người nhận ${amount} lì xì`,
+    festivalBonus: (p: string, amount: string, reason: 'doubles' | 'card'): string =>
+      reason === 'doubles' ? `${p} đổ đôi, được thưởng ${amount}` : `${p} được thêm ${amount} nhờ lễ hội`,
+    festivalTaxFree: (p: string, space: string) => `${p} đến ${space}, năm được mùa nên không phải nộp`,
+    festivalAmnesty: (names: string) => `${names} được thả khỏi nhà tạm giữ`,
+    festivalLevy: (total: string) => `Mọi người góp tổng cộng ${total} sửa đình làng`,
+    festivalShare: (to: string, total: string) => `${to} nhận ${total} từ mọi người`,
+    limitReached: (reason: 'rounds' | 'time'): string => (reason === 'rounds' ? 'Hết số vòng!' : 'Hết giờ!'),
   },
 };
 
@@ -510,6 +617,93 @@ const en: Strings = {
   jailCardName: 'Get Out of Jail Free card',
   close: 'Close',
 
+  // Game modes and festivals
+  gameMode: 'Game type',
+  modeClassic: 'Classic',
+  modeRounds: 'Round limit',
+  modeTime: 'Time limit',
+  modeHints: {
+    classic: 'Play until only one player is left.',
+    rounds: 'After the last round, the richest player wins (cash + land + houses).',
+    time: 'When time is up, the richest player wins (cash + land + houses). The game ends at the start of the next turn.',
+  },
+  roundsChoice: (n) => `${n} rounds`,
+  minutesChoice: (n) => `${n} min`,
+  festivalsLabel: 'Nghệ Tĩnh festivals',
+  festivalsHint: 'Every 3 rounds, a festival changes one rule for that round.',
+  roundOf: (round, total) => (total ? `Round ${round}/${total}` : `Round ${round}`),
+  timeLeft: 'Time left',
+  festivalNames: {
+    denCuong: 'Đền Cuông Festival',
+    langSen: 'Làng Sen Festival',
+    gioLao: 'Laos Wind Season',
+    chieuTrung: 'Đền Chiêu Trưng Festival',
+    cuaLo: 'Cửa Lò Beach Festival',
+    muaCuoi: 'Wedding Season',
+    nangNong: 'June Heatwave',
+    muaBao: 'Storm Season',
+    choPhien: 'Market Day',
+    hoiVat: 'Village Wrestling Festival',
+    anXa: 'Amnesty Day',
+    duocMua: 'Bumper Harvest',
+    hongSon: 'Đền Hồng Sơn Festival',
+    dongGop: 'Village Hall Repairs',
+    tuongThan: 'Helping Hands',
+    luaChin: 'Harvest Time',
+  },
+  festivalEffect: (id, group, m) =>
+    ({
+      denCuong: `Rent on the ${group} set is doubled this round.`,
+      langSen: 'Passing Xuất phát pays double this round.',
+      gioLao: 'Too hot and windy: no building this round.',
+      chieuTrung: `The bank gives every player ${m.gift}.`,
+      cuaLo: 'Crowds at the sea: rent on every beach is doubled this round.',
+      muaCuoi: 'Everyone travels to weddings: transport rent is doubled.',
+      nangNong: 'Fans run all day: utility rent is doubled.',
+      muaBao: 'Few visitors: all rent is halved this round.',
+      choPhien: 'Cheap materials: houses cost half.',
+      hoiVat: `Rolling doubles this round wins ${m.bonus}.`,
+      anXa: 'Everyone in jail is set free.',
+      duocMua: 'Nobody pays tax this round.',
+      hongSon: `Drawing a Cơ hội or Khí vận card also gives ${m.bonus}.`,
+      dongGop: `Everyone gives ${m.levy} to the bank (or all their cash, if less).`,
+      tuongThan: `Everyone gives the poorest player ${m.share}.`,
+      luaChin: 'Lifting a mortgage costs no 10% interest this round.',
+    })[id],
+  endByRounds: (n) => `${n} rounds played!`,
+  endByTime: "Time's up!",
+  richestWins: (name) => `${name} is the richest and wins!`,
+
+  // End-of-game summary
+  showSummary: 'See the summary',
+  summaryTitle: 'Game summary',
+  summaryRounds: (n) => `${n} rounds`,
+  worthChart: 'Wealth, round by round',
+  worth: 'Total wealth',
+  titlesHeading: 'Titles',
+  statsHeading: 'Stats',
+  statNames: {
+    rentReceived: 'Rent collected',
+    rentPaid: 'Rent paid',
+    bought: 'Land bought',
+    housesBuilt: 'Houses built',
+    laps: 'Laps past Xuất phát',
+    doubles: 'Doubles rolled',
+    jailed: 'Times in jail',
+    trades: 'Trades',
+    cards: 'Cards drawn',
+  },
+  titles: {
+    rentKing: { name: 'Rent King', why: 'collected the most rent' },
+    landlord: { name: 'Great Landlord', why: 'bought the most land' },
+    builder: { name: 'Building Tycoon', why: 'built the most houses' },
+    generous: { name: 'Big-Hearted Patron', why: 'paid the most rent' },
+    luckyDice: { name: 'Lord of Doubles', why: 'rolled the most doubles' },
+    jailRegular: { name: 'Jail Regular', why: 'went to jail the most' },
+    trader: { name: 'Merchant', why: 'made the most trades' },
+    traveller: { name: 'Wanderer of Nghệ Tĩnh', why: 'passed Xuất phát the most' },
+  },
+
   log: {
     turnStarted: (p) => `${p}'s turn`,
     rolled: (p, a, b) => `${p} rolled ${a} + ${b}`,
@@ -547,6 +741,16 @@ const en: Strings = {
     bankruptToPlayer: (p, to) => `${p} went bankrupt! Everything goes to ${to}`,
     bankruptToBank: (p) => `${p} went bankrupt! Property returns to the bank`,
     won: (p) => `${p} wins! 🏆`,
+    roundStarted: (round) => `— Round ${round} —`,
+    festival: (name, effect) => `🏮 ${name}: ${effect}`,
+    festivalGift: (amount) => `Everyone gets ${amount} lucky money`,
+    festivalBonus: (p, amount, reason) =>
+      reason === 'doubles' ? `${p} rolled doubles and wins ${amount}` : `${p} gets ${amount} extra from the festival`,
+    festivalTaxFree: (p, space) => `${p} lands on ${space}: a bumper harvest, so no tax`,
+    festivalAmnesty: (names) => `${names} set free from jail`,
+    festivalLevy: (total) => `Everyone gave ${total} in total for the village hall`,
+    festivalShare: (to, total) => `${to} receives ${total} from everyone`,
+    limitReached: (reason) => (reason === 'rounds' ? 'Last round played!' : "Time's up!"),
   },
 };
 

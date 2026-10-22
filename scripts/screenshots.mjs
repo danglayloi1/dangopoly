@@ -201,8 +201,13 @@ const scenes = {
       }
       game.ownership = {};
       game.phase = { kind: 'gameOver', winner: 0 };
+      game.endReason = 'lastStanding';
       game.log.push({ type: 'won', player: 0 });
     });
+    // The summary opens by itself at the end; close it to see the board.
+    await page.waitForSelector('dialog.summary-dialog');
+    await shot('summary');
+    await page.locator('dialog.summary-dialog').getByRole('button', { name: 'Đóng' }).click();
     await shot('winner');
 
     // A long game played at random through the real buttons, watching for errors.
@@ -552,6 +557,76 @@ const scenes = {
     await shot('offer-shown-to-minh');
     await click(/Từ chối/);
     await shot('after-reject');
+  },
+
+  /** Game types: a round limit with festivals (a festival round, the end, the summary) and a time limit. */
+  async modes({ page, shot, click, setup, act }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    await openFromMenu(page, /Chơi trên một máy/);
+    const inputs = page.locator('.player-row input');
+    await click(/Thêm người chơi/);
+    for (const [i, name] of ['Đăng', 'Lan', 'Minh'].entries()) await inputs.nth(i).fill(name);
+    await page.getByRole('radio', { name: 'Giới hạn vòng' }).click();
+    await page.getByRole('radio', { name: '10 vòng' }).click();
+    await page.getByLabel(/Lễ hội xứ Nghệ/).check();
+    await page.locator('.rules-picker').scrollIntoViewIfNeeded();
+    await shot('setup-round-limit');
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+
+    // A festival round, with some land owned.
+    await setup((game) => {
+      const give = (owner, ...spaces) => spaces.forEach((s) => (game.ownership[s] = { owner, houses: 0, mortgaged: false }));
+      give(0, 21, 23, 24);
+      give(1, 6, 8, 9);
+      give(2, 37, 39);
+      game.round = 3;
+      game.festival = { id: 'denCuong', group: 'red' };
+    });
+    await page.waitForSelector('.status-festival');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await shot('festival-round');
+
+    // Jump to the end of round 10 with a made-up history, then end the last turn.
+    await setup((game) => {
+      const rows = [];
+      for (let r = 0; r < 10; r++) rows.push([15e6 + r * 900e3 - (r % 3) * 400e3, 15e6 + Math.round(Math.sin(r) * 2e6), 15e6 - r * 600e3]);
+      game.worth = rows;
+      game.round = 10;
+      game.festival = null;
+      game.current = 2;
+      game.phase = { kind: 'awaitEndTurn' };
+      game.players[0].cash = 21e6;
+      game.stats = [
+        { rentPaid: 1.2e6, rentReceived: 4.5e6, jailed: 1, doubles: 3, bought: 5, housesBuilt: 4, laps: 3, trades: 1, cards: 4 },
+        { rentPaid: 2.1e6, rentReceived: 1.8e6, jailed: 3, doubles: 1, bought: 4, housesBuilt: 0, laps: 3, trades: 2, cards: 6 },
+        { rentPaid: 3.0e6, rentReceived: 0.6e6, jailed: 0, doubles: 2, bought: 2, housesBuilt: 0, laps: 4, trades: 1, cards: 3 },
+      ];
+    });
+    await act({ type: 'END_TURN' });
+    await page.waitForSelector('dialog.summary-dialog');
+    check(true, 'the round limit ends the game and the summary opens');
+    await shot('summary');
+    await page.locator('dialog.summary-dialog').getByRole('button', { name: 'Đóng' }).click();
+    await shot('winner-panel');
+
+    // A timed game: the clock in the status bar, then time runs out at the start of a turn.
+    await openFromMenu(page, /Chơi trên một máy/);
+    await inputs.nth(0).fill('Đăng');
+    await inputs.nth(1).fill('Lan');
+    await page.getByRole('radio', { name: 'Giới hạn giờ' }).click();
+    await startInListedOrder(page);
+    await page.waitForSelector('.status-clock');
+    await setup((game) => (game.rules.mode.endsAt = Date.now() + 45_000));
+    await page.waitForSelector('.status-clock.ending');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await shot('time-almost-up');
+    await setup((game) => (game.rules.mode.endsAt = Date.now() - 1));
+    await page.waitForSelector('dialog.summary-dialog', { timeout: 5_000 });
+    check(true, 'the time limit ends the game at the start of a turn');
+    check(errors === 0, `no errors on the page (${errors})`);
   },
 
   /**

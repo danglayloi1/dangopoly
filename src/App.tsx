@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createGame, type NewPlayer } from './engine/game';
+import { createGame, type NewPlayer, type RulesChoice } from './engine/game';
 import { isRoomCode, newRoomCode, normalizeRoomCode } from './net/protocol';
 import type { SaveFile } from './engine/save';
 import type { GameState } from './engine/types';
@@ -11,7 +11,7 @@ import { MusicPanel } from './ui/MusicPanel';
 import { OnlineCard } from './ui/OnlineCard';
 import { OnlineScreen } from './ui/OnlineScreen';
 import { ScreenTop } from './ui/Header';
-import { clearSavedGame, loadSavedGame } from './ui/savedGame';
+import { clearSavedGame, loadSavedGame, resumeClock } from './ui/savedGame';
 import { SettingsScreen } from './ui/SettingsScreen';
 import { SetupScreen } from './ui/SetupScreen';
 import { TitleScreen } from './ui/TitleScreen';
@@ -94,7 +94,8 @@ function Screens() {
     setGameNumber((n) => n + 1);
   };
 
-  const start = (players: NewPlayer[], startingCash: number) => play(createGame({ players, startingCash }));
+  const start = (players: NewPlayer[], startingCash: number, rules: RulesChoice) =>
+    play(createGame({ players, startingCash, rules }));
 
   // A new room's link only goes in the address once the room exists (see onCreated).
   const openRoom = (code: string, creating: boolean) => {
@@ -175,7 +176,7 @@ function Screens() {
       return (
         <MenuScreen
           saved={saved}
-          onContinue={() => saved && play(saved.game)}
+          onContinue={() => saved && play(resumeClock(saved))}
           onDiscard={discardSaved}
           onLocal={() => go('local')}
           onOnline={() => go('online')}

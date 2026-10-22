@@ -32,3 +32,15 @@ export function clearSavedGame(): void {
     // nothing to do
   }
 }
+
+/**
+ * A saved game to continue. A time limit doesn't run while the game is closed: the end moves
+ * later by however long it was away (since the last save, i.e. the last move).
+ */
+export function resumeClock(save: SaveFile, now: number = Date.now()): GameState {
+  const { game } = save;
+  const { mode } = game.rules;
+  if (mode.kind !== 'time' || game.phase.kind === 'gameOver') return game;
+  const away = Math.max(0, now - Date.parse(save.savedAt));
+  return { ...game, rules: { ...game.rules, mode: { ...mode, endsAt: mode.endsAt + away } } };
+}
