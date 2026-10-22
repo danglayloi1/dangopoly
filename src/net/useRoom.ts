@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ROOM_SERVER } from './config';
 import { RoomConnection, type ConnectionStatus } from './connection';
-import type { ClientMessage, ErrorCode, RoomView } from './protocol';
+import type { ClientMessage, ErrorCode, ReactionId, RoomView } from './protocol';
 import { forgetSeat, rememberSeat, seatKeyFor } from './seats';
+
+/** A reaction someone sent, shown for a few seconds. */
+export interface ShownReaction {
+  id: number;
+  seat: number;
+  reaction: ReactionId;
+}
+
+const REACTION_SHOWN_MS = 3_000;
 
 export interface RoomState {
   status: ConnectionStatus;
+  reactions: ShownReaction[];
   room: RoomView | null;
   error: ErrorCode | null; // the last refusal, shown until the next message is sent
   missing: boolean; // there's no room with this code
@@ -22,6 +32,8 @@ export function useRoom(code: string, creating: boolean): RoomState {
   const [room, setRoom] = useState<RoomView | null>(null);
   const [error, setError] = useState<ErrorCode | null>(null);
   const [missing, setMissing] = useState(false);
+  const [reactions, setReactions] = useState<ShownReaction[]>([]);
+  const nextReaction = useRef(0);
   const connection = useRef<RoomConnection | null>(null);
   const waitingToCreate = useRef(creating);
 
@@ -42,6 +54,10 @@ export function useRoom(code: string, creating: boolean): RoomState {
         } else if (msg.t === 'room') {
           setRoom(msg.room);
           setMissing(false);
+        } else if (msg.t === 'reaction') {
+          const shown = { id: nextReaction.current++, seat: msg.seat, reaction: msg.reaction };
+          setReactions((list) => [...list.slice(-5), shown]);
+          setTimeout(() => setReactions((list) => list.filter((r) => r !== shown)), REACTION_SHOWN_MS);
         } else if (msg.code === 'badSeatKey') {
           forgetSeat(code); // that seat is gone (left the lobby, or the room was replaced)
           look();
@@ -63,5 +79,5 @@ export function useRoom(code: string, creating: boolean): RoomState {
     connection.current?.send(msg);
   }, []);
 
-  return { status, room, error, missing, send };
+  return { status, room, error, missing, send, reactions };
 }

@@ -750,6 +750,13 @@ const scenes = {
     }
     check(oneAtATime, 'at every step exactly one phone has buttons');
 
+    // A quick reaction from Lan floats up on every phone.
+    await button(lan, 'Thả cảm xúc').click();
+    await lan.page.getByRole('button', { name: 'Răng rứa?' }).click();
+    for (const p of phones) await p.page.locator('.reaction-bubble', { hasText: 'Răng rứa?' }).waitFor();
+    check(true, "Lan's reaction shows on every phone");
+    await together('reaction');
+
     // Lan's phone drops out; the others see it; she comes back to her seat from the link.
     await lan.page.close();
     await dang.page.waitForSelector('.badge-away');

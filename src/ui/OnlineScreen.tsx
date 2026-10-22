@@ -8,9 +8,11 @@ import { FirstTurnResult } from './FirstTurnResult';
 import { GameTable } from './GameTable';
 import { LangSwitch, ThemeButton } from './Header';
 import { Lobby } from './Lobby';
+import { Reactions } from './Reactions';
 import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
 import { ViewerProvider } from './viewer';
+import type { NextGame } from './WinnerPanel';
 
 interface Props {
   code: string;
@@ -79,6 +81,10 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
     };
   }, [myMove, t.yourTurn]);
 
+  // After the game the host can open a new one in the same room; the others wait for that.
+  const next: NextGame | undefined =
+    seat === null ? undefined : seat === room.host ? { label: t.rematch, onClick: () => state.send({ t: 'rematch' }) } : { note: t.waitingRematch(room.seats[room.host].name) };
+
   const status = (
     <span className={`room-chip${state.status === 'open' ? '' : ' warn'}`} title={t.roomTitle(room.code)}>
       {state.status === 'open' ? (seat === null ? `👀 ${t.watching} · ${room.code}` : room.code) : t.reconnecting}
@@ -87,12 +93,17 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
 
   return (
     <ViewerProvider value={{ online: true, seat, connected: room.seats.map((s) => s.online) }}>
-      <GameTable game={game} dispatch={dispatch} presentation={presentation} onLeave={onLeave} headerExtra={status}>
+      <GameTable game={game} dispatch={dispatch} presentation={presentation} onLeave={onLeave} headerExtra={status} next={next}>
         {state.error && state.error !== 'notAllowed' && (
           <p className="online-toast" role="alert">
             {t.onlineErrors[state.error]}
           </p>
         )}
+        <Reactions
+          room={room}
+          reactions={state.reactions}
+          onSend={seat === null ? null : (reaction) => state.send({ t: 'react', reaction })}
+        />
         {showFirstTurn && room.firstTurn && (
           <FirstTurnResult rounds={room.firstTurn} seats={room.seats} onClose={() => setShowFirstTurn(false)} />
         )}

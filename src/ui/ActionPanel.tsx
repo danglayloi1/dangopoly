@@ -13,7 +13,7 @@ import { GROUP_COLORS, playerColor, spaceIcon } from './look';
 import { TokenIcon } from './TokenIcon';
 import { TradeOfferPanel } from './TradeOfferPanel';
 import { useMayAct, useViewer } from './viewer';
-import { WinnerPanel } from './WinnerPanel';
+import { WinnerPanel, type NextGame } from './WinnerPanel';
 
 interface Props {
   game: GameState;
@@ -21,14 +21,14 @@ interface Props {
   onShowSpace: (index: number) => void;
   onManage: () => void;
   onTrade: () => void;
-  onNewGame: () => void;
+  next: NextGame;
   onSummary: () => void;
   busy: boolean; // a move is being animated: show only the turn and the dice
   rolling: boolean;
 }
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
-export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, onNewGame, onSummary, busy, rolling }: Props) {
+export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, next, onSummary, busy, rolling }: Props) {
   const { t, lang, uiLang } = useLang();
   const { phase } = game;
   const player = game.players[game.current];
@@ -75,7 +75,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
   }
 
   if (phase.kind === 'gameOver') {
-    return <WinnerPanel game={game} winner={phase.winner} onNewGame={onNewGame} onSummary={onSummary} />;
+    return <WinnerPanel game={game} winner={phase.winner} next={next} onSummary={onSummary} />;
   }
 
   return (

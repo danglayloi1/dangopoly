@@ -24,7 +24,9 @@ export type ClientMessage =
   | { t: 'profile'; profile: Profile } // change name, token or color in the lobby
   | { t: 'leave' } // give up the seat (lobby only)
   | { t: 'start'; startingCash: number; firstTurn: FirstTurn; rules: RulesChoice } // host only
-  | { t: 'act'; action: Action };
+  | { t: 'act'; action: Action }
+  | { t: 'react'; reaction: ReactionId } // a quick reaction, shown on every phone
+  | { t: 'rematch' }; // host, after the game: back to the lobby with everyone still seated
 
 /** One round of the "who goes first" dice; seats are numbered in the final playing order. */
 export type FirstTurnRound = { seat: number; dice: Dice }[];
@@ -64,7 +66,25 @@ export type ErrorCode =
 export type ServerMessage =
   | { t: 'welcome'; seat: number; key: string } // keep the key to rejoin this seat
   | { t: 'room'; room: RoomView }
-  | { t: 'error'; code: ErrorCode };
+  | { t: 'error'; code: ErrorCode }
+  | { t: 'reaction'; seat: number; reaction: ReactionId };
+
+/** Quick reactions: a few emoji and some Nghệ phrases. */
+export const REACTIONS = {
+  laugh: '😂',
+  clap: '👏',
+  shock: '😱',
+  cry: '😭',
+  fire: '🔥',
+  rangRua: 'Răng rứa?',
+  gioiRua: 'Giỏi rứa!',
+  meOi: 'Mệ ơi!',
+  chiRua: 'Chi rứa trời!',
+} as const;
+
+export type ReactionId = keyof typeof REACTIONS;
+
+export const isReactionId = (v: unknown): v is ReactionId => typeof v === 'string' && Object.hasOwn(REACTIONS, v);
 
 export const MAX_MESSAGE_BYTES = 8 * 1024;
 

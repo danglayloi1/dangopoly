@@ -156,6 +156,13 @@ export function start(
   return ok({ ...room, seats, host, game, firstTurn: firstTurn === 'roll' ? rounds : null });
 }
 
+/** After a game, the host takes the room back to the lobby: same seats, choices and host; a new game can start. */
+export function rematch(room: RoomState, seat: number): Result<RoomState> {
+  if (seat !== room.host) return fail('notHost');
+  if (room.game?.phase.kind !== 'gameOver') return fail('notAllowed');
+  return ok({ ...room, game: null, firstTurn: null });
+}
+
 /**
  * A move from the phone in `seat`. Dice always come from the server's own random numbers. In timed
  * games anyone may say the time is up, but only the room's clock decides; and once it is up, the

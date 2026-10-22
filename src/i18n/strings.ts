@@ -91,6 +91,9 @@ const vi = {
   yourTurn: 'Lượt của bạn!',
   waitingAnswer: (name: string) => `Đang chờ ${name} trả lời…`,
   watching: 'Đang xem',
+  reactionsLabel: 'Thả cảm xúc',
+  rematch: 'Ván mới cùng phòng',
+  waitingRematch: (name: string) => `Chờ ${name} mở ván mới…`,
   onlineErrors: {
     noRoom: 'Không có phòng này.',
     codeTaken: 'Mã phòng bị trùng, hãy tạo phòng lại.',
@@ -436,6 +439,9 @@ const en: Strings = {
   yourTurn: 'Your turn!',
   waitingAnswer: (name: string) => `Waiting for ${name} to answer…`,
   watching: 'Watching',
+  reactionsLabel: 'React',
+  rematch: 'New game, same room',
+  waitingRematch: (name) => `Waiting for ${name} to start a new game…`,
   onlineErrors: {
     noRoom: 'There is no such room.',
     codeTaken: 'That room code is taken; create the room again.',
