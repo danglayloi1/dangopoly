@@ -1,5 +1,13 @@
 import type { UiLang } from '../data/text';
 import type { FestivalId, PlayerStats } from '../engine/types';
+
+/** Festival amounts, already formatted (e.g. "1tr"). */
+export interface FestivalMoney {
+  gift: string;
+  bonus: string;
+  levy: string;
+  share: string;
+}
 import type { ErrorCode } from '../net/protocol';
 import type { TitleId } from '../ui/summary';
 import { ngheStrings } from './nghe';
@@ -258,13 +266,37 @@ const vi = {
     langSen: 'Lễ hội Làng Sen',
     gioLao: 'Mùa gió Lào',
     chieuTrung: 'Lễ hội Đền Chiêu Trưng',
+    cuaLo: 'Lễ hội du lịch biển Cửa Lò',
+    muaCuoi: 'Mùa cưới',
+    nangNong: 'Nắng nóng tháng Sáu',
+    muaBao: 'Mùa mưa bão',
+    choPhien: 'Chợ phiên',
+    hoiVat: 'Hội vật làng',
+    anXa: 'Lễ ân xá',
+    duocMua: 'Năm được mùa',
+    hongSon: 'Lễ hội Đền Hồng Sơn',
+    dongGop: 'Góp tiền sửa đình làng',
+    tuongThan: 'Tương thân tương ái',
+    luaChin: 'Mùa lúa chín',
   } satisfies Record<FestivalId, string>,
-  festivalEffect: (id: FestivalId, group: string, gift: string) =>
+  festivalEffect: (id: FestivalId, group: string, m: FestivalMoney): string =>
     ({
       denCuong: `Tiền thuê bộ ${group} gấp đôi trong vòng này.`,
       langSen: 'Qua Xuất phát nhận gấp đôi trong vòng này.',
       gioLao: 'Nắng gió quá, không ai xây nhà được trong vòng này.',
-      chieuTrung: `Ngân hàng lì xì mỗi người ${gift}.`,
+      chieuTrung: `Ngân hàng lì xì mỗi người ${m.gift}.`,
+      cuaLo: 'Khách đông: tiền thuê các bãi biển gấp đôi trong vòng này.',
+      muaCuoi: 'Ai cũng đi ăn cưới: tiền thuê bến xe, cảng, ga, sân bay gấp đôi.',
+      nangNong: 'Quạt chạy suốt ngày: tiền thuê điện nước gấp đôi.',
+      muaBao: 'Khách vắng: mọi tiền thuê giảm một nửa trong vòng này.',
+      choPhien: 'Vật liệu rẻ: xây nhà chỉ tốn nửa giá.',
+      hoiVat: `Ai đổ đôi trong vòng này được thưởng ${m.bonus}.`,
+      anXa: 'Mọi người trong nhà tạm giữ được thả ra.',
+      duocMua: 'Không ai phải nộp thuế trong vòng này.',
+      hongSon: `Rút thẻ Cơ hội hay Khí vận được thêm ${m.bonus}.`,
+      dongGop: `Mỗi người góp ${m.levy} cho ngân hàng (thiếu thì góp hết tiền mặt).`,
+      tuongThan: `Mỗi người giúp người nghèo nhất ${m.share}.`,
+      luaChin: 'Chuộc lại đất không mất lãi 10% trong vòng này.',
     })[id],
   endByRounds: (n: number) => `Hết ${n} vòng!`,
   endByTime: 'Hết giờ!',
@@ -344,6 +376,12 @@ const vi = {
     roundStarted: (round: number) => `— Vòng ${round} —`,
     festival: (name: string, effect: string) => `🏮 ${name}: ${effect}`,
     festivalGift: (amount: string) => `Mọi người nhận ${amount} lì xì`,
+    festivalBonus: (p: string, amount: string, reason: 'doubles' | 'card'): string =>
+      reason === 'doubles' ? `${p} đổ đôi, được thưởng ${amount}` : `${p} được thêm ${amount} nhờ lễ hội`,
+    festivalTaxFree: (p: string, space: string) => `${p} đến ${space}, năm được mùa nên không phải nộp`,
+    festivalAmnesty: (names: string) => `${names} được thả khỏi nhà tạm giữ`,
+    festivalLevy: (total: string) => `Mọi người góp tổng cộng ${total} sửa đình làng`,
+    festivalShare: (to: string, total: string) => `${to} nhận ${total} từ mọi người`,
     limitReached: (reason: 'rounds' | 'time'): string => (reason === 'rounds' ? 'Hết số vòng!' : 'Hết giờ!'),
   },
 };
@@ -600,13 +638,37 @@ const en: Strings = {
     langSen: 'Làng Sen Festival',
     gioLao: 'Laos Wind Season',
     chieuTrung: 'Đền Chiêu Trưng Festival',
+    cuaLo: 'Cửa Lò Beach Festival',
+    muaCuoi: 'Wedding Season',
+    nangNong: 'June Heatwave',
+    muaBao: 'Storm Season',
+    choPhien: 'Market Day',
+    hoiVat: 'Village Wrestling Festival',
+    anXa: 'Amnesty Day',
+    duocMua: 'Bumper Harvest',
+    hongSon: 'Đền Hồng Sơn Festival',
+    dongGop: 'Village Hall Repairs',
+    tuongThan: 'Helping Hands',
+    luaChin: 'Harvest Time',
   },
-  festivalEffect: (id, group, gift) =>
+  festivalEffect: (id, group, m) =>
     ({
       denCuong: `Rent on the ${group} set is doubled this round.`,
       langSen: 'Passing Xuất phát pays double this round.',
       gioLao: 'Too hot and windy: no building this round.',
-      chieuTrung: `The bank gives every player ${gift}.`,
+      chieuTrung: `The bank gives every player ${m.gift}.`,
+      cuaLo: 'Crowds at the sea: rent on every beach is doubled this round.',
+      muaCuoi: 'Everyone travels to weddings: transport rent is doubled.',
+      nangNong: 'Fans run all day: utility rent is doubled.',
+      muaBao: 'Few visitors: all rent is halved this round.',
+      choPhien: 'Cheap materials: houses cost half.',
+      hoiVat: `Rolling doubles this round wins ${m.bonus}.`,
+      anXa: 'Everyone in jail is set free.',
+      duocMua: 'Nobody pays tax this round.',
+      hongSon: `Drawing a Cơ hội or Khí vận card also gives ${m.bonus}.`,
+      dongGop: `Everyone gives ${m.levy} to the bank (or all their cash, if less).`,
+      tuongThan: `Everyone gives the poorest player ${m.share}.`,
+      luaChin: 'Lifting a mortgage costs no 10% interest this round.',
     })[id],
   endByRounds: (n) => `${n} rounds played!`,
   endByTime: "Time's up!",
@@ -682,6 +744,12 @@ const en: Strings = {
     roundStarted: (round) => `— Round ${round} —`,
     festival: (name, effect) => `🏮 ${name}: ${effect}`,
     festivalGift: (amount) => `Everyone gets ${amount} lucky money`,
+    festivalBonus: (p, amount, reason) =>
+      reason === 'doubles' ? `${p} rolled doubles and wins ${amount}` : `${p} gets ${amount} extra from the festival`,
+    festivalTaxFree: (p, space) => `${p} lands on ${space}: a bumper harvest, so no tax`,
+    festivalAmnesty: (names) => `${names} set free from jail`,
+    festivalLevy: (total) => `Everyone gave ${total} in total for the village hall`,
+    festivalShare: (to, total) => `${to} receives ${total} from everyone`,
     limitReached: (reason) => (reason === 'rounds' ? 'Last round played!' : "Time's up!"),
   },
 };

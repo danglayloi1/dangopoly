@@ -80,7 +80,23 @@ export interface Rules {
   festivals: boolean; // every few rounds, a local festival changes one rule for a round
 }
 
-export type FestivalId = 'denCuong' | 'langSen' | 'gioLao' | 'chieuTrung';
+export type FestivalId =
+  | 'denCuong'
+  | 'langSen'
+  | 'gioLao'
+  | 'chieuTrung'
+  | 'cuaLo'
+  | 'muaCuoi'
+  | 'nangNong'
+  | 'muaBao'
+  | 'choPhien'
+  | 'hoiVat'
+  | 'anXa'
+  | 'duocMua'
+  | 'hongSon'
+  | 'dongGop'
+  | 'tuongThan'
+  | 'luaChin';
 
 /** The festival of the current round; group is the color set it doubles the rent of (Đền Cuông). */
 export interface Festival {
@@ -164,6 +180,11 @@ export type LogEntry =
   | { type: 'roundStarted'; round: number }
   | { type: 'festival'; festival: Festival; round: number }
   | { type: 'festivalGift'; amount: number }
+  | { type: 'festivalBonus'; player: number; amount: number; reason: 'doubles' | 'card' }
+  | { type: 'festivalTaxFree'; player: number; space: number }
+  | { type: 'festivalAmnesty'; players: number[] }
+  | { type: 'festivalLevy'; total: number }
+  | { type: 'festivalShare'; to: number; total: number }
   | { type: 'limitReached'; reason: 'rounds' | 'time' };
 
 export interface GameState {

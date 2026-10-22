@@ -13,11 +13,23 @@ import {
 import { CARDS, type CardDeck } from '../data/cards';
 import { defaultPlayerColor, type PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
-import { houseCost, houseRefund, isPropertyActionAllowed, mortgageValue, unmortgageCost } from './buildings';
+import { houseRefund, isPropertyActionAllowed, mortgageValue } from './buildings';
 import { jailFreeCardIndex, shuffledDeck } from './deck';
 import { rentFor } from './rent';
 import { rollDie } from './rng';
-import { emptyStats, endByWorth, festivalRentMultiplier, salaryFor, startNextRound, worthOfAll } from './rounds';
+import {
+  buildCost,
+  cardPrize,
+  doublesPrize,
+  emptyStats,
+  endByWorth,
+  festivalRentMultiplier,
+  salaryFor,
+  startNextRound,
+  taxFree,
+  unmortgagePrice,
+  worthOfAll,
+} from './rounds';
 import { normalizeOffer, offerProblem, tradeProblem } from './trading';
 import type {
   Action,
@@ -278,6 +290,11 @@ function roll(s: GameState, forced?: Dice): void {
   s.dice = dice;
   s.lastCard = null;
   s.log.push({ type: 'rolled', player: player.id, dice });
+  const prize = doubles ? doublesPrize(s) : 0;
+  if (prize > 0) {
+    player.cash += prize;
+    s.log.push({ type: 'festivalBonus', player: player.id, amount: prize, reason: 'doubles' });
+  }
 
   if (player.inJail) {
     rollInJail(s, player, doubles);
@@ -416,7 +433,7 @@ function manageProperty(s: GameState, action: PropertyAction): void {
 
   switch (action.type) {
     case 'BUILD_HOUSE': {
-      const cost = houseCost(space);
+      const cost = buildCost(s, space);
       player.cash -= cost;
       own.houses++;
       s.stats[player.id].housesBuilt++;
@@ -438,7 +455,7 @@ function manageProperty(s: GameState, action: PropertyAction): void {
       break;
     }
     case 'UNMORTGAGE': {
-      const amount = unmortgageCost(space);
+      const amount = unmortgagePrice(s, space);
       player.cash -= amount;
       own.mortgaged = false;
       s.log.push({ type: 'unmortgaged', player: player.id, space, amount });
@@ -527,6 +544,11 @@ function drawCard(s: GameState, player: Player, deck: CardDeck): void {
   s.lastCard = { deck, card };
   s.stats[player.id].cards++;
   s.log.push({ type: 'drewCard', player: player.id, deck, card });
+  const prize = cardPrize(s);
+  if (prize > 0) {
+    player.cash += prize;
+    s.log.push({ type: 'festivalBonus', player: player.id, amount: prize, reason: 'card' });
+  }
   if (effect.kind !== 'jailFree') s.decks[deck].push(card); // back under the deck
 
   const others = s.players.filter((p) => p.id !== player.id && !p.bankrupt);
@@ -651,12 +673,16 @@ function resolveLanding(s: GameState, player: Player, options: RentOptions = {})
         const rent =
           space.kind === 'utility' && options.utilityPerPip
             ? diceTotal * options.utilityPerPip
-            : rentFor(s, index, diceTotal) * (options.rentMultiplier ?? 1) * festivalRentMultiplier(s, index);
+            : Math.round(rentFor(s, index, diceTotal) * (options.rentMultiplier ?? 1) * festivalRentMultiplier(s, index));
         if (rent > 0 && !charge(s, player.id, own.owner, rent, { kind: 'rent', space: index })) return;
       }
       break;
     }
     case 'tax':
+      if (taxFree(s)) {
+        s.log.push({ type: 'festivalTaxFree', player: player.id, space: index });
+        break;
+      }
       if (!charge(s, player.id, null, space.amount, { kind: 'tax', space: index })) return;
       break;
     case 'goToJail':

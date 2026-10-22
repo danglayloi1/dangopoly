@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { canBuildHouse } from '../src/engine/buildings';
 import { applyAction, createGame, GameError, legalActions, type RulesChoice } from '../src/engine/game';
-import { FESTIVAL_GIFT, worthOf } from '../src/engine/rounds';
+import { BOARD } from '../src/data/board';
+import { FESTIVAL_GIFT, FESTIVALS, worthOf } from '../src/engine/rounds';
+import { STRINGS } from '../src/i18n/strings';
+import { festivalText } from '../src/ui/logText';
 import { parseSave, SAVE_VERSION, serializeGame } from '../src/engine/save';
 import type { Action, GameState } from '../src/engine/types';
 import { awards } from '../src/ui/summary';
@@ -189,5 +192,127 @@ describe('saves', () => {
     expect(game?.rules).toEqual({ mode: { kind: 'classic' }, festivals: false });
     expect(game?.round).toBe(1);
     expect(game?.stats).toHaveLength(2);
+  });
+});
+
+describe('more festivals', () => {
+  const firstOf = (kind: string, from = 0) => BOARD.findIndex((s, i) => i >= from && s.kind === kind);
+  const beach = BOARD.findIndex((s) => s.name.vi === 'Biển Cửa Lò');
+
+  /** Lan owns `space`; Đăng lands on it (from 3 spaces before, rolling 1 + 2). Returns the rent paid. */
+  function rentOn(space: number, festival: GameState['festival']): number {
+    const s = newGame();
+    s.ownership[space] = { owner: 1, houses: 0, mortgaged: false };
+    s.players[0].position = space - 3;
+    s.festival = festival;
+    return play(s, { type: 'ROLL', dice: [1, 2] }).stats[0].rentPaid;
+  }
+
+  it('Cửa Lò: rent ×2 on the beaches only', () => {
+    expect(rentOn(beach, { id: 'cuaLo', group: null })).toBe(2 * rentOn(beach, null));
+    expect(rentOn(6, { id: 'cuaLo', group: null })).toBe(rentOn(6, null));
+  });
+
+  it('Mùa cưới: transport rent ×2; Nắng nóng: utility rent ×2', () => {
+    const transport = firstOf('transport');
+    const utility = firstOf('utility');
+    expect(rentOn(transport, { id: 'muaCuoi', group: null })).toBe(2 * rentOn(transport, null));
+    expect(rentOn(utility, { id: 'nangNong', group: null })).toBe(2 * rentOn(utility, null));
+  });
+
+  it('Mùa mưa bão: all rent halved', () => {
+    expect(rentOn(6, { id: 'muaBao', group: null })).toBe(rentOn(6, null) / 2);
+  });
+
+  it('Chợ phiên: houses cost half', () => {
+    const s = newGame();
+    s.ownership[1] = { owner: 0, houses: 0, mortgaged: false };
+    s.ownership[3] = { owner: 0, houses: 0, mortgaged: false };
+    s.festival = { id: 'choPhien', group: null };
+    const built = play(s, { type: 'BUILD_HOUSE', space: 1 });
+    expect(s.players[0].cash - built.players[0].cash).toBe(250_000); // a 500k house
+  });
+
+  it('Mùa lúa chín: lifting a mortgage costs no interest', () => {
+    const s = newGame();
+    s.ownership[3] = { owner: 0, houses: 0, mortgaged: true }; // 600k: loan 300k
+    const normal = play(s, { type: 'UNMORTGAGE', space: 3 });
+    s.festival = { id: 'luaChin', group: null };
+    const harvest = play(s, { type: 'UNMORTGAGE', space: 3 });
+    expect(s.players[0].cash - normal.players[0].cash).toBe(330_000);
+    expect(s.players[0].cash - harvest.players[0].cash).toBe(300_000);
+  });
+
+  it('Hội vật làng: doubles win a prize', () => {
+    const s = newGame();
+    s.festival = { id: 'hoiVat', group: null };
+    const after = play(s, { type: 'ROLL', dice: [2, 2] });
+    expect(after.log).toContainEqual({ type: 'festivalBonus', player: 0, amount: 500_000, reason: 'doubles' });
+  });
+
+  it('Năm được mùa: no tax', () => {
+    const tax = firstOf('tax');
+    const s = newGame();
+    s.players[0].position = tax - 3;
+    s.festival = { id: 'duocMua', group: null };
+    const after = play(s, { type: 'ROLL', dice: [1, 2] });
+    expect(after.players[0].cash).toBe(15_000_000);
+    expect(after.log).toContainEqual({ type: 'festivalTaxFree', player: 0, space: tax });
+  });
+
+  it('Đền Hồng Sơn: drawing a card comes with a prize', () => {
+    const card = firstOf('card', 3);
+    const s = newGame();
+    s.players[0].position = card - 3;
+    s.festival = { id: 'hongSon', group: null };
+    const after = play(s, { type: 'ROLL', dice: [1, 2] });
+    expect(after.log).toContainEqual({ type: 'festivalBonus', player: 0, amount: 500_000, reason: 'card' });
+  });
+
+  /**
+   * Plays two-player games with festivals to the start of round 3, trying seeds until that round's
+   * festival is `id`; `prepare` sets things up just before (e.g. someone in jail).
+   */
+  function round3With(id: string, prepare: (s: GameState) => void): GameState {
+    for (let seed = 1; seed < 1000; seed++) {
+      let s = createGame({ players: PLAYERS.map((p) => ({ ...p })), seed, rules: { mode: { kind: 'classic' }, festivals: true } });
+      s = endTurn(endTurn(s)); // round 2
+      s = endTurn(s);
+      prepare(s);
+      s = endTurn(s); // round 3 starts
+      if (s.festival?.id === id) return s;
+    }
+    throw new Error(`no seed brings ${id}`);
+  }
+
+  it('Lễ ân xá: everyone in jail is set free', () => {
+    const s = round3With('anXa', (g) => {
+      g.players[1].inJail = true;
+      g.players[1].jailAttempts = 2;
+    });
+    expect(s.players[1].inJail).toBe(false);
+    expect(s.log).toContainEqual({ type: 'festivalAmnesty', players: [1] });
+  });
+
+  it('Góp tiền sửa đình làng: everyone gives 500k, or what they have', () => {
+    const s = round3With('dongGop', (g) => (g.players[1].cash = 200_000));
+    expect(s.players.map((p) => p.cash)).toEqual([14_500_000, 0]);
+    expect(s.log).toContainEqual({ type: 'festivalLevy', total: 700_000 });
+  });
+
+  it('Tương thân tương ái: everyone helps the poorest player', () => {
+    const s = round3With('tuongThan', (g) => (g.players[1].cash = 1_000_000));
+    expect(s.players.map((p) => p.cash)).toEqual([14_700_000, 1_300_000]);
+    expect(s.log).toContainEqual({ type: 'festivalShare', to: 1, total: 300_000 });
+  });
+
+  it('every festival has a name and an effect in every language', () => {
+    for (const lang of ['vi', 'nghe', 'en'] as const) {
+      for (const id of FESTIVALS) {
+        expect(STRINGS[lang].festivalNames[id]).toBeTruthy();
+        expect(festivalText({ id, group: 'red' }, lang)).toBeTruthy();
+      }
+    }
+    expect(FESTIVALS).toHaveLength(16);
   });
 });
