@@ -12,6 +12,7 @@ import { StatusBar } from './StatusBar';
 import { SummaryDialog } from './SummaryDialog';
 import { TradeDialog } from './TradeDialog';
 import type { Presentation } from './usePresentation';
+import type { NextGame } from './WinnerPanel';
 
 interface Props {
   game: GameState;
@@ -19,11 +20,12 @@ interface Props {
   presentation: Presentation; // from usePresentation(game), which the caller may also need
   onLeave: () => void;
   headerExtra?: ReactNode; // shown in the top bar, e.g. "auto-saved" or the room code
+  next?: NextGame; // after the game; by default a button back to the menu
   children?: ReactNode; // shown above everything, e.g. the tutorial hint
 }
 
 /** The game on screen: board, turn panel, players, history and the pop-ups. Used for local and online games. */
-export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, children }: Props) {
+export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, next = { onClick: onLeave }, children }: Props) {
   const [shownSpace, setShownSpace] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
   const [trading, setTrading] = useState(false);
@@ -53,7 +55,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
             onShowSpace={setShownSpace}
             onManage={() => setManaging(true)}
             onTrade={() => setTrading(true)}
-            onNewGame={onLeave}
+            next={next}
             onSummary={() => setSummary(true)}
             busy={busy}
             rolling={rolling}

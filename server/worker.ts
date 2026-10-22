@@ -2,7 +2,7 @@
 // and one Durable Object per room that keeps the room (see room.ts) and talks to the phones.
 
 import { DurableObject } from 'cloudflare:workers';
-import { isRoomCode, MAX_MESSAGE_BYTES, type ErrorCode, type ServerMessage } from '../src/net/protocol';
+import { isReactionId, isRoomCode, MAX_MESSAGE_BYTES, type ErrorCode, type ServerMessage } from '../src/net/protocol';
 import * as Room from './room';
 import type { RoomState } from './room';
 
@@ -18,12 +18,16 @@ interface Connection {
   watching: boolean; // gets room updates (after look, create, join or rejoin)
   windowStart: number; // for the message rate limit
   count: number;
+  lastReaction?: number; // reactions: at most one every REACTION_GAP_MS
+  lastChat?: number; // chat: at most one message every CHAT_GAP_MS
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_CONNECTIONS = 12;
 const RATE_WINDOW_MS = 10_000;
 const MAX_MESSAGES_PER_WINDOW = 40;
+const REACTION_GAP_MS = 1_200;
+const CHAT_GAP_MS = 1_000;
 
 /** Dice, seeds and seat keys from the platform's secure random numbers. */
 const RANDOM: Room.Randomness = {
@@ -135,6 +139,25 @@ export class GameRoom extends DurableObject<Env> {
       case 'act':
         if (!room || seat === null) return this.error(ws, 'badMessage');
         return this.apply(ws, Room.act(room, seat, msg.action, Date.now()));
+      case 'rematch':
+        if (!room || seat === null) return this.error(ws, 'badMessage');
+        return this.apply(ws, Room.rematch(room, seat));
+      case 'chat': {
+        if (!room || seat === null) return this.error(ws, 'badMessage');
+        if (conn.lastChat && now - conn.lastChat < CHAT_GAP_MS) return this.error(ws, 'tooFast');
+        ws.serializeAttachment({ ...(ws.deserializeAttachment() as Connection), lastChat: now });
+        return this.apply(ws, Room.chat(room, seat, msg.text, now));
+      }
+      case 'react': {
+        // Not stored: just passed on to every phone in the room, the sender's too.
+        if (!room || seat === null || !isReactionId(msg.reaction)) return this.error(ws, 'badMessage');
+        if (conn.lastReaction && now - conn.lastReaction < REACTION_GAP_MS) return this.error(ws, 'tooFast');
+        ws.serializeAttachment({ ...(ws.deserializeAttachment() as Connection), lastReaction: now });
+        for (const other of this.ctx.getWebSockets()) {
+          if ((other.deserializeAttachment() as Connection).watching) this.send(other, { t: 'reaction', seat, reaction: msg.reaction });
+        }
+        return;
+      }
       default:
         return this.error(ws, 'badMessage');
     }

@@ -69,6 +69,11 @@ export function ngheStrings(vi: Strings): Strings {
     yourTurn: 'Tới lượt mi rồi!',
     waitingAnswer: (name) => `Chờ ${name} trả lời…`,
     watching: 'Đang coi',
+    rematch: 'Nhởi ván nựa cùng phòng',
+    chatLabel: 'Tán dóc',
+    chatPlaceholder: 'Nhắn chi đó nờ…',
+    chatEmpty: 'Chưa ai nhắn chi. Chào cả phòng đi nờ!',
+    waitingRematch: (name) => `Chờ ${name} mở ván mới nờ…`,
     onlineErrors: {
       ...vi.onlineErrors,
       noRoom: 'Nỏ có phòng ni.',

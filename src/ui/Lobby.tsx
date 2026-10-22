@@ -10,6 +10,7 @@ import type { FirstTurn, Profile } from '../net/protocol';
 import { forgetSeat } from '../net/seats';
 import type { RoomState } from '../net/useRoom';
 import { LangSwitch, ThemeButton } from './Header';
+import { ChatBox } from './ChatBox';
 import { colorHex } from './look';
 import { ColorPicker, TokenPicker } from './Pickers';
 import { QrCode } from './QrCode';
@@ -207,6 +208,8 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
           {t.onlineErrors[error]}
         </p>
       )}
+
+      {room && me !== null && <ChatBox room={room} onSend={(text) => send({ t: 'chat', text })} besideReactions={false} />}
     </main>
   );
 }

@@ -310,3 +310,11 @@ Friends play from their own phones. One player creates a room and shares its cod
   - titles for the single leader of each stat;
   - a stats table: rent paid and received, land bought, houses built, laps, doubles, jail, trades, cards.
 
+### Online extras
+- **Quick reactions:** 15 emoji and 8 Nghệ phrases, such as *Răng rứa?*, *Giỏi rứa!*, *Chộ chưa!* and *Thôi chết rồi!*. The room passes them to every phone without storing them, at most one every 1.2 s per phone.
+- **Chat:** available in the lobby and during the game, from the 💬 button, which shows an unread count.
+  - The room keeps the last 30 messages, so a phone that comes back sees them.
+  - Each message is at most 200 characters, with control and invisible characters removed, and is shown as plain text.
+  - At most one message per second per phone.
+- **Rematch:** after the game, the host's "Ván mới cùng phòng" takes the room back to the lobby, with the same seats and choices. The host can change the settings and start again.
+

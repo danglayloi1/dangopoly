@@ -29,14 +29,17 @@ function Confetti() {
   );
 }
 
+/** What comes after: a button (local: back to the menu; online host: new game in the same room), or a note. */
+export type NextGame = { label?: string; onClick: () => void } | { note: string };
+
 interface Props {
   game: GameState;
   winner: number;
-  onNewGame: () => void;
+  next: NextGame;
   onSummary: () => void;
 }
 
-export function WinnerPanel({ game, winner, onNewGame, onSummary }: Props) {
+export function WinnerPanel({ game, winner, next, onSummary }: Props) {
   const { t } = useLang();
   const player = game.players[winner];
   const owned = Object.values(game.ownership).filter((o) => o.owner === winner);
@@ -58,9 +61,13 @@ export function WinnerPanel({ game, winner, onNewGame, onSummary }: Props) {
         <button className="primary big" onClick={onSummary} autoFocus>
           📊 {t.showSummary}
         </button>
-        <button className="secondary" onClick={onNewGame}>
-          {t.playAgain}
-        </button>
+        {'note' in next ? (
+          <p className="waiting-note">{next.note}</p>
+        ) : (
+          <button className="secondary" onClick={next.onClick}>
+            {next.label ?? t.playAgain}
+          </button>
+        )}
       </div>
     </div>
   );

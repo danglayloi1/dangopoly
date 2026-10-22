@@ -19,6 +19,10 @@ npm test         # runs the rule tests
 npm run build    # builds the final website into dist/
 ```
 
+**Online extras:** tap 😊 to send a quick reaction (15 emoji, 8 Nghệ phrases like *Răng rứa?*) that
+pops up on every phone; tap 💬 to chat with the room, in the lobby and during the game; after a game
+the host can start **a new game in the same room**.
+
 **Game types:** classic (until one player is left), a round limit, or a time limit; with a limit the
 richest player wins. Turn on **🏮 Lễ hội xứ Nghệ** and every 3rd round a festival changes one rule for
 that round. At the end, a summary shows the ranking, a chart of everyone's wealth, titles and stats.

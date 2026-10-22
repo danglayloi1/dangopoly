@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { Profile } from '../src/net/protocol';
-import { isRoomCode, newRoomCode, normalizeRoomCode } from '../src/net/protocol';
+import { isReactionId, isRoomCode, newRoomCode, normalizeRoomCode } from '../src/net/protocol';
 import {
   act,
   changeProfile,
+  chat,
+  cleanChat,
   cleanAction,
   cleanProfile,
   join,
   leave,
+  rematch,
   newRoom,
   type Randomness,
   type RoomState,
@@ -205,5 +208,64 @@ describe('game types online', () => {
       room = must(act(room, room.game!.current, action, late));
     }
     expect(room.game?.endReason).toBe('time');
+  });
+});
+
+describe('after the game', () => {
+  const finished = () => {
+    const room = must(start(lobby(DANG, LAN, MINH), 0, 15_000_000, 'roll', fakeRandom([1, 1, 6, 6, 2, 2])));
+    room.game!.phase = { kind: 'gameOver', winner: 1 };
+    return room;
+  };
+
+  it('lets the host take everyone back to the lobby for a new game', () => {
+    const room = finished();
+    const host = room.host;
+    const again = must(rematch(room, host));
+    expect(again.game).toBeNull();
+    expect(again.firstTurn).toBeNull();
+    expect(again.seats.map((s) => s.name)).toEqual(room.seats.map((s) => s.name)); // same seats, keys and choices
+    expect(again.host).toBe(host);
+    expect(must(start(again, host, 15_000_000, 'inOrder', fakeRandom())).game?.players).toHaveLength(3);
+  });
+
+  it('only the host, and only once the game is over', () => {
+    const room = finished();
+    expect(rematch(room, (room.host + 1) % 3)).toEqual({ ok: false, error: 'notHost' });
+    const playing = must(start(lobby(DANG, LAN), 0, 15_000_000, 'inOrder', fakeRandom()));
+    expect(rematch(playing, 0)).toEqual({ ok: false, error: 'notAllowed' });
+  });
+
+  it('accepts only the listed reactions', () => {
+    expect(isReactionId('rangRua')).toBe(true);
+    expect(isReactionId('toString')).toBe(false);
+    expect(isReactionId('<script>')).toBe(false);
+  });
+});
+
+describe('chat', () => {
+  it('keeps messages with the sender as they were, the last 30 only', () => {
+    let room = lobby(DANG, LAN);
+    room = must(chat(room, 1, 'Răng rứa?', 1_000));
+    expect(view(room, 0, new Set()).chat).toEqual([{ id: 1, seat: 1, name: 'Lan', color: 'indigo', text: 'Răng rứa?', at: 1_000 }]);
+    for (let i = 0; i < 40; i++) room = must(chat(room, 0, `tin ${i}`, 2_000 + i));
+    const kept = view(room, 0, new Set()).chat;
+    expect(kept).toHaveLength(30);
+    expect(kept.at(-1)).toMatchObject({ id: 41, text: 'tin 39' });
+  });
+
+  it('tidies text and refuses empty messages', () => {
+    expect(cleanChat('  xin   chào\n\nbạn  ')).toBe('xin chào bạn');
+    expect(cleanChat('a‮b​c')).toBe('a b c'); // invisible direction and zero-width characters
+    expect(cleanChat('x'.repeat(300))).toHaveLength(200);
+    expect(cleanChat('   ')).toBeNull();
+    expect(cleanChat(42)).toBeNull();
+    expect(chat(lobby(DANG), 0, '')).toEqual({ ok: false, error: 'badMessage' });
+  });
+
+  it('survives a rematch', () => {
+    const room = must(chat(must(start(lobby(DANG, LAN), 0, 15_000_000, 'inOrder', fakeRandom())), 0, 'gg'));
+    room.game!.phase = { kind: 'gameOver', winner: 0 };
+    expect(must(rematch(room, room.host)).chat).toHaveLength(1);
   });
 });

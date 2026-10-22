@@ -14,8 +14,8 @@ const check = (ok, what) => {
 };
 
 /** A pretend phone: sends messages and waits for the replies it expects. */
-function phone(name) {
-  const ws = new WebSocket(`${SERVER}/room/${code}`);
+function phone(name, room = code) {
+  const ws = new WebSocket(`${SERVER}/room/${room}`);
   const inbox = [];
   const waiting = [];
   ws.addEventListener('message', (e) => {
@@ -112,6 +112,60 @@ check((await a.next(errorOf)).code === 'badMessage', 'unknown moves are refused'
 a.send('x'.repeat(9000));
 check((await a.next(errorOf)).code === 'badMessage', 'oversized messages are refused');
 
-for (const p of [a, b2, c]) p.close();
+// Quick reactions reach every phone, at most one per moment from each.
+c.send({ t: 'react', reaction: 'rangRua' });
+const reaction = await a.next((m) => m.t === 'reaction', 'reaction');
+check(reaction.reaction === 'rangRua' && seats[reaction.seat].name === 'Minh', 'a reaction from Minh reaches the others');
+c.send({ t: 'react', reaction: 'clap' });
+check((await c.next(errorOf)).code === 'tooFast', 'reactions sent too fast are refused');
+c.send({ t: 'react', reaction: 'hack' });
+await new Promise((r) => setTimeout(r, 1300));
+c.send({ t: 'react', reaction: 'hack' });
+check((await c.next(errorOf)).code === 'badMessage', 'unknown reactions are refused');
+
+// Chat: messages reach everyone and stay in the room for phones that come back.
+b2.send({ t: 'chat', text: '  Chào   cả nhà!  ' });
+const chatted = await a.next(roomWhere((r) => r.chat.some((m) => m.text === 'Chào cả nhà!')), 'chat message');
+check(chatted.room.chat.at(-1).name === 'Lan', 'a chat message from Lan reaches the others, tidied');
+b2.send({ t: 'chat', text: 'again' });
+check((await b2.next(errorOf)).code === 'tooFast', 'chat messages sent too fast are refused');
+b2.close();
+const b3 = phone('Lan once more');
+await b3.opened;
+b3.send({ t: 'rejoin', key: bWelcome.key });
+const history = await b3.next(roomWhere((r) => r.you !== null), 'room after rejoining');
+check(history.room.chat.some((m) => m.text === 'Chào cả nhà!'), 'a phone that comes back sees the chat so far');
+
+for (const p of [a, b3, c]) p.close();
+
+// A one-round game, then a new game in the same room.
+const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const code2 = Array.from({ length: 6 }, () => ALPHA[Math.floor(Math.random() * ALPHA.length)]).join('');
+const host = phone('Host', code2);
+const guest = phone('Guest', code2);
+await Promise.all([host.opened, guest.opened]);
+host.send({ t: 'create', profile: { name: 'Đăng', token: 'nonLa', color: 'red' } });
+await host.next((m) => m.t === 'welcome', 'welcome');
+guest.send({ t: 'join', profile: { name: 'Lan', token: 'conTrau', color: 'indigo' } });
+await guest.next((m) => m.t === 'welcome', 'welcome');
+host.send({ t: 'start', startingCash: 15_000_000, firstTurn: 'inOrder', rules: { mode: { kind: 'rounds', rounds: 1 }, festivals: false } });
+let view = (await host.next(roomWhere((r) => r.stage === 'playing'), 'started')).room;
+const byName = { Đăng: host, Lan: guest };
+for (let i = 0; i < 40 && view.game.phase.kind !== 'gameOver'; i++) {
+  const g = view.game;
+  const who = byName[g.players[g.phase.kind === 'inDebt' ? g.phase.debtor : g.current].name];
+  const action = { awaitRoll: 'ROLL', awaitBuy: 'DECLINE', awaitEndTurn: 'END_TURN', inDebt: 'DECLARE_BANKRUPTCY' }[g.phase.kind];
+  const before = g.log.length;
+  who.send({ t: 'act', action: { type: action } });
+  view = (await host.next(roomWhere((r) => r.game && (r.game.log.length !== before || r.game.phase.kind === 'gameOver')), 'next move')).room;
+}
+check(view.game.phase.kind === 'gameOver' && view.game.endReason === 'rounds', 'a one-round game ends after the round, richest player winning');
+guest.send({ t: 'rematch' });
+check((await guest.next(errorOf)).code === 'notHost', 'only the host can start a new game in the room');
+host.send({ t: 'rematch' });
+const lobbyAgain = await guest.next(roomWhere((r) => r.stage === 'lobby'), 'lobby again');
+check(lobbyAgain.room.seats.length === 2 && lobbyAgain.room.you !== null, 'after a rematch everyone is back in the lobby, still seated');
+host.close();
+guest.close();
 console.log(failed === 0 ? 'ALL SERVER CHECKS PASSED' : `${failed} SERVER CHECKS FAILED`);
 process.exit(failed === 0 ? 0 : 1);
