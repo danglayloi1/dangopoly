@@ -318,3 +318,19 @@ Friends play from their own phones. One player creates a room and shares its cod
   - At most one message per second per phone.
 - **Rematch:** after the game, the host's "Ván mới cùng phòng" takes the room back to the lobby, with the same seats and choices. The host can change the settings and start again.
 
+---
+
+## 12. Effects and animation speed
+
+After each move, effects play on the board at the same time as the sounds:
+- a **red seal** stamped on a property just bought;
+- **coins flying** for rent, tax, salary and card money, with −amount where they leave and +amount where they land;
+- **dust** where a house or the đình goes up;
+- **bars** coming down on the jail corner;
+- a bankrupt token **tearing** like paper;
+- a **festival banner** with lanterns unrolling across the screen, and **lucky money** raining down for Đền Chiêu Trưng.
+
+The **dice** are 3D cubes: they spin while rolling, then turn to show the result, with the 1 and 4 in red. **Tokens** hop in an arc and squash a little as they land.
+
+**Settings → Hiệu ứng chuyển động** sets the speed: Bình thường, Nhanh (twice as fast), or Tắt (nothing moves; results show at once). A device set to "reduce motion" always counts as Tắt.
+

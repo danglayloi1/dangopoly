@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, LogEntry } from '../engine/types';
-import { hasMotion, newLogEntries, planMoves, soundFor } from './motion';
+import { speedFactor } from './animation';
+import { EFFECT_MS, effectsFor, hasMotion, newLogEntries, planMoves, soundFor, type Effect } from './motion';
 import { playSound } from './sound';
 
 const DICE_MS = 650;
@@ -9,23 +10,22 @@ const MAX_TRIP_MS = 1800; // long card trips hop faster
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function prefersReducedMotion(): boolean {
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch {
-    return false;
-  }
+/** An effect being shown; the id tells React apart two of the same kind. */
+export interface ShownEffect {
+  id: number;
+  effect: Effect;
 }
 
 export interface Presentation {
   positions: number[]; // where each token is drawn right now
   rolling: boolean; // the dice are tumbling
   busy: boolean; // a move is playing out: hold back results and buttons
+  effects: ShownEffect[]; // seals, flying coins, banners… (see effectsFor)
 }
 
 /**
  * Plays each change of the game as a little show: dice tumble, tokens hop space by space,
- * then the sounds for what happened. The game itself has already moved on; this only
+ * then the sounds and effects for what happened (at the speed chosen in Settings). The game itself has already moved on; this only
  * controls what the screen shows meanwhile.
  */
 export function usePresentation(game: GameState): Presentation {
@@ -33,12 +33,14 @@ export function usePresentation(game: GameState): Presentation {
   const [positions, setPositions] = useState(actual);
   const [rolling, setRolling] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [effects, setEffects] = useState<ShownEffect[]>([]);
+  const nextEffect = useRef(0);
   const shownRef = useRef(actual);
   const processedLog = useRef(game.log);
 
   // Decided during render, so the very first frame after a roll already holds things back.
   const fresh = newLogEntries(processedLog.current, game.log);
-  const pending = game.log !== processedLog.current && hasMotion(fresh) && !prefersReducedMotion();
+  const pending = game.log !== processedLog.current && hasMotion(fresh) && speedFactor() > 0;
 
   useEffect(() => {
     const entries = newLogEntries(processedLog.current, game.log);
@@ -50,12 +52,19 @@ export function usePresentation(game: GameState): Presentation {
       shownRef.current = next;
       setPositions(next);
     };
+    const factor = speedFactor();
     const playEventSounds = (list: LogEntry[]) => {
       const names = [...new Set(list.map(soundFor).filter((n) => n !== null))];
       names.forEach((name, i) => setTimeout(() => !cancelled && playSound(name), i * 140));
+      if (factor === 0) return; // animations off: no effects either
+      for (const effect of effectsFor(list, game)) {
+        const shown = { id: nextEffect.current++, effect };
+        setEffects((now) => [...now, shown]);
+        setTimeout(() => setEffects((now) => now.filter((e) => e !== shown)), EFFECT_MS[effect.kind] * factor);
+      }
     };
 
-    if (!hasMotion(entries) || prefersReducedMotion()) {
+    if (!hasMotion(entries) || factor === 0) {
       show(final);
       setRolling(false);
       setAnimating(false);
@@ -68,12 +77,12 @@ export function usePresentation(game: GameState): Presentation {
       if (entries.some((e) => e.type === 'rolled')) {
         setRolling(true);
         playSound('dice');
-        await sleep(DICE_MS);
+        await sleep(DICE_MS * factor);
         if (cancelled) return;
         setRolling(false);
       }
       for (const move of planMoves(entries, shownRef.current)) {
-        const stepMs = move.jump ? 300 : Math.min(STEP_MS, MAX_TRIP_MS / move.path.length);
+        const stepMs = (move.jump ? 300 : Math.min(STEP_MS, MAX_TRIP_MS / move.path.length)) * factor;
         for (const pos of move.path) {
           if (cancelled) return;
           const next = [...shownRef.current];
@@ -94,5 +103,5 @@ export function usePresentation(game: GameState): Presentation {
     };
   }, [game]);
 
-  return { positions, rolling, busy: pending || animating };
+  return { positions, rolling, busy: pending || animating, effects };
 }

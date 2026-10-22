@@ -559,6 +559,109 @@ const scenes = {
     await shot('after-reject');
   },
 
+  /**
+   * The effects after a move, each caught mid-way: the page's clock is under the script's control
+   * (page.clock), so a move plays out exactly as far as needed and then everything is frozen.
+   */
+  async effects({ page, shot, click, setup }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    await page.clock.install();
+    await openFromMenu(page, /Chơi trên một máy/);
+    const inputs = page.locator('.player-row input');
+    await click(/Thêm người chơi/);
+    for (const [i, name] of ['Đăng', 'Lan', 'Minh'].entries()) await inputs.nth(i).fill(name);
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+
+    const dispatch = (action) => page.evaluate((a) => window.__dangopoly.dispatch(a), action);
+    /** Plays the move until the effects appear, then freezes every animation `at` ms into it. */
+    const freezeAt = async (selector, at) => {
+      for (let i = 0; i < 40 && !(await page.locator(selector).count()); i++) await page.clock.runFor(100);
+      await page.evaluate((ms) => {
+        for (const a of document.getAnimations()) {
+          a.pause();
+          a.currentTime = ms;
+        }
+      }, at);
+      return (await page.locator(selector).count()) > 0;
+    };
+    const settle = () => page.clock.runFor(4000);
+
+    // Buying: the red seal, coins to the bank.
+    await setup((game) => {
+      game.players[1].position = 10;
+      game.players[2].position = 21;
+    });
+    await dispatch({ type: 'ROLL', dice: [1, 2] }); // Đăng: Xuất phát → Lò kẹo cu đơ
+    await settle();
+    await dispatch({ type: 'BUY' });
+    check(await freezeAt('.fx-seal', 300), 'buying stamps a red seal');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await shot('seal-and-coins');
+    await settle();
+
+    // Rent: coins fly from Đăng to Lan, who owns the space.
+    await setup((game) => {
+      game.phase = { kind: 'awaitRoll' };
+      game.current = 0;
+      game.dice = null;
+      game.ownership[6] = { owner: 1, houses: 0, mortgaged: false };
+    });
+    await dispatch({ type: 'ROLL', dice: [1, 2] }); // 3 → 6
+    check(await freezeAt('.fx-money .fx-coin', 450), 'rent sends coins to the owner');
+    await shot('rent-coins');
+    await settle();
+
+    // Building: dust where the house goes up.
+    await setup((game) => {
+      game.phase = { kind: 'awaitEndTurn' };
+      game.current = 0;
+      game.ownership[1] = { owner: 0, houses: 0, mortgaged: false };
+      game.ownership[3] = { owner: 0, houses: 0, mortgaged: false };
+    });
+    await dispatch({ type: 'BUILD_HOUSE', space: 1 });
+    check(await freezeAt('.fx-build', 250), 'building raises dust');
+    await shot('build-dust');
+    await settle();
+
+    // Jail: bars come down.
+    await setup((game) => {
+      game.phase = { kind: 'awaitRoll' };
+      game.current = 0;
+      game.dice = null;
+      game.players[0].position = 27;
+    });
+    await dispatch({ type: 'ROLL', dice: [1, 2] }); // → 30, Vào nhà tạm giữ
+    check(await freezeAt('.fx-jail', 500), 'going to jail brings down the bars');
+    await shot('jail-bars');
+    await settle();
+
+    // A festival: the last player of round 2 ends the turn, festivals on; round 3 brings one.
+    await setup((game) => {
+      game.rules = { ...game.rules, festivals: true };
+      game.round = 2;
+      game.current = 2;
+      game.phase = { kind: 'awaitEndTurn' };
+    });
+    await dispatch({ type: 'END_TURN' });
+    check(await freezeAt('.fx-festival', 900), 'a festival unrolls its banner');
+    await shot('festival-banner');
+    await settle();
+
+    // Bankrupt: Minh can't pay a big debt and gives up; the token tears.
+    await setup((game) => {
+      game.current = 2;
+      game.players[2].position = 21;
+      game.phase = { kind: 'inDebt', debtor: 2, creditor: null, amount: 99_000_000, reason: { kind: 'card' } };
+    });
+    await dispatch({ type: 'DECLARE_BANKRUPTCY' });
+    check(await freezeAt('.fx-tear', 900), 'a bankrupt token tears like paper');
+    await shot('bankrupt-tear');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /** Game types: a round limit with festivals (a festival round, the end, the summary) and a time limit. */
   async modes({ page, shot, click, setup, act }) {
     const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);

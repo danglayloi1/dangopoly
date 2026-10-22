@@ -64,6 +64,10 @@ const vi = {
   theme: 'Giao diện',
   back: 'Quay lại',
   musicWhere: 'Bấm nút 🎵 ở góc dưới bên phải để mở nhạc.',
+  animSpeed: 'Hiệu ứng chuyển động',
+  animSpeedNames: { normal: 'Bình thường', fast: 'Nhanh', off: 'Tắt' },
+  animSpeedHint: 'Xúc xắc, quân cờ đi, con dấu, tiền bay… Chọn “Nhanh” cho ván dài hoặc máy chậm.',
+  sealBought: 'Đã mua',
 
   // Online play
   online: 'Chơi online',
@@ -446,6 +450,10 @@ const en: Strings = {
   theme: 'Colors',
   back: 'Back',
   musicWhere: 'Press the 🎵 button in the bottom corner to open the music.',
+  animSpeed: 'Animations',
+  animSpeedNames: { normal: 'Normal', fast: 'Fast', off: 'Off' },
+  animSpeedHint: 'Dice, moving tokens, seals, flying coins… Choose “Fast” for long games or slow phones.',
+  sealBought: 'Sold',
 
   // Online play
   online: 'Play online',

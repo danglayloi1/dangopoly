@@ -44,6 +44,8 @@ export function ngheStrings(vi: Strings): Strings {
     settingsHint: 'Ngôn ngữ, giao diện, âm thanh, nhạc',
     back: 'Quay lại',
     musicWhere: 'Bấm cấy nút 🎵 ở góc dưới bên phải để mở nhạc.',
+    animSpeedHint: 'Xúc xắc, quân cờ đi, con dấu, tiền bay… Ván dài hoặc máy chậm thì chọn “Nhanh” nờ.',
+    sealBought: 'Mua rồi',
 
     // Online play
     online: 'Nhởi online',

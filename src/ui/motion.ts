@@ -2,7 +2,7 @@
 
 import { BOARD_SIZE, JAIL_SPACE } from '../data/board';
 import { CARDS } from '../data/cards';
-import type { LogEntry } from '../engine/types';
+import type { Festival, GameState, LogEntry } from '../engine/types';
 import type { SoundName } from './sound';
 
 /**
@@ -96,3 +96,86 @@ export function soundFor(entry: LogEntry): SoundName | null {
       return null;
   }
 }
+
+/** Where money flies from or to: a board space, or the bank in the middle of the board. */
+export type Spot = number | 'bank';
+
+/** A short visual effect on the board, played when a move has finished. */
+export type Effect =
+  | { kind: 'seal'; space: number } // bought: a red seal stamped on the space
+  | { kind: 'money'; from: Spot; to: Spot; amount: number } // coins fly, the amount pops up
+  | { kind: 'build'; space: number } // a house or the đình goes up, with a puff of dust
+  | { kind: 'jail'; space: number } // bars come down
+  | { kind: 'bankrupt'; space: number; player: number } // the token tears like paper
+  | { kind: 'festival'; festival: Festival } // a lantern banner across the screen
+  | { kind: 'coinRain' }; // lucky money for everyone
+
+/** At most this many coin flights per move, so a big card ("pay everyone") stays readable. */
+const MAX_MONEY = 4;
+
+/** The effects for what just happened. `game` is the state after it, for where players stand. */
+export function effectsFor(entries: readonly LogEntry[], game: GameState): Effect[] {
+  const at = (player: number): number => game.players[player].position;
+  const others = (player: number) => game.players.filter((p) => p.id !== player && !p.bankrupt).map((p) => p.id);
+  const effects: Effect[] = [];
+  const money = (from: Spot, to: Spot, amount: number) => {
+    if (amount > 0 && effects.filter((e) => e.kind === 'money').length < MAX_MONEY) effects.push({ kind: 'money', from, to, amount });
+  };
+
+  for (const e of entries) {
+    switch (e.type) {
+      case 'bought':
+        effects.push({ kind: 'seal', space: e.space }); // the price shows on the player card already
+        break;
+      case 'paidRent':
+        money(at(e.player), at(e.to), e.amount);
+        break;
+      case 'paidTax':
+      case 'cardPaid':
+        money(at(e.player), 'bank', e.amount);
+        break;
+      case 'passedStart':
+        money(0, at(e.player), e.amount);
+        break;
+      case 'cardCollected':
+      case 'festivalBonus':
+        money('bank', at(e.player), e.amount);
+        break;
+      case 'paidEach':
+        for (const o of others(e.player)) money(at(e.player), at(o), e.each);
+        break;
+      case 'collectedFromEach':
+        for (const o of others(e.player)) money(at(o), at(e.player), e.total / Math.max(1, others(e.player).length));
+        break;
+      case 'builtHouse':
+        effects.push({ kind: 'build', space: e.space });
+        break;
+      case 'wentToJail':
+        effects.push({ kind: 'jail', space: JAIL_SPACE });
+        break;
+      case 'bankrupt':
+        effects.push({ kind: 'bankrupt', space: at(e.player), player: e.player });
+        break;
+      case 'festival':
+        effects.push({ kind: 'festival', festival: e.festival });
+        break;
+      case 'festivalGift':
+        effects.push({ kind: 'coinRain' });
+        break;
+      default:
+        break;
+    }
+  }
+  return effects;
+}
+
+/** How long each effect stays on screen at normal speed (ms). */
+export const EFFECT_MS: Record<Effect['kind'], number> = {
+  seal: 1400,
+  money: 1300,
+  build: 1000,
+  jail: 1600,
+  bankrupt: 1600,
+  festival: 3200,
+  coinRain: 2000,
+};

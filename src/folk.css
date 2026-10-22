@@ -381,19 +381,125 @@ button.secondary:disabled {
   font-size: 1.3em;
 }
 
-/* Dice: ivory with ink edges; the 1 and 4 are red, as on traditional Vietnamese dice. */
+/* Dice: little 3D cubes, ivory with ink edges; the 1 and 4 are red, as on traditional
+   Vietnamese dice. A die spins while rolling, then turns to its number (see Dice.tsx). */
 .die {
-  background: #fbf6e8;
-  border: 2px solid #2b2420;
-  box-shadow: 2px 2px 0 #2b2420;
+  --die-size: clamp(34px, 7.5cqw, 52px);
+  width: var(--die-size);
+  height: var(--die-size);
+  padding: 0;
+  display: block;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  perspective: calc(var(--die-size) * 5);
+  filter: drop-shadow(2px 2px 0 #2b2420);
 }
 
-.die .pip {
+.die.blank {
+  background: #fbf6e8;
+  border: 2px solid #2b2420;
+  border-radius: 18%;
+  filter: none;
+  box-sizing: border-box;
+}
+
+.die-cube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform calc(0.5s * var(--fx, 1)) cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+.die-cube.rolling {
+  animation: die-spin calc(0.55s * var(--fx, 1)) linear infinite;
+}
+
+.dice .die:nth-child(2) .die-cube.rolling {
+  animation-direction: reverse;
+  animation-duration: calc(0.45s * var(--fx, 1));
+}
+
+@keyframes die-spin {
+  from {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateX(360deg) rotateY(720deg) rotateZ(180deg);
+  }
+}
+
+.die-face {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 12%;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  background: #fbf6e8;
+  border: 2px solid #2b2420;
+  border-radius: 18%;
+  backface-visibility: hidden;
+}
+
+.face-1 {
+  transform: translateZ(calc(var(--die-size) / 2));
+}
+
+.face-2 {
+  transform: rotateY(90deg) translateZ(calc(var(--die-size) / 2));
+}
+
+.face-3 {
+  transform: rotateX(90deg) translateZ(calc(var(--die-size) / 2));
+}
+
+.face-4 {
+  transform: rotateX(-90deg) translateZ(calc(var(--die-size) / 2));
+}
+
+.face-5 {
+  transform: rotateY(-90deg) translateZ(calc(var(--die-size) / 2));
+}
+
+.face-6 {
+  transform: rotateY(180deg) translateZ(calc(var(--die-size) / 2));
+}
+
+.die-face .pip {
+  margin: 14%;
+  border-radius: 50%;
   background: #2b2420;
 }
 
-.die.red-pips .pip {
+.die-face.red-pips .pip {
   background: #b8322a;
+}
+
+/* Tokens hop in an arc from space to space and squash a little as they land. */
+.cell-token {
+  animation: token-arc calc(0.2s * var(--fx, 1)) ease-out;
+}
+
+@keyframes token-arc {
+  0% {
+    transform: translateY(-60%) scale(1.15);
+  }
+  55% {
+    transform: translateY(0) scale(1.12, 0.85);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* Animations set to "off" in Settings: nothing moves. */
+:root[data-anim='off'] .cell-token,
+:root[data-anim='off'] .die-cube {
+  animation: none;
+  transition: none;
 }
 
 /* Drawn card: its artwork on top. */
@@ -649,8 +755,7 @@ button.secondary:disabled {
 }
 
 .first-turn-row .die {
-  width: 32px;
-  height: 32px;
+  --die-size: 32px;
 }
 
 .first-turn-row.up {
@@ -1796,6 +1901,353 @@ a.secondary {
   }
 }
 
+/* ===== Effects after a move (Effects.tsx). Durations follow the speed setting (--fx). ===== */
+.fx {
+  position: relative;
+  z-index: 6;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Bought: a red seal stamped on the space, then it fades. */
+.fx-seal span {
+  padding: 0.18em 0.4em;
+  border-radius: 6px;
+  background: #b8322a;
+  color: #fbf6e8;
+  outline: 1.5px solid #b8322a;
+  outline-offset: 2px;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: clamp(11px, 2.2cqw, 19px);
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1.5px rgba(251, 246, 232, 0.7), 2px 2px 0 rgba(43, 36, 32, 0.5);
+  animation: seal-stamp calc(1.4s * var(--fx, 1)) ease-out forwards;
+}
+
+@keyframes seal-stamp {
+  0% {
+    transform: rotate(-12deg) scale(2.6);
+    opacity: 0;
+  }
+  18% {
+    transform: rotate(-12deg) scale(0.9);
+    opacity: 1;
+  }
+  26% {
+    transform: rotate(-12deg) scale(1.06);
+  }
+  34%,
+  80% {
+    transform: rotate(-12deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-12deg) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Money: coins fly from one spot to another; −amount where they leave, +amount where they land. */
+.fx-coin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: clamp(14px, 2.6cqw, 24px);
+  line-height: 0;
+  opacity: 0;
+  animation: coin-fly calc(0.8s * var(--fx, 1)) cubic-bezier(0.45, 0, 0.35, 1) calc(var(--i) * 0.09s * var(--fx, 1)) forwards;
+}
+
+@keyframes coin-fly {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -110%) scale(1.1);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.fx-amount {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 1px 7px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 900;
+  font-size: clamp(10px, 1.8cqw, 16px);
+  white-space: nowrap;
+  opacity: 0;
+  animation: amount-pop calc(1.1s * var(--fx, 1)) ease-out forwards;
+}
+
+.fx-minus {
+  color: var(--danger);
+}
+
+.fx-plus {
+  --tx: var(--dx);
+  --ty: var(--dy);
+  color: #2e7d32;
+  animation-delay: calc(0.6s * var(--fx, 1));
+}
+
+:root[data-theme='dark'] .fx-plus {
+  color: #7bd88f;
+}
+
+@keyframes amount-pop {
+  0% {
+    transform: translate(calc(-50% + var(--tx, 0px)), calc(-50% + var(--ty, 0px))) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(calc(-50% + var(--tx, 0px)), calc(-80% + var(--ty, 0px))) scale(1);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--tx, 0px)), calc(-170% + var(--ty, 0px)));
+    opacity: 0;
+  }
+}
+
+/* Building: puffs of dust where a house (or the đình) goes up. */
+.fx-build i {
+  position: absolute;
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(201, 180, 138, 0.85);
+  animation: dust calc(1s * var(--fx, 1)) ease-out forwards;
+}
+
+.fx-build i:nth-child(1) {
+  --x: -60%;
+}
+
+.fx-build i:nth-child(2) {
+  --x: 0%;
+  animation-delay: calc(0.08s * var(--fx, 1));
+}
+
+.fx-build i:nth-child(3) {
+  --x: 60%;
+  animation-delay: calc(0.16s * var(--fx, 1));
+}
+
+@keyframes dust {
+  0% {
+    transform: translate(var(--x), 30%) scale(0.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(calc(var(--x) * 1.8), -60%) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* A house pops up when it appears. */
+.building {
+  animation: pop-in calc(0.45s * var(--fx, 1)) cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes pop-in {
+  from {
+    transform: scale(0) translateY(40%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* Jail: bars come down over the jail corner. */
+.fx-jail {
+  align-self: stretch;
+  justify-self: stretch;
+  background: repeating-linear-gradient(90deg, transparent 0 13%, var(--ink) 13% 19%);
+  transform-origin: top;
+  animation: bars-down calc(1.6s * var(--fx, 1)) ease-out forwards;
+}
+
+@keyframes bars-down {
+  0% {
+    transform: scaleY(0);
+    opacity: 1;
+  }
+  25% {
+    transform: scaleY(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+
+/* Bankrupt: the token tears in two, like paper, and falls away. */
+.fx-tear span {
+  position: absolute;
+  left: 25%;
+  top: 25%;
+  width: 50%;
+  aspect-ratio: 1;
+  animation: tear-left calc(1.6s * var(--fx, 1)) ease-in forwards;
+}
+
+.fx-tear .tear-left {
+  clip-path: polygon(0 0, 55% 0, 45% 30%, 55% 55%, 42% 80%, 50% 100%, 0 100%);
+}
+
+.fx-tear .tear-right {
+  clip-path: polygon(55% 0, 100% 0, 100% 100%, 50% 100%, 42% 80%, 55% 55%, 45% 30%);
+  animation-name: tear-right;
+}
+
+@keyframes tear-left {
+  0%,
+  25% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-40%, 90%) rotate(-35deg);
+    opacity: 0;
+  }
+}
+
+@keyframes tear-right {
+  0%,
+  25% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translate(40%, 90%) rotate(35deg);
+    opacity: 0;
+  }
+}
+
+/* Festival: a red banner with lanterns unrolls across the screen. */
+.fx-festival {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.fx-festival-scroll {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(540px, calc(100vw - 24px));
+  padding: 14px 20px;
+  background: #b8322a;
+  background-image: var(--paper);
+  color: #fbf6e8;
+  border: 3px solid #d9ae4f;
+  outline: 2px solid #2b2420;
+  border-radius: 10px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+  transform-origin: center;
+  animation: banner-unroll calc(3.2s * var(--fx, 1)) ease-out forwards;
+}
+
+.fx-festival-scroll div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.fx-festival-scroll strong {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: clamp(1.1rem, 5vw, 1.5rem);
+  color: #f5d77a;
+}
+
+.fx-lantern {
+  font-size: 1.8rem;
+  animation: lantern-sway calc(1.2s * var(--fx, 1)) ease-in-out infinite alternate;
+}
+
+@keyframes banner-unroll {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  15% {
+    transform: scaleX(1.04);
+  }
+  20%,
+  85% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-24px);
+    opacity: 0;
+  }
+}
+
+@keyframes lantern-sway {
+  from {
+    transform: rotate(-10deg);
+  }
+  to {
+    transform: rotate(10deg);
+  }
+}
+
+/* Lucky money: coins rain down the screen. */
+.fx-rain {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fx-rain span {
+  position: absolute;
+  top: -40px;
+  left: var(--x);
+  font-size: 28px;
+  line-height: 0;
+  animation: coin-rain calc(1.8s * var(--fx, 1)) ease-in calc(var(--d) * var(--fx, 1)) forwards;
+}
+
+@keyframes coin-rain {
+  to {
+    transform: translateY(calc(100vh + 80px)) rotate(540deg);
+  }
+}
+
+:root[data-anim='off'] .building {
+  animation: none;
+}
+
 /* ===== Music: a button in the corner and a small Spotify player above it ===== */
 .music {
   position: fixed;
@@ -1946,10 +2398,12 @@ body {
   }
 
   .die {
-    width: 28px;
-    height: 28px;
+    --die-size: 28px;
+    filter: drop-shadow(1.5px 1.5px 0 #2b2420);
+  }
+
+  .die-face {
     border-width: 1.5px;
-    box-shadow: 1.5px 1.5px 0 #2b2420;
   }
 
   .dice {
