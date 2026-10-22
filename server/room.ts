@@ -3,7 +3,18 @@
 
 import { PLAYER_COLOR_IDS } from '../src/data/colors';
 import { TOKENS } from '../src/data/tokens';
-import { actorFor, applyAction, createGame, GameError, MAX_PLAYERS, MIN_PLAYERS } from '../src/engine/game';
+import {
+  actorFor,
+  applyAction,
+  CLASSIC_RULES,
+  createGame,
+  GameError,
+  MAX_MINUTES,
+  MAX_PLAYERS,
+  MAX_ROUNDS,
+  MIN_PLAYERS,
+  type RulesChoice,
+} from '../src/engine/game';
 import type { Action, Dice, GameState } from '../src/engine/types';
 import type { ErrorCode, FirstTurn, FirstTurnRound, Profile, RoomView } from '../src/net/protocol';
 import { orderFrom } from '../src/ui/firstTurn';
@@ -104,6 +115,8 @@ export function start(
   startingCash: unknown,
   firstTurn: FirstTurn,
   random: Randomness,
+  rawRules: unknown = CLASSIC_RULES,
+  now: number = Date.now(),
 ): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
   if (room.game) return fail('started');
@@ -111,6 +124,8 @@ export function start(
   if (!Number.isInteger(startingCash) || (startingCash as number) < MIN_STARTING_CASH || (startingCash as number) > MAX_STARTING_CASH) {
     return fail('badMessage');
   }
+  const rules = cleanRules(rawRules);
+  if (!rules) return fail('badMessage');
 
   let first = 0;
   let rounds: { seat: number; dice: Dice }[][] = [];
@@ -135,18 +150,32 @@ export function start(
     players: seats.map(({ name, token, color }) => ({ name, token, color })),
     seed: random.seed(),
     startingCash: startingCash as number,
+    rules,
+    now,
   });
   return ok({ ...room, seats, host, game, firstTurn: firstTurn === 'roll' ? rounds : null });
 }
 
-/** A move from the phone in `seat`. Dice always come from the server's own random numbers. */
-export function act(room: RoomState, seat: number, raw: unknown): Result<RoomState> {
+/**
+ * A move from the phone in `seat`. Dice always come from the server's own random numbers. In timed
+ * games anyone may say the time is up, but only the room's clock decides; and once it is up, the
+ * game ends at the start of the next turn even if nobody says so.
+ */
+export function act(room: RoomState, seat: number, raw: unknown, now: number = Date.now()): Result<RoomState> {
   if (!room.game) return fail('notAllowed');
   const action = cleanAction(raw);
   if (!action) return fail('badMessage');
-  if (actorFor(room.game, action) !== seat) return fail('notYourMove');
+  const { mode } = room.game.rules;
+  const timeIsUp = mode.kind === 'time' && now >= mode.endsAt;
+  if (action.type === 'TIME_UP') {
+    if (!timeIsUp) return fail('notAllowed');
+  } else if (actorFor(room.game, action) !== seat) {
+    return fail('notYourMove');
+  }
   try {
-    return ok({ ...room, game: applyAction(room.game, action) });
+    let game = applyAction(room.game, action);
+    if (timeIsUp && game.phase.kind === 'awaitRoll') game = applyAction(game, { type: 'TIME_UP' });
+    return ok({ ...room, game });
   } catch (e) {
     if (e instanceof GameError) return fail('notAllowed');
     throw e;
@@ -168,7 +197,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
 // ---------------------------------------------------------------------------
 // Checking moves from the network: only known shapes get through to the engine.
 
-const SIMPLE = ['ROLL', 'BUY', 'DECLINE', 'PAY_DEBT', 'DECLARE_BANKRUPTCY', 'END_TURN', 'PAY_JAIL_FINE', 'USE_JAIL_CARD', 'ACCEPT_TRADE', 'REJECT_TRADE'] as const;
+const SIMPLE = ['ROLL', 'BUY', 'DECLINE', 'PAY_DEBT', 'DECLARE_BANKRUPTCY', 'END_TURN', 'PAY_JAIL_FINE', 'USE_JAIL_CARD', 'ACCEPT_TRADE', 'REJECT_TRADE', 'TIME_UP'] as const;
 const ON_SPACE = ['BUILD_HOUSE', 'SELL_HOUSE', 'MORTGAGE', 'UNMORTGAGE'] as const;
 
 const isInt = (v: unknown, min: number, max: number): v is number => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
@@ -179,6 +208,18 @@ function cleanSide(raw: unknown) {
   if (!Array.isArray(spaces) || spaces.length > 40 || !spaces.every((s) => isInt(s, 0, 39))) return null;
   if (!isInt(cash, 0, Number.MAX_SAFE_INTEGER) || !isInt(jailCards, 0, 2)) return null;
   return { spaces: [...spaces] as number[], cash, jailCards };
+}
+
+/** The game type the host chose, or null if it isn't one the game offers. */
+export function cleanRules(raw: unknown): RulesChoice | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const { mode, festivals } = raw as Record<string, unknown>;
+  if (typeof festivals !== 'boolean' || typeof mode !== 'object' || mode === null) return null;
+  const m = mode as Record<string, unknown>;
+  if (m.kind === 'classic') return { mode: { kind: 'classic' }, festivals };
+  if (m.kind === 'rounds' && isInt(m.rounds, 1, MAX_ROUNDS)) return { mode: { kind: 'rounds', rounds: m.rounds }, festivals };
+  if (m.kind === 'time' && isInt(m.minutes, 1, MAX_MINUTES)) return { mode: { kind: 'time', minutes: m.minutes }, festivals };
+  return null;
 }
 
 export function cleanAction(raw: unknown): Action | null {

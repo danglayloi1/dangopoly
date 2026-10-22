@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { actingPlayer } from '../engine/buildings';
 import type { Action, GameState } from '../engine/types';
 import { ActionPanel } from './ActionPanel';
@@ -8,6 +8,8 @@ import { GameHeader } from './Header';
 import { ManageDialog } from './ManageDialog';
 import { PlayerList } from './PlayerList';
 import { SpaceCard } from './SpaceCard';
+import { StatusBar } from './StatusBar';
+import { SummaryDialog } from './SummaryDialog';
 import { TradeDialog } from './TradeDialog';
 import type { Presentation } from './usePresentation';
 
@@ -25,15 +27,23 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
   const [shownSpace, setShownSpace] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
   const [trading, setTrading] = useState(false);
+  const [summary, setSummary] = useState(false);
   const actor = actingPlayer(game);
   const { positions, rolling, busy } = presentation;
   // While a move plays out, the side panel keeps showing money as it was until the token arrives.
   const settled = useRef(game);
   if (!busy) settled.current = game;
 
+  // When the game ends (once the last move has played out), the summary opens by itself.
+  const over = game.phase.kind === 'gameOver' && !busy;
+  useEffect(() => {
+    if (over) setSummary(true);
+  }, [over]);
+
   return (
     <div className="game">
       <GameHeader onBack={onLeave}>{headerExtra}</GameHeader>
+      <StatusBar game={game} />
 
       <div className="game-layout">
         <Board game={game} positions={positions} busy={busy} onSelectSpace={setShownSpace}>
@@ -44,6 +54,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
             onManage={() => setManaging(true)}
             onTrade={() => setTrading(true)}
             onNewGame={onLeave}
+            onSummary={() => setSummary(true)}
             busy={busy}
             rolling={rolling}
           />
@@ -66,6 +77,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
       )}
       {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
       {children}
+      {summary && game.phase.kind === 'gameOver' && <SummaryDialog game={game} onClose={() => setSummary(false)} />}
       {shownSpace !== null && (
         <SpaceCard index={shownSpace} game={game} dispatch={dispatch} onClose={() => setShownSpace(null)} />
       )}

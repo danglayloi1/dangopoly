@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { STARTING_CASH } from '../data/board';
 import { PLAYER_COLORS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
-import { MAX_PLAYERS, MIN_PLAYERS } from '../engine/game';
+import { CLASSIC_RULES, MAX_PLAYERS, MIN_PLAYERS, type RulesChoice } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import { roomLink } from '../net/config';
@@ -13,6 +13,7 @@ import { LangSwitch, ThemeButton } from './Header';
 import { colorHex } from './look';
 import { ColorPicker, TokenPicker } from './Pickers';
 import { QrCode } from './QrCode';
+import { RulesPicker } from './RulesPicker';
 import { TokenIcon } from './TokenIcon';
 
 const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
@@ -40,6 +41,7 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
   const [nameMissing, setNameMissing] = useState(false);
   const [startingCash, setStartingCash] = useState(STARTING_CASH);
   const [firstTurn, setFirstTurn] = useState<FirstTurn>('roll');
+  const [rules, setRules] = useState<RulesChoice>(CLASSIC_RULES);
 
   // Before joining, move off tokens and colors that others have taken meanwhile.
   useEffect(() => {
@@ -170,6 +172,7 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
               ))}
             </div>
           </div>
+          <RulesPicker rules={rules} onChange={setRules} />
           <div className="first-turn-choice">
             <h2 id="online-first-label">{t.whoFirst}</h2>
             <div className="segmented" role="radiogroup" aria-labelledby="online-first-label">
@@ -190,7 +193,7 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
           <button
             className="primary big"
             disabled={room.seats.length < MIN_PLAYERS || status !== 'open'}
-            onClick={() => send({ t: 'start', startingCash, firstTurn })}
+            onClick={() => send({ t: 'start', startingCash, firstTurn, rules })}
           >
             {t.startOnline} →
           </button>

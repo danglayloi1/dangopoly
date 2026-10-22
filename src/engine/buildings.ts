@@ -2,6 +2,7 @@
 
 import { BOARD, GROUP_SPACES, isOwnable } from '../data/board';
 import { ownsWholeGroup } from './rent';
+import { buildingBlocked } from './rounds';
 import type { GameState, PropertyAction } from './types';
 
 /** `houses` value meaning a hotel (4 houses, then one more step). */
@@ -65,6 +66,7 @@ function housesIn(state: GameState, spaces: readonly number[]): number[] {
  */
 export function canBuildHouse(state: GameState, space: number): boolean {
   if (state.phase.kind === 'inDebt' || !ownedByActor(state, space)) return false;
+  if (buildingBlocked(state)) return false; // Mùa gió Lào
   const s = BOARD[space];
   if (s.kind !== 'property') return false;
   const own = state.ownership[space];

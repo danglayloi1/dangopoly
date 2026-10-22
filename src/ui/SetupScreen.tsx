@@ -2,7 +2,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react';
 import { START_SALARY, STARTING_CASH } from '../data/board';
 import { defaultPlayerColor, PLAYER_COLORS, type PlayerColorId } from '../data/colors';
 import { TOKENS, type TokenId } from '../data/tokens';
-import { MAX_PLAYERS, MIN_PLAYERS, type NewPlayer } from '../engine/game';
+import { CLASSIC_RULES, MAX_PLAYERS, MIN_PLAYERS, type NewPlayer, type RulesChoice } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import { useLang } from '../i18n/LangContext';
 import type { SaveFile } from '../engine/save';
@@ -11,12 +11,13 @@ import { ScreenTop } from './Header';
 import { colorHex } from './look';
 import { millionsText, parseMillions } from './startingCash';
 import { ColorPicker, TokenPicker } from './Pickers';
+import { RulesPicker } from './RulesPicker';
 import { TokenIcon } from './TokenIcon';
 
 const STARTING_CASH_CHOICES = [10_000_000, STARTING_CASH, 20_000_000];
 
 interface Props {
-  onStart: (players: NewPlayer[], startingCash: number) => void;
+  onStart: (players: NewPlayer[], startingCash: number, rules: RulesChoice) => void;
   onBack: () => void;
   saved: SaveFile | null; // a new game replaces it, so ask first
 }
@@ -42,6 +43,7 @@ export function SetupScreen({ onStart, onBack, saved }: Props) {
     { name: '', token: 'conTrau', color: defaultPlayerColor(1) },
   ]);
   const [firstTurn, setFirstTurn] = useState<FirstTurn>('roll');
+  const [rules, setRules] = useState<RulesChoice>(CLASSIC_RULES);
   // While set, the "who goes first" dice are shown for these players.
   const [rollingFor, setRollingFor] = useState<NewPlayer[] | null>(null);
   // The starting money is whatever is typed in the box; the preset buttons just fill it in.
@@ -69,7 +71,7 @@ export function SetupScreen({ onStart, onBack, saved }: Props) {
     if (saved && !window.confirm(t.newGameReplaces)) return;
     const named = players.map((p) => ({ ...p, name: p.name.trim() }));
     if (firstTurn === 'roll') setRollingFor(named);
-    else onStart(named, startingCash);
+    else onStart(named, startingCash, rules);
   };
 
   return (
@@ -160,6 +162,8 @@ export function SetupScreen({ onStart, onBack, saved }: Props) {
           </p>
         </div>
 
+        <RulesPicker rules={rules} onChange={setRules} />
+
         <div className="first-turn-choice">
           <h2 id="first-turn-label">{t.whoFirst}</h2>
           <div className="segmented" role="radiogroup" aria-labelledby="first-turn-label">
@@ -193,7 +197,7 @@ export function SetupScreen({ onStart, onBack, saved }: Props) {
       {rollingFor && startingCash !== null && (
         <FirstTurnDialog
           players={rollingFor}
-          onDone={(ordered) => onStart(ordered, startingCash)}
+          onDone={(ordered) => onStart(ordered, startingCash, rules)}
           onClose={() => setRollingFor(null)}
         />
       )}

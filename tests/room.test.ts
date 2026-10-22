@@ -173,3 +173,37 @@ describe('moves', () => {
     expect(JSON.stringify(v)).not.toContain('key-'); // seat keys never leave the server
   });
 });
+
+describe('game types online', () => {
+  const T0 = 1_000_000;
+  const timed = () =>
+    must(start(lobby(DANG, LAN), 0, 15_000_000, 'inOrder', fakeRandom(), { mode: { kind: 'time', minutes: 20 }, festivals: true }, T0));
+
+  it('start the game type the host chose, and refuse ones the game does not offer', () => {
+    const room = must(start(lobby(DANG, LAN), 0, 15_000_000, 'inOrder', fakeRandom(), { mode: { kind: 'rounds', rounds: 15 }, festivals: false }));
+    expect(room.game?.rules.mode).toEqual({ kind: 'rounds', rounds: 15 });
+    const bad = start(lobby(DANG, LAN), 0, 15_000_000, 'inOrder', fakeRandom(), { mode: { kind: 'rounds', rounds: 1000 }, festivals: false });
+    expect(bad).toEqual({ ok: false, error: 'badMessage' });
+    expect(timed().game?.rules).toEqual({ mode: { kind: 'time', minutes: 20, endsAt: T0 + 20 * 60_000 }, festivals: true });
+  });
+
+  it('only let the time run out by the room clock, but from any phone', () => {
+    const room = timed();
+    expect(act(room, 1, { type: 'TIME_UP' }, T0 + 60_000)).toEqual({ ok: false, error: 'notAllowed' });
+    const over = must(act(room, 1, { type: 'TIME_UP' }, T0 + 20 * 60_000));
+    expect(over.game?.phase.kind).toBe('gameOver');
+    expect(over.game?.endReason).toBe('time');
+  });
+
+  it('end the game at the next turn once time is up, even if no phone says so', () => {
+    let room = must(act(timed(), 0, { type: 'ROLL' }, T0));
+    const late = T0 + 21 * 60_000;
+    // Play on until the turn passes; the move that starts the next turn ends the game.
+    for (let i = 0; i < 10 && room.game!.phase.kind !== 'gameOver'; i++) {
+      const phase = room.game!.phase.kind;
+      const action = phase === 'awaitBuy' ? { type: 'DECLINE' } : phase === 'awaitRoll' ? { type: 'ROLL' } : { type: 'END_TURN' };
+      room = must(act(room, room.game!.current, action, late));
+    }
+    expect(room.game?.endReason).toBe('time');
+  });
+});

@@ -1248,6 +1248,275 @@ a.secondary {
   color: var(--muted);
 }
 
+/* ===== Game type: picker, status bar under the top bar ===== */
+.rules-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rules-picker .small-note {
+  margin: 0;
+}
+
+.small-choices button {
+  padding: 6px 0;
+  font-size: 0.88rem;
+}
+
+.festival-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.festival-toggle input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.festival-toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+}
+
+.status-bar {
+  max-width: 1240px;
+  margin: 0 auto 6px;
+  padding: 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.status-round,
+.status-clock {
+  padding: 2px 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.status-clock.ending {
+  border-color: var(--danger);
+  color: var(--danger);
+  animation: waiting-blink 1s ease-in-out infinite;
+}
+
+.status-festival {
+  padding: 2px 10px;
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--gold) 22%, var(--surface));
+}
+
+@media (max-width: 480px) {
+  .status-bar {
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-clock.ending {
+    animation: none;
+  }
+}
+
+.winner-reason {
+  margin: 0;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* ===== End-of-game summary ===== */
+.summary-dialog {
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  background-image: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+}
+
+.summary-dialog::backdrop {
+  background: rgba(20, 14, 10, 0.55);
+}
+
+.summary-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--ink);
+}
+
+.summary-header h2 {
+  margin: 0;
+}
+
+.summary-body {
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.summary-body h3 {
+  margin: 0 0 8px;
+}
+
+.summary-how {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.summary-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-ranking li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--player);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.summary-medal {
+  width: 1.6em;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.summary-name {
+  flex: 1;
+  font-weight: 800;
+}
+
+.summary-worth {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.worth-chart {
+  margin: 0;
+}
+
+.worth-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.chart-grid {
+  stroke: var(--border);
+  stroke-dasharray: 3 3;
+}
+
+.chart-label {
+  font-size: 9px;
+  fill: var(--muted);
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+}
+
+.summary-titles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.summary-titles li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 2px solid var(--player);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--player) 10%, var(--surface));
+  font-size: 0.85rem;
+}
+
+.summary-titles strong {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1rem;
+}
+
+.summary-table-wrap {
+  overflow-x: auto;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-table th,
+.summary-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.summary-table th[scope='row'] {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.summary-table thead th {
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .summary-table th,
+  .summary-table td {
+    padding: 5px 4px;
+  }
+
+  .summary-table th[scope='row'] {
+    white-space: normal;
+  }
+}
+
 /* ===== Music: a button in the corner and a small Spotify player above it ===== */
 .music {
   position: fixed;

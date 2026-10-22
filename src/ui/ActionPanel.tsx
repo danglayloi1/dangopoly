@@ -22,12 +22,13 @@ interface Props {
   onManage: () => void;
   onTrade: () => void;
   onNewGame: () => void;
+  onSummary: () => void;
   busy: boolean; // a move is being animated: show only the turn and the dice
   rolling: boolean;
 }
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
-export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, onNewGame, busy, rolling }: Props) {
+export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, onNewGame, onSummary, busy, rolling }: Props) {
   const { t, lang, uiLang } = useLang();
   const { phase } = game;
   const player = game.players[game.current];
@@ -74,7 +75,7 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, on
   }
 
   if (phase.kind === 'gameOver') {
-    return <WinnerPanel game={game} winner={phase.winner} onNewGame={onNewGame} />;
+    return <WinnerPanel game={game} winner={phase.winner} onNewGame={onNewGame} onSummary={onSummary} />;
   }
 
   return (

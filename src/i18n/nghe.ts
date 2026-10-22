@@ -148,6 +148,46 @@ export function ngheStrings(vi: Strings): Strings {
     inJailBadge: 'Đang bị nhốt',
     close: 'Đóng',
 
+    // Game modes and festivals
+    gameMode: 'Kiểu nhởi',
+    modeHints: {
+      classic: 'Nhởi tới khi chỉ còn một đứa chưa sạt nghiệp.',
+      rounds: 'Hết số vòng thì đứa mô giàu nhất thắng (tiền + đất + nhà).',
+      time: 'Hết giờ thì đứa mô giàu nhất thắng (tiền + đất + nhà). Ván dừng ở đầu lượt kế tiếp.',
+    },
+    festivalsHint: 'Cứ 3 vòng có một lễ hội, đổi một luật trong vòng đó nờ.',
+    festivalEffect: (id, group, gift) =>
+      ({
+        denCuong: `Tiền thuê bộ ${group} gấp đôi trong vòng ni.`,
+        langSen: 'Qua Xuất phát được gấp đôi trong vòng ni.',
+        gioLao: 'Nắng gió rứa, nỏ ai xây nhà được trong vòng ni.',
+        chieuTrung: `Ngân hàng lì xì mỗi đứa ${gift}.`,
+      })[id],
+    endByRounds: (n) => `Hết ${n} vòng rồi!`,
+    endByTime: 'Hết giờ rồi!',
+    richestWins: (name) => `${name} giàu nhất, thắng rồi!`,
+
+    // End-of-game summary
+    showSummary: 'Coi tổng kết',
+    summaryTitle: 'Tổng kết ván nhởi',
+    worthChart: 'Tài sản qua từng vòng',
+    statNames: {
+      ...vi.statNames,
+      rentReceived: 'Tiền thuê thu được',
+      jailed: 'Lần vô nhà tạm giữ',
+      trades: 'Lần đổi chác',
+    },
+    titles: {
+      rentKing: { name: 'Vua thu tô', why: 'thu tiền thuê nhiều nhất nờ' },
+      landlord: { name: 'Đại địa chủ', why: 'mua đất nhiều nhất' },
+      builder: { name: 'Ông trùm xây nhà', why: 'xây nhà nhiều nhất' },
+      generous: { name: 'Người hào phóng', why: 'trả tiền thuê nhiều nhất, tội nghiệp' },
+      luckyDice: { name: 'Thần đổ đôi', why: 'đổ đôi nhiều nhất' },
+      jailRegular: { name: 'Khách quen nhà tạm giữ', why: 'vô nhà tạm giữ nhiều nhất' },
+      trader: { name: 'Lái buôn', why: 'đổi chác nhiều nhất' },
+      traveller: { name: 'Đi khắp xứ Nghệ', why: 'qua Xuất phát nhiều nhất' },
+    },
+
     // Log
     log: {
       ...vi.log,
@@ -175,6 +215,8 @@ export function ngheStrings(vi: Strings): Strings {
       bankruptToPlayer: (p, to) => `${p} sạt nghiệp! Tài sản về tay ${to} hết`,
       bankruptToBank: (p) => `${p} sạt nghiệp! Tài sản trả về ngân hàng`,
       won: (p) => `${p} thắng rồi! Giỏi rứa! 🏆`,
+      festivalGift: (amount) => `Cả bọn được lì xì ${amount}`,
+      limitReached: (reason) => (reason === 'rounds' ? 'Hết số vòng rồi!' : 'Hết giờ rồi!'),
     },
   };
 }

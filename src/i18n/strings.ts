@@ -1,5 +1,7 @@
 import type { UiLang } from '../data/text';
+import type { FestivalId, PlayerStats } from '../engine/types';
 import type { ErrorCode } from '../net/protocol';
+import type { TitleId } from '../ui/summary';
 import { ngheStrings } from './nghe';
 
 const vi = {
@@ -235,6 +237,69 @@ const vi = {
   jailCardName: 'Thẻ Ra tù miễn phí',
   close: 'Đóng',
 
+  // Game modes and festivals
+  gameMode: 'Kiểu ván',
+  modeClassic: 'Cổ điển',
+  modeRounds: 'Giới hạn vòng',
+  modeTime: 'Giới hạn giờ',
+  modeHints: {
+    classic: 'Chơi đến khi chỉ còn một người chưa phá sản.',
+    rounds: 'Hết số vòng thì người giàu nhất thắng (tiền + đất + nhà).',
+    time: 'Hết giờ thì người giàu nhất thắng (tiền + đất + nhà). Ván kết thúc ở đầu lượt kế tiếp.',
+  },
+  roundsChoice: (n: number) => `${n} vòng`,
+  minutesChoice: (n: number) => `${n} phút`,
+  festivalsLabel: 'Lễ hội xứ Nghệ',
+  festivalsHint: 'Cứ 3 vòng có một lễ hội, đổi một luật trong vòng đó.',
+  roundOf: (round: number, total: number | null) => (total ? `Vòng ${round}/${total}` : `Vòng ${round}`),
+  timeLeft: 'Thời gian còn lại',
+  festivalNames: {
+    denCuong: 'Lễ hội Đền Cuông',
+    langSen: 'Lễ hội Làng Sen',
+    gioLao: 'Mùa gió Lào',
+    chieuTrung: 'Lễ hội Đền Chiêu Trưng',
+  } satisfies Record<FestivalId, string>,
+  festivalEffect: (id: FestivalId, group: string, gift: string) =>
+    ({
+      denCuong: `Tiền thuê bộ ${group} gấp đôi trong vòng này.`,
+      langSen: 'Qua Xuất phát nhận gấp đôi trong vòng này.',
+      gioLao: 'Nắng gió quá, không ai xây nhà được trong vòng này.',
+      chieuTrung: `Ngân hàng lì xì mỗi người ${gift}.`,
+    })[id],
+  endByRounds: (n: number) => `Hết ${n} vòng!`,
+  endByTime: 'Hết giờ!',
+  richestWins: (name: string) => `${name} giàu nhất nên thắng!`,
+
+  // End-of-game summary
+  showSummary: 'Xem tổng kết',
+  summaryTitle: 'Tổng kết ván',
+  summaryRounds: (n: number) => `${n} vòng`,
+  worthChart: 'Tài sản qua từng vòng',
+  worth: 'Tổng tài sản',
+  titlesHeading: 'Danh hiệu',
+  statsHeading: 'Số liệu',
+  statNames: {
+    rentReceived: 'Tiền thuê đã thu',
+    rentPaid: 'Tiền thuê đã trả',
+    bought: 'Đất đã mua',
+    housesBuilt: 'Nhà đã xây',
+    laps: 'Lần qua Xuất phát',
+    doubles: 'Lần đổ đôi',
+    jailed: 'Lần vào nhà tạm giữ',
+    trades: 'Giao dịch',
+    cards: 'Thẻ đã rút',
+  } satisfies Record<keyof PlayerStats, string>,
+  titles: {
+    rentKing: { name: 'Vua thu tô', why: 'thu tiền thuê nhiều nhất' },
+    landlord: { name: 'Đại địa chủ', why: 'mua nhiều đất nhất' },
+    builder: { name: 'Ông trùm xây dựng', why: 'xây nhiều nhà nhất' },
+    generous: { name: 'Mạnh thường quân', why: 'trả tiền thuê nhiều nhất' },
+    luckyDice: { name: 'Thần đổ đôi', why: 'đổ đôi nhiều nhất' },
+    jailRegular: { name: 'Khách quen nhà tạm giữ', why: 'vào nhà tạm giữ nhiều nhất' },
+    trader: { name: 'Thương lái', why: 'giao dịch nhiều nhất' },
+    traveller: { name: 'Đi khắp xứ Nghệ', why: 'qua Xuất phát nhiều nhất' },
+  } satisfies Record<TitleId, { name: string; why: string }>,
+
   // Log
   log: {
     turnStarted: (p: string) => `Lượt của ${p}`,
@@ -276,6 +341,10 @@ const vi = {
     bankruptToPlayer: (p: string, to: string) => `${p} phá sản! Toàn bộ tài sản về tay ${to}`,
     bankruptToBank: (p: string) => `${p} phá sản! Tài sản trả về ngân hàng`,
     won: (p: string) => `${p} chiến thắng! 🏆`,
+    roundStarted: (round: number) => `— Vòng ${round} —`,
+    festival: (name: string, effect: string) => `🏮 ${name}: ${effect}`,
+    festivalGift: (amount: string) => `Mọi người nhận ${amount} lì xì`,
+    limitReached: (reason: 'rounds' | 'time'): string => (reason === 'rounds' ? 'Hết số vòng!' : 'Hết giờ!'),
   },
 };
 
@@ -510,6 +579,69 @@ const en: Strings = {
   jailCardName: 'Get Out of Jail Free card',
   close: 'Close',
 
+  // Game modes and festivals
+  gameMode: 'Game type',
+  modeClassic: 'Classic',
+  modeRounds: 'Round limit',
+  modeTime: 'Time limit',
+  modeHints: {
+    classic: 'Play until only one player is left.',
+    rounds: 'After the last round, the richest player wins (cash + land + houses).',
+    time: 'When time is up, the richest player wins (cash + land + houses). The game ends at the start of the next turn.',
+  },
+  roundsChoice: (n) => `${n} rounds`,
+  minutesChoice: (n) => `${n} min`,
+  festivalsLabel: 'Nghệ Tĩnh festivals',
+  festivalsHint: 'Every 3 rounds, a festival changes one rule for that round.',
+  roundOf: (round, total) => (total ? `Round ${round}/${total}` : `Round ${round}`),
+  timeLeft: 'Time left',
+  festivalNames: {
+    denCuong: 'Đền Cuông Festival',
+    langSen: 'Làng Sen Festival',
+    gioLao: 'Laos Wind Season',
+    chieuTrung: 'Đền Chiêu Trưng Festival',
+  },
+  festivalEffect: (id, group, gift) =>
+    ({
+      denCuong: `Rent on the ${group} set is doubled this round.`,
+      langSen: 'Passing Xuất phát pays double this round.',
+      gioLao: 'Too hot and windy: no building this round.',
+      chieuTrung: `The bank gives every player ${gift}.`,
+    })[id],
+  endByRounds: (n) => `${n} rounds played!`,
+  endByTime: "Time's up!",
+  richestWins: (name) => `${name} is the richest and wins!`,
+
+  // End-of-game summary
+  showSummary: 'See the summary',
+  summaryTitle: 'Game summary',
+  summaryRounds: (n) => `${n} rounds`,
+  worthChart: 'Wealth, round by round',
+  worth: 'Total wealth',
+  titlesHeading: 'Titles',
+  statsHeading: 'Stats',
+  statNames: {
+    rentReceived: 'Rent collected',
+    rentPaid: 'Rent paid',
+    bought: 'Land bought',
+    housesBuilt: 'Houses built',
+    laps: 'Laps past Xuất phát',
+    doubles: 'Doubles rolled',
+    jailed: 'Times in jail',
+    trades: 'Trades',
+    cards: 'Cards drawn',
+  },
+  titles: {
+    rentKing: { name: 'Rent King', why: 'collected the most rent' },
+    landlord: { name: 'Great Landlord', why: 'bought the most land' },
+    builder: { name: 'Building Tycoon', why: 'built the most houses' },
+    generous: { name: 'Big-Hearted Patron', why: 'paid the most rent' },
+    luckyDice: { name: 'Lord of Doubles', why: 'rolled the most doubles' },
+    jailRegular: { name: 'Jail Regular', why: 'went to jail the most' },
+    trader: { name: 'Merchant', why: 'made the most trades' },
+    traveller: { name: 'Wanderer of Nghệ Tĩnh', why: 'passed Xuất phát the most' },
+  },
+
   log: {
     turnStarted: (p) => `${p}'s turn`,
     rolled: (p, a, b) => `${p} rolled ${a} + ${b}`,
@@ -547,6 +679,10 @@ const en: Strings = {
     bankruptToPlayer: (p, to) => `${p} went bankrupt! Everything goes to ${to}`,
     bankruptToBank: (p) => `${p} went bankrupt! Property returns to the bank`,
     won: (p) => `${p} wins! 🏆`,
+    roundStarted: (round) => `— Round ${round} —`,
+    festival: (name, effect) => `🏮 ${name}: ${effect}`,
+    festivalGift: (amount) => `Everyone gets ${amount} lucky money`,
+    limitReached: (reason) => (reason === 'rounds' ? 'Last round played!' : "Time's up!"),
   },
 };
 

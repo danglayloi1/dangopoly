@@ -19,6 +19,10 @@ npm test         # runs the rule tests
 npm run build    # builds the final website into dist/
 ```
 
+**Game types:** classic (until one player is left), a round limit, or a time limit; with a limit the
+richest player wins. Turn on **🏮 Lễ hội xứ Nghệ** and every 3rd round a festival changes one rule for
+that round. At the end, a summary shows the ranking, a chart of everyone's wealth, titles and stats.
+
 After **Vào chơi**, the menu offers: play on one device, play online, the guided practice game
 (**🎓 Hướng dẫn chơi**), and settings (language, colors, sound volume).
 
@@ -32,7 +36,8 @@ plays it in the Spotify app instead.
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
-`online` (three phones in one room; needs `npm run server` too), `live` (the published site).
+`modes` (round and time limits, festivals, the summary), `online` (three phones in one room; needs
+`npm run server` too), `live` (the published site).
 
 ```bash
 npm run shots -- tutorial            # desktop size

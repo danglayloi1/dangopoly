@@ -276,3 +276,22 @@ Friends play from their own phones. One player creates a room and shares its cod
 11. ✅ **Game server** (no release: nothing changed for players yet): the who-may-move rule in the engine; the room logic as plain TypeScript with tests; the Worker and Durable Object around it; deploy from GitHub Actions.
 12. ✅ **Online screens** (v1.3.0): "Chơi online" on the start screen (create or join), the lobby (name, token, color; the host starts; first-turn dice for everyone), the game screen in online mode (only your own buttons; trade offers pop up on the other player's phone), offline markers, rejoin by link, QR code; screenshots of 2–4 phones playing.
 
+---
+
+## 11. Game types, festivals and the summary
+
+- **Classic:** play until one player is left.
+- **Round limit** (10/15/20/30): a round ends when play comes back to the first player. After the last round, the richest player wins.
+- **Time limit** (20/30/45/60 min): when time is up, the game ends at the start of the next turn and the richest player wins. A saved local game's clock doesn't run while it's closed. Online, only the room server's clock decides.
+- **Wealth** = cash + land at its price (half if mortgaged) + houses at their cost. Ties go to more cash.
+- **Festivals** (optional): rounds 3, 6, 9… each have one, picked by the game's seeded random numbers. It lasts that round.
+  - **Lễ hội Đền Cuông:** rent ×2 on one random color set.
+  - **Lễ hội Làng Sen:** double salary at Xuất phát.
+  - **Mùa gió Lào:** no building.
+  - **Lễ hội Đền Chiêu Trưng:** the bank gives everyone 1tr.
+- **Summary** at the end:
+  - how the game ended, and the ranking by wealth;
+  - a chart of each player's wealth at the start of every round;
+  - titles for the single leader of each stat;
+  - a stats table: rent paid and received, land bought, houses built, laps, doubles, jail, trades, cards.
+

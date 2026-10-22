@@ -1,3 +1,4 @@
+import type { ColorGroup } from '../data/board';
 import type { CardDeck } from '../data/cards';
 import type { PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
@@ -65,6 +66,43 @@ export interface TradeOffer {
 
 export type Dice = [number, number];
 
+/**
+ * How the game ends: when one player is left (classic), after a set number of rounds, or when
+ * the time is up. With a limit, the richest player wins (see worthOf in rounds.ts).
+ */
+export type GameMode =
+  | { kind: 'classic' }
+  | { kind: 'rounds'; rounds: number }
+  | { kind: 'time'; minutes: number; endsAt: number }; // endsAt: ms since 1970
+
+export interface Rules {
+  mode: GameMode;
+  festivals: boolean; // every few rounds, a local festival changes one rule for a round
+}
+
+export type FestivalId = 'denCuong' | 'langSen' | 'gioLao' | 'chieuTrung';
+
+/** The festival of the current round; group is the color set it doubles the rent of (Đền Cuông). */
+export interface Festival {
+  id: FestivalId;
+  group: ColorGroup | null;
+}
+
+/** Counted during the game for the summary at the end. */
+export interface PlayerStats {
+  rentPaid: number;
+  rentReceived: number;
+  jailed: number; // times sent to jail
+  doubles: number;
+  bought: number; // properties bought from the bank
+  housesBuilt: number;
+  laps: number; // times passing Xuất phát
+  trades: number; // trades agreed
+  cards: number; // cards drawn
+}
+
+export type EndReason = 'lastStanding' | 'rounds' | 'time';
+
 export type Action =
   | { type: 'ROLL'; dice?: Dice } // `dice` forces the result (tutorial and tests)
   | { type: 'BUY' }
@@ -83,7 +121,9 @@ export type Action =
   // Trading (see trading.ts)
   | { type: 'PROPOSE_TRADE'; offer: TradeOffer }
   | { type: 'ACCEPT_TRADE' }
-  | { type: 'REJECT_TRADE' };
+  | { type: 'REJECT_TRADE' }
+  // Timed games: the time is up (sent at the start of a turn; whoever sends it checks the clock)
+  | { type: 'TIME_UP' };
 
 export type ActionType = Action['type'];
 export type PropertyAction = Extract<Action, { space: number }>;
@@ -120,7 +160,11 @@ export type LogEntry =
   | { type: 'stayedInJail'; player: number; attempt: number }
   | { type: 'leftJail'; player: number; how: JailExit }
   | { type: 'bankrupt'; player: number; creditor: number | null }
-  | { type: 'won'; player: number };
+  | { type: 'won'; player: number }
+  | { type: 'roundStarted'; round: number }
+  | { type: 'festival'; festival: Festival; round: number }
+  | { type: 'festivalGift'; amount: number }
+  | { type: 'limitReached'; reason: 'rounds' | 'time' };
 
 export interface GameState {
   players: Player[];
@@ -134,4 +178,10 @@ export interface GameState {
   lastCard: { deck: CardDeck; card: number } | null; // the card drawn this turn, to show it
   rngState: number;
   log: LogEntry[];
+  rules: Rules;
+  round: number; // 1 for the first round; a round ends when play comes back around to the first player
+  festival: Festival | null; // the festival of this round, if any
+  stats: PlayerStats[]; // by player id
+  worth: number[][]; // each player's worth at the start of every round (and at the end)
+  endReason: EndReason | null;
 }
