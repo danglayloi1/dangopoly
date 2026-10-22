@@ -1,0 +1,180 @@
+/* More themes besides Giấy dó (light) and Sơn mài (dark), chosen in Settings or with the theme
+   button. Each set of colors is written once and used both by the page (data-theme on <html>)
+   and by its preview tile in the theme picker (data-preview), so the tiles always match. */
+
+/* Giấy dó and Sơn mài for their preview tiles (the page itself gets them from styles.css). */
+.theme-preview[data-preview='light'] {
+  --bg: #efe4cc;
+  --surface: #f8f0dd;
+  --accent: #b8322a;
+  --gold: #c99a2e;
+  --ink: #2b2420;
+  --text: #2b2420;
+}
+
+.theme-preview[data-preview='dark'] {
+  --bg: #1b1512;
+  --surface: #261d18;
+  --accent: #d64a3c;
+  --gold: #d9ae4f;
+  --ink: #d9ae4f;
+  --text: #f3e7cc;
+}
+
+/* Tết: warm paper, red ink and gold, with apricot blossoms (hoa mai) on the wallpaper. */
+:root[data-theme='tet'],
+.theme-preview[data-preview='tet'] {
+  --bg: #f6e2c0;
+  --surface: #fff4df;
+  --surface-2: #f4dcae;
+  --text: #3a120c;
+  --muted: #7a4a2e;
+  --accent: #c8161d;
+  --gold: #d4a017;
+  --border: #e0b45a;
+  --ink: #6b1410;
+  --board-bg: #f3d9a8;
+  --board-line: #6b1410;
+  --cell-bg: #fff2d6;
+  --danger: #a3121a;
+  --print-shadow: 3px 3px 0 #6b1410;
+  --wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cg fill='%23ecc15a' stroke='%23c8161d' stroke-width='1.2'%3E%3Cg transform='translate(36 40)'%3E%3Ccircle cx='0' cy='-7' r='5'/%3E%3Ccircle cx='6.7' cy='-2.2' r='5'/%3E%3Ccircle cx='4.1' cy='5.7' r='5'/%3E%3Ccircle cx='-4.1' cy='5.7' r='5'/%3E%3Ccircle cx='-6.7' cy='-2.2' r='5'/%3E%3Ccircle cx='0' cy='0' r='2.6' fill='%23c8161d'/%3E%3C/g%3E%3Cg transform='translate(110 108) scale(.75)'%3E%3Ccircle cx='0' cy='-7' r='5'/%3E%3Ccircle cx='6.7' cy='-2.2' r='5'/%3E%3Ccircle cx='4.1' cy='5.7' r='5'/%3E%3Ccircle cx='-4.1' cy='5.7' r='5'/%3E%3Ccircle cx='-6.7' cy='-2.2' r='5'/%3E%3Ccircle cx='0' cy='0' r='2.6' fill='%23c8161d'/%3E%3C/g%3E%3C/g%3E%3Cpath d='M20 120 Q40 100 62 112 M86 26 Q104 44 128 34' fill='none' stroke='%23a0522d' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Chàm: indigo, like the woodblock prints of Hàng Trống, with waves on the wallpaper. */
+:root[data-theme='cham'],
+.theme-preview[data-preview='cham'] {
+  --bg: #e4e9ef;
+  --surface: #f4f6f9;
+  --surface-2: #d9e1ea;
+  --text: #17212e;
+  --muted: #4a5a70;
+  --accent: #2c4f8c;
+  --gold: #b88326;
+  --border: #9fb0c4;
+  --ink: #17212e;
+  --board-bg: #d7e0ea;
+  --board-line: #17212e;
+  --cell-bg: #f1f4f8;
+  --danger: #b3261e;
+  --print-shadow: 3px 3px 0 #17212e;
+  --wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' fill='none' stroke='%23b3c1d3' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 20 Q15 5 30 20 T60 20 T90 20 T120 20'/%3E%3Cpath d='M0 50 Q15 35 30 50 T60 50 T90 50 T120 50'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Tương phản cao: black on white, no textures, strongest colors; easiest to read. */
+:root[data-theme='contrast'],
+.theme-preview[data-preview='contrast'] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #ececec;
+  --text: #000000;
+  --muted: #2b2b2b;
+  --accent: #a4001d;
+  --gold: #6b4f00;
+  --border: #000000;
+  --ink: #000000;
+  --board-bg: #ffffff;
+  --board-line: #000000;
+  --cell-bg: #ffffff;
+  --danger: #a4001d;
+  --print-shadow: 3px 3px 0 #000000;
+  --paper: none;
+  --wallpaper: none;
+  color-scheme: light;
+}
+
+:root[data-theme='contrast'] .muted,
+:root[data-theme='contrast'] .cell-price {
+  color: #2b2b2b;
+  opacity: 1;
+}
+
+/* ===== The theme picker: a tile per theme showing its paper, a card, ink and colors ===== */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.theme-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.theme-choice.selected {
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 var(--accent);
+}
+
+.theme-preview {
+  display: grid;
+  place-items: center;
+  height: 70px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ink);
+  background-color: var(--bg);
+  background-image: var(--paper), var(--wallpaper);
+  overflow: hidden;
+}
+
+.theme-preview .mini-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.theme-preview .mini-button {
+  width: 30px;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.theme-preview .mini-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 1.5px solid var(--ink);
+}
+
+.theme-preview .mini-line {
+  width: 26px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text);
+  opacity: 0.7;
+}
+
+/* "Follow the device": half Giấy dó, half Sơn mài. */
+.theme-preview.split {
+  grid-template-columns: 1fr 1fr;
+  padding: 0;
+}
+
+.theme-preview.split > .theme-preview {
+  height: 100%;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+.theme-preview.split .mini-card {
+  transform: scale(0.8);
+}

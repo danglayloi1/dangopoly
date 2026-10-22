@@ -1,5 +1,6 @@
 import type { RulesChoice } from '../engine/game';
 import { useLang } from '../i18n/LangContext';
+import { Icon } from './icons';
 
 export const ROUND_CHOICES = [10, 15, 20, 30];
 export const MINUTE_CHOICES = [20, 30, 45, 60];
@@ -72,7 +73,9 @@ export function RulesPicker({ rules, onChange }: { rules: RulesChoice; onChange:
       <label className="festival-toggle">
         <input type="checkbox" checked={rules.festivals} onChange={(e) => onChange({ ...rules, festivals: e.target.checked })} />
         <span>
-          <strong>🏮 {t.festivalsLabel}</strong>
+          <strong>
+            <Icon name="lantern" /> {t.festivalsLabel}
+          </strong>
           <span className="muted">{t.festivalsHint}</span>
         </span>
       </label>

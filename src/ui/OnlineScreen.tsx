@@ -14,6 +14,7 @@ import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
 import { ViewerProvider } from './viewer';
 import type { NextGame } from './WinnerPanel';
+import { Icon } from './icons';
 
 interface Props {
   code: string;
@@ -88,7 +89,15 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
 
   const status = (
     <span className={`room-chip${state.status === 'open' ? '' : ' warn'}`} title={t.roomTitle(room.code)}>
-      {state.status === 'open' ? (seat === null ? `👀 ${t.watching} · ${room.code}` : room.code) : t.reconnecting}
+      {state.status !== 'open' ? (
+        t.reconnecting
+      ) : seat === null ? (
+        <>
+          <Icon name="eye" /> {t.watching} · {room.code}
+        </>
+      ) : (
+        room.code
+      )}
     </span>
   );
 

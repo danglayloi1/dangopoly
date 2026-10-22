@@ -334,3 +334,17 @@ The **dice** are 3D cubes: they spin while rolling, then turn to show the result
 
 **Settings → Hiệu ứng chuyển động** sets the speed: Bình thường, Nhanh (twice as fast), or Tắt (nothing moves; results show at once). A device set to "reduce motion" always counts as Tắt.
 
+## 13. Look: themes, titles and icons
+
+**Settings → Giao diện** shows a tile per theme, each a small preview of its paper, a card and its colors:
+- **Theo thiết bị**: Giấy dó by day, Sơn mài when the device is in dark mode;
+- **Giấy dó** (light) and **Sơn mài** (dark lacquer; the board picture turns to evening, with the moon);
+- **Tết**: warm paper, red and gold, apricot blossoms (hoa mai) on the wallpaper;
+- **Chàm**: indigo like the Hàng Trống prints, with waves;
+- **Tương phản cao**: black on white with no textures, the easiest to read.
+
+The theme button in the header goes through them in that order. Titles (the logo, screen titles, the
+winner, the festival banner) are written in a brush font (Water Brush). Every symbol in the game is a
+drawn icon in the folk colors instead of an emoji. On the board picture, birds cross the sky and light
+glints on the Lam River (still when motion is off).
+

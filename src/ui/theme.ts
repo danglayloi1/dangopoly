@@ -1,14 +1,17 @@
-// Light / dark / follow the device. The choice is a data-theme attribute on <html>, which the
-// styles read; index.html applies the saved choice before the page draws, so there's no flash.
+// The colors: follow the device, Giấy dó (light), Sơn mài (dark), Tết, Chàm, or high contrast.
+// The choice is a data-theme attribute on <html>, which the styles read (styles.css, themes.css);
+// index.html applies the saved choice before the page draws, so there's no flash.
 
-export type Theme = 'auto' | 'light' | 'dark';
+export type Theme = 'auto' | 'light' | 'dark' | 'tet' | 'cham' | 'contrast';
+
+export const THEMES: readonly Theme[] = ['auto', 'light', 'dark', 'tet', 'cham', 'contrast'];
 
 const KEY = 'dangopoly.theme';
 
 export function savedTheme(): Theme {
   try {
     const value = localStorage.getItem(KEY);
-    if (value === 'light' || value === 'dark') return value;
+    if (value && value !== 'auto' && THEMES.includes(value as Theme)) return value as Theme;
   } catch {
     // storage unavailable: follow the device
   }
@@ -27,7 +30,7 @@ export function applyTheme(theme: Theme): void {
   }
 }
 
-/** auto → light → dark → auto */
+/** The theme button goes through them in order: auto → light → dark → Tết → Chàm → contrast → auto. */
 export function nextTheme(theme: Theme): Theme {
-  return theme === 'auto' ? 'light' : theme === 'light' ? 'dark' : 'auto';
+  return THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
 }

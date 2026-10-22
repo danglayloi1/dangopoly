@@ -10,10 +10,10 @@
     />
     <meta name="theme-color" content="#d64545" />
     <script>
-      // Apply the saved light/dark choice before the page draws (see src/ui/theme.ts).
+      // Apply the saved colors before the page draws (see src/ui/theme.ts).
       try {
         const theme = localStorage.getItem('dangopoly.theme');
-        if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+        if (['light', 'dark', 'tet', 'cham', 'contrast'].includes(theme)) document.documentElement.setAttribute('data-theme', theme);
       } catch {}
     </script>
 
@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800;900&family=Water+Brush&display=swap"
     />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

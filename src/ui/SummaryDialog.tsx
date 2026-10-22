@@ -8,8 +8,9 @@ import { awards } from './summary';
 import { TokenIcon } from './TokenIcon';
 import { useModalDialog } from './useModalDialog';
 import { WorthChart } from './WorthChart';
+import { Icon, type IconName } from './icons';
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+const MEDALS: IconName[] = ['medalGold', 'medalSilver', 'medalBronze'];
 const MONEY_STATS: readonly (keyof PlayerStats)[] = ['rentReceived', 'rentPaid'];
 const STAT_ORDER: readonly (keyof PlayerStats)[] = ['rentReceived', 'rentPaid', 'bought', 'housesBuilt', 'laps', 'doubles', 'jailed', 'trades', 'cards'];
 
@@ -41,13 +42,15 @@ export function SummaryDialog({ game, onClose }: { game: GameState; onClose: () 
       </header>
       <div className="summary-body">
         <p className="summary-how">
-          🏆 {how} <span className="muted">· {t.summaryRounds(game.round)}</span>
+          <Icon name="trophy" /> {how} <span className="muted">· {t.summaryRounds(game.round)}</span>
         </p>
 
         <ol className="summary-ranking">
           {ranking.map((p, i) => (
             <li key={p.id} style={{ '--player': playerColor(p) } as CSSProperties}>
-              <span className="summary-medal">{p.bankrupt ? '💸' : (MEDALS[i] ?? `${i + 1}.`)}</span>
+              <span className="summary-medal">
+                {p.bankrupt ? <Icon name="purse" /> : MEDALS[i] ? <Icon name={MEDALS[i]} /> : `${i + 1}.`}
+              </span>
               <TokenIcon token={p.token} color={playerColor(p)} size={30} />
               <span className="summary-name">{p.name}</span>
               <span className="summary-worth">{p.bankrupt ? t.bankrupt : formatMoney(worth[p.id])}</span>

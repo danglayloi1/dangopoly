@@ -2,6 +2,7 @@ import type { SaveFile } from '../engine/save';
 import { useLang } from '../i18n/LangContext';
 import { LangSwitch, ThemeButton } from './Header';
 import { SavedGameCard } from './SavedGameCard';
+import { Icon, type IconName } from './icons';
 
 interface Props {
   saved: SaveFile | null;
@@ -29,10 +30,10 @@ export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onOnline, on
 
       <h1 className="menu-title">{t.menuTitle}</h1>
       <nav className="menu-choices" aria-label={t.menuTitle}>
-        <MenuChoice icon="🎲" title={t.playLocal} hint={t.playLocalHint} onClick={onLocal} />
-        <MenuChoice icon="🌐" title={t.online} hint={t.onlineIntro} onClick={onOnline} />
-        <MenuChoice icon="🎓" title={t.tutorialStart} hint={t.tutorialIntro} onClick={onTutorial} />
-        <MenuChoice icon="⚙️" title={t.settings} hint={t.settingsHint} onClick={onSettings} />
+        <MenuChoice icon="dice" title={t.playLocal} hint={t.playLocalHint} onClick={onLocal} />
+        <MenuChoice icon="globe" title={t.online} hint={t.onlineIntro} onClick={onOnline} />
+        <MenuChoice icon="scroll" title={t.tutorialStart} hint={t.tutorialIntro} onClick={onTutorial} />
+        <MenuChoice icon="gear" title={t.settings} hint={t.settingsHint} onClick={onSettings} />
       </nav>
 
       <footer>
@@ -42,11 +43,11 @@ export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onOnline, on
   );
 }
 
-function MenuChoice({ icon, title, hint, onClick }: { icon: string; title: string; hint: string; onClick: () => void }) {
+function MenuChoice({ icon, title, hint, onClick }: { icon: IconName; title: string; hint: string; onClick: () => void }) {
   return (
     <button className="menu-choice" onClick={onClick}>
       <span className="menu-icon" aria-hidden="true">
-        {icon}
+        <Icon name={icon} size={30} />
       </span>
       <span className="menu-text">
         <strong>{title}</strong>

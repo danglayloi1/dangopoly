@@ -72,7 +72,9 @@ export function TradeOfferPanel({ game, offer, dispatch, onShowSpace }: Props) {
     <div className="action-panel trade-offer" style={{ '--player': playerColor(to) } as CSSProperties}>
       <div className="turn-banner" style={{ color: playerColor(to) }}>
         <TokenIcon token={to.token} color={playerColor(to)} size={28} />
-        <span>🤝 {t.offerTitle(to.name, from.name)}</span>
+        <span>
+          <Icon name="handshake" /> {t.offerTitle(to.name, from.name)}
+        </span>
       </div>
       {!online && <p className="muted pass-device">{t.passDevice(to.name)}</p>}
 

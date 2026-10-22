@@ -9,6 +9,7 @@ import { colorHex } from './look';
 import { playSound } from './sound';
 import { TokenIcon } from './TokenIcon';
 import { useModalDialog } from './useModalDialog';
+import { Icon } from './icons';
 
 interface Props {
   players: NewPlayer[];
@@ -104,12 +105,12 @@ export function FirstTurnDialog({ players, onDone, onClose }: Props) {
       <div className="first-turn-actions">
         {next !== undefined && (
           <button className="primary big" disabled={rolling !== null} onClick={() => roll(next)} autoFocus>
-            🎲 {t.rollForFirst(players[next].name)}
+            <Icon name="dice" /> {t.rollForFirst(players[next].name)}
           </button>
         )}
         {tied && (
           <button className="primary big" onClick={() => rollAgain(tied)} autoFocus>
-            🎲 {t.rollForFirst(players[tied[0]].name)}
+            <Icon name="dice" /> {t.rollForFirst(players[tied[0]].name)}
           </button>
         )}
         {ordered && (
