@@ -3,20 +3,23 @@ import { BOARD, isOwnable } from '../data/board';
 import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
+import { BoardEffects } from './Effects';
 import { cellPosition } from './geometry';
 import { groupFill, playerColor, spaceIcon } from './look';
 import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
+import type { ShownEffect } from './usePresentation';
 
 interface Props {
   game: GameState;
   positions: number[]; // where to draw each token (it lags behind the game while hopping)
   busy: boolean; // a move is being animated
   onSelectSpace: (index: number) => void;
+  effects: ShownEffect[]; // seals, flying coins… drawn over the spaces
   children: ReactNode; // shown in the middle of the board
 }
 
-export function Board({ game, positions, busy, onSelectSpace, children }: Props) {
+export function Board({ game, positions, busy, onSelectSpace, effects, children }: Props) {
   const { lang, t } = useLang();
 
   return (
@@ -41,6 +44,7 @@ export function Board({ game, positions, busy, onSelectSpace, children }: Props)
             key={index}
             className={`cell side-${side} kind-${space.kind}${own ? ' owned' : ''}${own?.mortgaged ? ' mortgaged' : ''}`}
             style={style}
+            data-space={index}
             onClick={() => onSelectSpace(index)}
             aria-label={ownerName ? `${name}, ${t.ownedBy(ownerName)}` : name}
           >
@@ -76,6 +80,7 @@ export function Board({ game, positions, busy, onSelectSpace, children }: Props)
         );
       })}
       <div className="board-center">{children}</div>
+      <BoardEffects effects={effects} game={game} />
     </div>
   );
 }

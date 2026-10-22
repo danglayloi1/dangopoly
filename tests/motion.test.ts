@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CARDS } from '../src/data/cards';
 import { applyAction, createGame } from '../src/engine/game';
 import type { GameState, LogEntry } from '../src/engine/types';
-import { hasMotion, newLogEntries, planMoves, soundFor, stepPath } from '../src/ui/motion';
+import { effectsFor, hasMotion, newLogEntries, planMoves, soundFor, stepPath } from '../src/ui/motion';
 
 function newGame(): GameState {
   return createGame({
@@ -114,5 +114,54 @@ describe('hasMotion and soundFor', () => {
     expect(soundFor({ type: 'wentToJail', player: 0, reason: 'card' })).toBe('jail');
     expect(soundFor({ type: 'won', player: 0 })).toBe('win');
     expect(soundFor({ type: 'turnStarted', player: 1 })).toBeNull();
+  });
+});
+
+describe('effects after a move', () => {
+  const game = createGame({
+    players: [
+      { name: 'Đăng', token: 'nonLa' },
+      { name: 'Lan', token: 'conTrau' },
+      { name: 'Minh', token: 'xeDap' },
+    ],
+    seed: 1,
+  });
+  game.players[0].position = 6;
+  game.players[1].position = 10;
+  game.players[2].position = 21;
+
+  it('stamps a seal on what was bought', () => {
+    expect(effectsFor([{ type: 'bought', player: 0, space: 6, price: 1_000_000 }], game)).toEqual([{ kind: 'seal', space: 6 }]);
+  });
+
+  it('sends coins from payer to owner, and to or from the bank', () => {
+    expect(effectsFor([{ type: 'paidRent', player: 0, to: 1, space: 6, amount: 60_000 }], game)).toEqual([
+      { kind: 'money', from: 6, to: 10, amount: 60_000 },
+    ]);
+    expect(effectsFor([{ type: 'paidTax', player: 0, space: 4, amount: 2_000_000 }], game)).toEqual([
+      { kind: 'money', from: 6, to: 'bank', amount: 2_000_000 },
+    ]);
+    expect(effectsFor([{ type: 'passedStart', player: 0, amount: 2_000_000 }], game)).toEqual([
+      { kind: 'money', from: 0, to: 6, amount: 2_000_000 },
+    ]);
+  });
+
+  it('keeps big payouts readable: at most four coin flights', () => {
+    const many = Array.from({ length: 6 }, () => ({ type: 'paidEach' as const, player: 0, each: 100_000 }));
+    expect(effectsFor(many, game).filter((e) => e.kind === 'money')).toHaveLength(4);
+  });
+
+  it('shows building, jail, bankruptcy and festivals', () => {
+    const kinds = effectsFor(
+      [
+        { type: 'builtHouse', player: 0, space: 6, houses: 1, cost: 500_000 },
+        { type: 'wentToJail', player: 0, reason: 'space' },
+        { type: 'bankrupt', player: 2, creditor: null },
+        { type: 'festival', festival: { id: 'chieuTrung', group: null }, round: 3 },
+        { type: 'festivalGift', amount: 1_000_000 },
+      ],
+      game,
+    ).map((e) => e.kind);
+    expect(kinds).toEqual(['build', 'jail', 'bankrupt', 'festival', 'coinRain']);
   });
 });

@@ -40,7 +40,7 @@ plays it in the Spotify app instead.
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
-`modes` (round and time limits, festivals, the summary), `online` (three phones in one room; needs
+`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).
 
 ```bash

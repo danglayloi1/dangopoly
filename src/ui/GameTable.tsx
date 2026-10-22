@@ -3,6 +3,7 @@ import { actingPlayer } from '../engine/buildings';
 import type { Action, GameState } from '../engine/types';
 import { ActionPanel } from './ActionPanel';
 import { Board } from './Board';
+import { ScreenEffects } from './Effects';
 import { GameLog } from './GameLog';
 import { GameHeader } from './Header';
 import { ManageDialog } from './ManageDialog';
@@ -48,7 +49,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
       <StatusBar game={game} />
 
       <div className="game-layout">
-        <Board game={game} positions={positions} busy={busy} onSelectSpace={setShownSpace}>
+        <Board game={game} positions={positions} busy={busy} onSelectSpace={setShownSpace} effects={presentation.effects}>
           <ActionPanel
             game={game}
             dispatch={dispatch}
@@ -78,6 +79,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
         />
       )}
       {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
+      <ScreenEffects effects={presentation.effects} />
       {children}
       {summary && game.phase.kind === 'gameOver' && <SummaryDialog game={game} onClose={() => setSummary(false)} />}
       {shownSpace !== null && (
