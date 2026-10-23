@@ -11,6 +11,7 @@ import { ManageDialog } from './ManageDialog';
 import { PlayerList } from './PlayerList';
 import { SpaceCard } from './SpaceCard';
 import { StatusBar } from './StatusBar';
+import type { NewBadges } from './records';
 import { SummaryDialog } from './SummaryDialog';
 import { TradeDialog } from './TradeDialog';
 import type { Presentation } from './usePresentation';
@@ -24,10 +25,11 @@ interface Props {
   headerExtra?: ReactNode; // shown in the top bar, e.g. "auto-saved" or the room code
   next?: NextGame; // after the game; by default a button back to the menu
   children?: ReactNode; // shown above everything, e.g. the tutorial hint
+  newBadges?: NewBadges[]; // badges this game earned for the first time (shown in the summary)
 }
 
 /** The game on screen: board, turn panel, players, history and the pop-ups. Used for local and online games. */
-export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, next = { onClick: onLeave }, children }: Props) {
+export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, next = { onClick: onLeave }, children, newBadges = [] }: Props) {
   const [shownSpace, setShownSpace] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
   const [trading, setTrading] = useState(false);
@@ -84,7 +86,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
       {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
       <ScreenEffects effects={presentation.effects} />
       {children}
-      {summary && game.phase.kind === 'gameOver' && <SummaryDialog game={game} onClose={() => setSummary(false)} />}
+      {summary && game.phase.kind === 'gameOver' && <SummaryDialog game={game} newBadges={newBadges} onClose={() => setSummary(false)} />}
       {shownSpace !== null && (
         <SpaceCard index={shownSpace} game={game} dispatch={dispatch} onClose={() => setShownSpace(null)} />
       )}

@@ -2886,3 +2886,137 @@ body {
     white-space: normal;
   }
 }
+
+/* ===== Records and badges ===== */
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.records-table th,
+.records-table td {
+  padding: 8px 6px;
+  border-bottom: 1.5px dashed var(--border);
+  text-align: right;
+}
+
+.records-table th:first-child {
+  text-align: left;
+}
+
+.records-table thead th {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.records-table .link {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.records-table tr.chosen th .link {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.badge-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+/* Each badge is a little round seal with its name and how it's earned. */
+.badge-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--gold);
+  text-align: center;
+}
+
+.badge-tile .icon {
+  padding: 6px;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  background: var(--surface-2, var(--surface));
+  box-sizing: content-box;
+}
+
+.badge-tile strong {
+  font-size: 0.9rem;
+}
+
+.badge-tile span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.badge-tile.locked {
+  border-style: dashed;
+  border-color: var(--border);
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.badge-tile.locked .icon {
+  filter: grayscale(1);
+  border-color: var(--border);
+}
+
+.center-button {
+  align-self: center;
+}
+
+.summary-badges ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-badges li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--player);
+  border-radius: 10px;
+  background: var(--surface);
+  animation: pop-in calc(0.4s / var(--fx, 1)) ease-out backwards;
+}
+
+.summary-badges li > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-badges .badge-seal {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  background: var(--surface-2, var(--surface));
+  flex-shrink: 0;
+}
+
+.summary-share {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 4px;
+}

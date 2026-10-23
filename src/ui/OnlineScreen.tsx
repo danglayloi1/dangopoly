@@ -12,6 +12,7 @@ import { Lobby } from './Lobby';
 import { Reactions } from './Reactions';
 import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
+import { useRecordGame } from './useRecordGame';
 import { ViewerProvider } from './viewer';
 import type { NextGame } from './WinnerPanel';
 import { Icon } from './icons';
@@ -59,6 +60,7 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
   const presentation = usePresentation(game);
   const dispatch = (action: Action) => state.send({ t: 'act', action });
   const seat = room.you;
+  const newBadges = useRecordGame(game, seat === null ? null : [seat], true); // this phone's own player
   // The dice for who goes first are shown once, at the start (before anyone has moved).
   const [showFirstTurn, setShowFirstTurn] = useState(room.firstTurn !== null && game.log.length <= 1);
   const myMove = seat !== null && whoseMove(game) === seat;
@@ -103,7 +105,7 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
 
   return (
     <ViewerProvider value={{ online: true, seat, connected: room.seats.map((s) => s.online) }}>
-      <GameTable game={game} dispatch={dispatch} presentation={presentation} onLeave={onLeave} headerExtra={status} next={next}>
+      <GameTable game={game} dispatch={dispatch} presentation={presentation} onLeave={onLeave} headerExtra={status} next={next} newBadges={newBadges}>
         {state.error && state.error !== 'notAllowed' && (
           <p className="online-toast" role="alert">
             {t.onlineErrors[state.error]}
