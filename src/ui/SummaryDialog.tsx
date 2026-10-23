@@ -1,10 +1,12 @@
-import type { CSSProperties } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { formatMoney } from '../engine/money';
 import { worthOfAll } from '../engine/rounds';
 import type { GameState, PlayerStats } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { playerColor } from './look';
+import { BADGES, type NewBadges } from './records';
 import { awards } from './summary';
+import { canSharePictures, drawSummary, shareOrSave } from './summaryPicture';
 import { TokenIcon } from './TokenIcon';
 import { useModalDialog } from './useModalDialog';
 import { WorthChart } from './WorthChart';
@@ -15,8 +17,10 @@ const MONEY_STATS: readonly (keyof PlayerStats)[] = ['rentReceived', 'rentPaid']
 const STAT_ORDER: readonly (keyof PlayerStats)[] = ['rentReceived', 'rentPaid', 'bought', 'housesBuilt', 'laps', 'doubles', 'jailed', 'trades', 'cards'];
 
 /** After the game: how it ended, the ranking, the wealth chart, titles and stats. */
-export function SummaryDialog({ game, onClose }: { game: GameState; onClose: () => void }) {
+export function SummaryDialog({ game, newBadges = [], onClose }: { game: GameState; newBadges?: NewBadges[]; onClose: () => void }) {
   const { t } = useLang();
+  const rankingRef = useRef<HTMLOListElement>(null);
+  const [drawing, setDrawing] = useState(false);
   const { dialogProps, close } = useModalDialog(onClose);
   const winner = game.phase.kind === 'gameOver' ? game.players[game.phase.winner] : null;
   const worth = worthOfAll(game);
@@ -32,6 +36,35 @@ export function SummaryDialog({ game, onClose }: { game: GameState; onClose: () 
           ? t.winner(winner.name)
           : '';
 
+  // The summary as a picture to share or keep (see summaryPicture.ts).
+  const [canShare] = useState(canSharePictures);
+  const picture = async (share: boolean) => {
+    setDrawing(true);
+    try {
+      // The tokens as drawn in the ranking above, so the picture shows the same ones.
+      const tokens = new Map<number, SVGSVGElement>();
+      rankingRef.current?.querySelectorAll('li').forEach((li, i) => {
+        const svg = li.querySelector<SVGSVGElement>('svg.token-icon');
+        if (svg) tokens.set(ranking[i].id, svg);
+      });
+      const blob = await drawSummary(game, ranking.map((p) => p.id), worth, tokens, {
+        title: t.pictureTitle,
+        edition: t.edition,
+        how,
+        rounds: t.summaryRounds(game.round),
+        bankrupt: t.bankrupt,
+        titlesHeading: t.titlesHeading,
+        titles: awards(game).map((a) => `${t.titles[a.title].name}: ${game.players[a.player].name}`),
+        newBadges: t.newBadges,
+        badges: newBadges.flatMap(({ player, badges }) => badges.map((id) => `${game.players[player].name}: ${t.badges[id].name}`)),
+        site: 'danglayloi1.github.io/dangopoly',
+      });
+      if (blob) await shareOrSave(blob, 'dangopoly-tong-ket.png', t.pictureTitle, share);
+    } finally {
+      setDrawing(false);
+    }
+  };
+
   return (
     <dialog {...dialogProps} className="summary-dialog" aria-labelledby="summary-title">
       <header className="summary-header">
@@ -45,7 +78,7 @@ export function SummaryDialog({ game, onClose }: { game: GameState; onClose: () 
           <Icon name="trophy" /> {how} <span className="muted">· {t.summaryRounds(game.round)}</span>
         </p>
 
-        <ol className="summary-ranking">
+        <ol className="summary-ranking" ref={rankingRef}>
           {ranking.map((p, i) => (
             <li key={p.id} style={{ '--player': playerColor(p) } as CSSProperties}>
               <span className="summary-medal">
@@ -57,6 +90,29 @@ export function SummaryDialog({ game, onClose }: { game: GameState; onClose: () 
             </li>
           ))}
         </ol>
+
+        {newBadges.length > 0 && (
+          <section className="summary-badges">
+            <h3>{t.newBadges}</h3>
+            <ul>
+              {newBadges.flatMap(({ player, badges }) =>
+                badges.map((id) => (
+                  <li key={`${player}-${id}`} style={{ '--player': playerColor(game.players[player]) } as CSSProperties}>
+                    <span className="badge-seal">
+                      <Icon name={BADGES.find((b) => b.id === id)!.icon} size={28} />
+                    </span>
+                    <span>
+                      <strong>{t.badges[id].name}</strong>
+                      <span className="muted">
+                        {game.players[player].name} · {t.badges[id].how}
+                      </span>
+                    </span>
+                  </li>
+                )),
+              )}
+            </ul>
+          </section>
+        )}
 
         <WorthChart game={game} />
 
@@ -108,6 +164,17 @@ export function SummaryDialog({ game, onClose }: { game: GameState; onClose: () 
             </table>
           </div>
         </section>
+
+        <div className="summary-share">
+          {canShare && (
+            <button className="primary" disabled={drawing} onClick={() => picture(true)}>
+              {t.sharePicture}
+            </button>
+          )}
+          <button className={canShare ? 'secondary' : 'primary'} disabled={drawing} onClick={() => picture(false)}>
+            <Icon name="save" /> {t.savePicture}
+          </button>
+        </div>
       </div>
     </dialog>
   );

@@ -729,6 +729,55 @@ const scenes = {
     check(errors === 0, `no errors on the page (${errors})`);
   },
 
+  /** Winning against a Khó bot: new badges in the summary, the summary saved as a picture, and the records screen. */
+  async records({ page, shot, click, setup }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    await page.goto(BASE_URL);
+    await page.evaluate(() => localStorage.removeItem('dangopoly.records'));
+
+    await openFromMenu(page, /Chơi với máy/);
+    const rows = page.locator('.player-row');
+    await rows.nth(2).getByRole('button', { name: /Bỏ người chơi/ }).click();
+    await rows.first().locator('input').fill('Đăng');
+    await rows.nth(1).getByRole('radio', { name: 'Khó' }).click();
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+
+    // Đăng owns a đình on the brown set; the bot owes more than it has and gives up by itself.
+    await setup((game) => {
+      game.ownership[1] = { owner: 0, houses: 5, mortgaged: false };
+      game.ownership[3] = { owner: 0, houses: 5, mortgaged: false };
+      game.current = 1;
+      game.phase = { kind: 'inDebt', debtor: 1, creditor: 0, amount: 100_000_000, reason: { kind: 'rent', space: 3 } };
+    });
+    await page.waitForSelector('.summary-dialog', { timeout: 15_000 });
+    const badges = await page.locator('.summary-badges li').allTextContents();
+    check(['Trận thắng đầu', 'Dựng đình', 'Hạ máy khó'].every((b) => badges.some((text) => text.includes(b))), `the summary shows the new badges (${badges.length})`);
+    await shot('summary-badges');
+
+    const [download] = await Promise.all([page.waitForEvent('download'), click(/Lưu ảnh/)]);
+    const file = path.join(outDir, 'summary-picture.png');
+    await download.saveAs(file);
+    const png = await readFile(file);
+    const width = png.readUInt32BE(16);
+    const height = png.readUInt32BE(20);
+    check(download.suggestedFilename() === 'dangopoly-tong-ket.png' && width === 1080 && height === 1350, `the summary is saved as a picture (${width}×${height}, ${Math.round(png.length / 1024)} KB)`);
+
+    await page.locator('.summary-dialog').getByRole('button', { name: 'Đóng' }).click();
+    await click(/Trang chủ/);
+    await click(/Thành tích/);
+    const row = page.locator('.records-table tbody tr').first();
+    const cells = await row.locator('th, td').allTextContents();
+    check(cells[0].includes('Đăng') && cells[1] === '1' && cells[2] === '1', `the records show Đăng: 1 game, 1 win (${cells.join(' | ')})`);
+    check((await page.locator('.records-table tbody tr').count()) === 1, 'computer players get no records');
+    const earned = await page.locator('.badge-tile:not(.locked)').count();
+    check(earned >= 3, `earned badges are shown in color (${earned} of ${await page.locator('.badge-tile').count()})`);
+    await shot('records');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /**
    * The effects after a move, each caught mid-way: the page's clock is under the script's control
    * (page.clock), so a move plays out exactly as far as needed and then everything is frozen.

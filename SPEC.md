@@ -389,3 +389,34 @@ a bot moves after a short pause once the last move has played out (following the
 nobody gets buttons while it plays. Bots are saved with the game. In a test of 150 three-bot games,
 every game finished and Khó won about half. Online rooms are for people only.
 
+## 16. Records, badges and the summary picture
+
+**Thành tích** on the menu shows everyone who has finished a game on this device: games, wins and best
+fortune, and their **badges** (15, earned once each and kept with the date). Records are kept by name,
+ignoring case and extra spaces, in this browser only. Computer players get none. A game is recorded the
+moment it ends: on one device for every person at the table, online for this phone's own player. The
+tutorial doesn't count.
+
+| Badge | How |
+|---|---|
+| Trận thắng đầu | win a game |
+| Lão làng | finish 10 games |
+| Dựng đình | end a game owning a đình |
+| Đủ bộ | end a game with a whole color set |
+| Chúa đất | own 10 or more places |
+| Vua thu tô | collect 10tr in rent in one game |
+| Đại gia | end a game worth 40tr or more |
+| Tay đổ đôi | roll 8 doubles in one game |
+| Khách quen nhà tạm giữ | go to jail 3 times in one game |
+| Lái buôn | agree 3 trades in one game |
+| Vua lễ hội | win a game with festivals on |
+| Thắng chớp nhoáng | win a classic game within 25 rounds |
+| Hạ máy khó | win a game against a Khó bot |
+| Một chọi ba | beat three bots at once |
+| Chơi online | finish an online game |
+
+The end-of-game summary lists the **new badges**. It can be turned into a **picture** (1080×1350 PNG,
+always in Giấy dó colors): the ranking with each player's token, the wealth chart, titles and new
+badges, and the board's river painting when there is room. **Chia sẻ ảnh** opens the phone's share
+sheet where the browser can share files; **Lưu ảnh** saves the file.
+

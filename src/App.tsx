@@ -12,6 +12,7 @@ import { OnlineCard } from './ui/OnlineCard';
 import { OnlineScreen } from './ui/OnlineScreen';
 import { ScreenTop } from './ui/Header';
 import { clearSavedGame, loadSavedGame, resumeClock } from './ui/savedGame';
+import { RecordsScreen } from './ui/RecordsScreen';
 import { SettingsScreen } from './ui/SettingsScreen';
 import { SetupScreen } from './ui/SetupScreen';
 import { TitleScreen } from './ui/TitleScreen';
@@ -26,7 +27,7 @@ export default function App() {
 }
 
 /** The screens reached from the menu (a game or a room is shown on top of them). */
-type Screen = 'title' | 'menu' | 'local' | 'bots' | 'online' | 'settings';
+type Screen = 'title' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -205,6 +206,8 @@ function Screens() {
         );
       case 'settings':
         return <SettingsScreen onBack={back} />;
+      case 'records':
+        return <RecordsScreen onBack={back} />;
       case 'menu':
         return (
           <MenuScreen
@@ -215,6 +218,7 @@ function Screens() {
             onBots={() => go('bots')}
             onOnline={() => go('online')}
             onTutorial={() => play(createTutorialGame(lang), true)}
+            onRecords={() => go('records')}
             onSettings={() => go('settings')}
             onBack={toTitle}
           />
