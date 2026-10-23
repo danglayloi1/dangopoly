@@ -653,6 +653,82 @@ const scenes = {
     check(errors === 0, `no errors on the page (${errors})`);
   },
 
+  /** One person against two computer players: the bots play their own turns and answer trades. */
+  async bots({ page, shot, click, setup }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    await openFromMenu(page, /Chơi với máy/);
+    const rows = page.locator('.player-row');
+    check((await rows.count()) === 3 && (await page.locator('.player-row.is-bot').count()) === 2, 'the setup starts with you and two computer players');
+    await rows.first().locator('input').fill('Đăng');
+    await rows.nth(2).getByRole('radio', { name: 'Khó' }).click();
+    await shot('setup');
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+    check((await page.locator('.badge-bot').count()) === 2, 'the computer players are marked in the player list');
+
+    const panel = page.locator('.action-panel');
+    const settled = () => page.waitForSelector('.board[data-busy="false"]', { timeout: 20_000 });
+    /** Đăng's turn: press whatever ends it (buy if offered). */
+    const myTurn = async () => {
+      for (let i = 0; i < 8; i++) {
+        await settled();
+        const buttons = panel.locator('.action-buttons button');
+        let pressed = false;
+        for (const word of ['Mua', 'Gieo', 'Trả', 'Kết thúc', 'Bỏ qua']) {
+          const b = buttons.filter({ hasText: word }).first();
+          if (await b.count()) {
+            const ends = word === 'Kết thúc';
+            await b.click();
+            pressed = true;
+            if (ends) return;
+            break;
+          }
+        }
+        if (!pressed) return;
+        await page.waitForTimeout(150);
+      }
+    };
+    const whoseTurn = () => page.evaluate(() => window.__dangopoly.getGame().current);
+
+    await myTurn();
+    await page.waitForTimeout(300);
+    check((await whoseTurn()) === 1, 'after Đăng, the turn passes to a computer player');
+    const thinking = await page.locator('.waiting-note', { hasText: /đang tính/ }).isVisible();
+    const noButtons = (await panel.locator('.action-buttons button').count()) === 0;
+    check(thinking && noButtons, 'while a bot plays, the screen says it is thinking and shows no buttons');
+    await shot('bot-thinking');
+    await page.waitForFunction(() => window.__dangopoly.getGame().current === 0 && window.__dangopoly.getGame().phase.kind === 'awaitRoll', null, { timeout: 60_000 });
+    check(true, 'both bots play their whole turns by themselves, then it is Đăng’s turn again');
+    await settled();
+    await shot('back-to-me');
+
+    // Đăng offers a bot a good deal; the bot answers on its own.
+    await setup((game) => {
+      game.ownership[39] = { owner: 0, houses: 0, mortgaged: false };
+    });
+    await page.evaluate(() =>
+      window.__dangopoly.dispatch({
+        type: 'PROPOSE_TRADE',
+        offer: { from: 0, to: 1, give: { spaces: [39], cash: 0, jailCards: 0 }, take: { spaces: [], cash: 0, jailCards: 0 } },
+      }),
+    );
+    await page.waitForFunction(() => window.__dangopoly.getGame().phase.kind !== 'tradeOffer', null, { timeout: 10_000 });
+    const answered = await page.evaluate(() => window.__dangopoly.getGame().ownership[39].owner);
+    check(answered === 1, 'a bot answers a trade offer by itself (and takes a free street)');
+
+    // The game is saved with its bots: continue it after a reload.
+    await click(/Trang chủ/);
+    await page.goto('about:blank');
+    await page.goto(BASE_URL);
+    await click(/Vào chơi/);
+    await click(/Chơi tiếp/);
+    await page.waitForSelector('.board');
+    check((await page.locator('.badge-bot').count()) === 2, 'a saved game keeps its computer players');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /**
    * The effects after a move, each caught mid-way: the page's clock is under the script's control
    * (page.clock), so a move plays out exactly as far as needed and then everything is frozen.

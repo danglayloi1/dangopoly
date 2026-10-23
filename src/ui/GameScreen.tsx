@@ -6,6 +6,7 @@ import { useLang } from '../i18n/LangContext';
 import { GameTable } from './GameTable';
 import { clearSavedGame, saveGame } from './savedGame';
 import { useNow } from './useNow';
+import { useBots } from './useBots';
 import { usePresentation } from './usePresentation';
 import { TutorialBubble } from '../tutorial/TutorialBubble';
 import { useTutorial } from '../tutorial/useTutorial';
@@ -37,6 +38,7 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
   }, []);
   // In the tutorial, every move goes through it: it only lets through what the lesson asks for.
   const tutorial = useTutorial(tutorialMode, play, presentation.busy);
+  useBots(game, presentation.busy, play);
 
   // Timed games: once the time is up, the game ends at the start of the next turn.
   const timed = game.rules.mode.kind === 'time' && game.phase.kind !== 'gameOver';

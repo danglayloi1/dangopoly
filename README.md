@@ -27,7 +27,8 @@ the host can start **a new game in the same room**.
 richest player wins. Turn on **🏮 Lễ hội xứ Nghệ** and every 3rd round a festival changes one rule for
 that round. At the end, a summary shows the ranking, a chart of everyone's wealth, titles and stats.
 
-After **Vào chơi**, the menu offers: play on one device, play online, the guided practice game
+After **Vào chơi**, the menu offers: play on one device, **play against the computer** (1–3 bots,
+each Dễ, Vừa or Khó), play online, the guided practice game
 (**🎓 Hướng dẫn chơi**), and settings (language, six color themes with previews, effect speed, sound volume).
 
 **Music:** the 🎵 button in the corner opens a Spotify player with Nghệ Tĩnh folk songs (dân ca ví giặm),
@@ -40,7 +41,7 @@ plays it in the Spotify app instead.
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
-`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `layout` (cards fitting small boards, the phone
+`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `layout` (cards fitting small boards, the phone
 player strip, screen transitions; add `--mobile`), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).
 

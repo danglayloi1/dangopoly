@@ -9,6 +9,7 @@ interface Props {
   onContinue: () => void;
   onDiscard: () => void;
   onLocal: () => void;
+  onBots: () => void;
   onOnline: () => void;
   onTutorial: () => void;
   onSettings: () => void;
@@ -16,7 +17,7 @@ interface Props {
 }
 
 /** The main menu: continue a saved game, or choose how to play. */
-export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onOnline, onTutorial, onSettings, onBack }: Props) {
+export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onBots, onOnline, onTutorial, onSettings, onBack }: Props) {
   const { t } = useLang();
   return (
     <main className="setup menu">
@@ -35,6 +36,7 @@ export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onOnline, on
       <h1 className="menu-title">{t.menuTitle}</h1>
       <nav className="menu-choices" aria-label={t.menuTitle}>
         <MenuChoice icon="dice" title={t.playLocal} hint={t.playLocalHint} onClick={onLocal} />
+        <MenuChoice icon="bot" title={t.playBots} hint={t.playBotsHint} onClick={onBots} />
         <MenuChoice icon="globe" title={t.online} hint={t.onlineIntro} onClick={onOnline} />
         <MenuChoice icon="scroll" title={t.tutorialStart} hint={t.tutorialIntro} onClick={onTutorial} />
         <MenuChoice icon="gear" title={t.settings} hint={t.settingsHint} onClick={onSettings} />

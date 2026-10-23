@@ -33,6 +33,7 @@ import {
 import { normalizeOffer, offerProblem, tradeProblem } from './trading';
 import type {
   Action,
+  BotLevel,
   Dice,
   GameState,
   JailReason,
@@ -50,6 +51,7 @@ export interface NewPlayer {
   name: string;
   token: TokenId;
   color?: PlayerColorId; // the seat's default color if not given
+  bot?: BotLevel; // played by the computer
 }
 
 /** How the game ends and whether festivals happen; the default is the classic game. */
@@ -116,6 +118,7 @@ export function createGame({ players, seed, startingCash = STARTING_CASH, rules 
     players: players.map((p, id) => ({
       id,
       name: p.name.trim(),
+      ...(p.bot ? { bot: p.bot } : {}),
       token: p.token,
       color: colors[id],
       cash: startingCash,

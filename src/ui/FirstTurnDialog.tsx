@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { defaultPlayerColor } from '../data/colors';
 import type { NewPlayer } from '../engine/game';
 import type { Dice as DiceValues } from '../engine/types';
@@ -53,6 +53,14 @@ export function FirstTurnDialog({ players, onDone, onClose }: Props) {
     );
   };
 
+  // Computer players roll for themselves, after a moment.
+  const botNext = next !== undefined && rolling === null && players[next].bot !== undefined;
+  useEffect(() => {
+    if (!botNext) return;
+    const timer = setTimeout(() => roll(next!), reducedMotion() ? 0 : 500);
+    return () => clearTimeout(timer);
+  }, [botNext, next]);
+
   const rollAgain = (between: number[]) => {
     setContenders(between);
     setRolls((prev) => prev.map((r, j) => (between.includes(j) ? null : r)));
@@ -104,7 +112,7 @@ export function FirstTurnDialog({ players, onDone, onClose }: Props) {
 
       <div className="first-turn-actions">
         {next !== undefined && (
-          <button className="primary big" disabled={rolling !== null} onClick={() => roll(next)} autoFocus>
+          <button className="primary big" disabled={rolling !== null || botNext} onClick={() => roll(next)} autoFocus>
             <Icon name="dice" /> {t.rollForFirst(players[next].name)}
           </button>
         )}

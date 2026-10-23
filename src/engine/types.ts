@@ -3,9 +3,13 @@ import type { CardDeck } from '../data/cards';
 import type { PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
 
+/** How well a computer player plays (see engine/bot.ts). */
+export type BotLevel = 'easy' | 'normal' | 'hard';
+
 export interface Player {
   id: number; // index in GameState.players
   name: string;
+  bot?: BotLevel; // a computer player; people have no level
   token: TokenId;
   color: PlayerColorId;
   cash: number; // đồng

@@ -362,3 +362,30 @@ glints on the Lam River (still when motion is off).
 - **Moving between screens:** a new screen slides in from the right, going back slides in from the
   left, and a game or room rises into place. It follows the animation speed setting.
 
+## 15. Computer players
+
+**Chơi với máy** on the menu opens the setup with you and two computer players. On either setup screen,
+any seat can be switched between **Người** and **Máy**. A computer player gets a local nickname (Cu Đơ,
+Nhút, Hến, Bưởi) and a level:
+
+| | Dễ | Vừa | Khó |
+|---|---|---|---|
+| Keeps in hand | 500k | 1tr5 | 2tr, more when others have built (up to 6tr) |
+| Buys | most places, at random | whatever leaves its reserve | the same |
+| Stretches its budget to complete or block a set | no | yes | yes |
+| Builds | sometimes, up to 3 houses | up to 4 houses | up to the đình |
+| Leaves jail early | no | with a card or plenty of cash | early in the game; stays in late |
+| Trades | says yes easily | minds what you gain | minds it fully and wants a margin |
+
+Any bot pays its debts by mortgaging spare places first, then selling houses, and declares
+bankruptcy only when even everything it owns wouldn't cover the debt. It also offers to buy the
+pieces it is missing from a set when one player holds them all. To another bot it offers the least that
+bot would accept; to a person, a premium over the price. After an offer it waits about two rounds
+before offering again.
+
+Bots are part of the engine (`engine/bot.ts`): given the game, the next action for the bot whose move
+it is. Its choices depend only on the game, so the same game always plays out the same way. On screen,
+a bot moves after a short pause once the last move has played out (following the animation speed), and
+nobody gets buttons while it plays. Bots are saved with the game. In a test of 150 three-bot games,
+every game finished and Khó won about half. Online rooms are for people only.
+
