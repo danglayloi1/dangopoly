@@ -6,6 +6,7 @@ import { CARDS, type CardDeck } from '../data/cards';
 import { defaultPlayerColor, PLAYER_COLOR_IDS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
 import { emptyStats, FESTIVALS } from './rounds';
+import { BOT_LEVELS } from './bot';
 import type { GameState } from './types';
 
 /** Bump this when GameState changes shape; older saves are then ignored. */
@@ -73,6 +74,7 @@ function isValidPlayer(v: unknown, index: number): boolean {
     typeof v.token === 'string' &&
     TOKEN_IDS.includes(v.token) &&
     (v.color === undefined || PLAYER_COLOR_IDS.includes(v.color as never)) &&
+    (v.bot === undefined || BOT_LEVELS.includes(v.bot as never)) &&
     isInt(v.cash, 0, Number.MAX_SAFE_INTEGER) &&
     isInt(v.position, 0, BOARD_SIZE - 1) &&
     isBool(v.bankrupt) &&

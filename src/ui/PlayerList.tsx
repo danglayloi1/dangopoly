@@ -88,6 +88,11 @@ export function PlayerList({ game, onShowSpace }: Props) {
                     <Icon name="ticket" />×{p.jailCards.length}
                   </span>
                 )}
+                {p.bot && (
+                  <span className="badge badge-bot" title={`${t.botBadge} · ${t.botLevels[p.bot]}`}>
+                    <Icon name="bot" /> {t.botLevels[p.bot]}
+                  </span>
+                )}
                 {viewer.online && p.id === viewer.seat && <span className="badge badge-you">{t.youBadge}</span>}
                 {viewer.online && !p.bankrupt && !viewer.connected[p.id] && (
                   <span className="badge badge-away">{t.offline}</span>

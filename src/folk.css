@@ -2819,3 +2819,70 @@ body {
 :root[data-anim='off'] .screen-transition {
   animation: none;
 }
+
+/* ===== Computer players ===== */
+/* In the setup form: a small Person / Computer switch beside the name, and the level below. */
+.person-or-bot {
+  flex-shrink: 0;
+}
+
+.person-or-bot button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}
+
+.person-or-bot .icon {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.bot-level {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.bot-level .segmented button {
+  padding: 4px 12px;
+}
+
+.player-row.is-bot {
+  background-image: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in srgb, var(--player) 7%, transparent) 14px 16px);
+}
+
+.badge-bot {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-color: var(--player, var(--border));
+}
+
+@media (max-width: 480px) {
+  .person-or-bot-text {
+    display: none;
+  }
+}
+
+/* Phones: a screen's title gets its own line under the back button and the controls, so a long
+   brush-written title (Chơi với máy) isn't cut off. */
+@media (max-width: 480px) {
+  .screen-top {
+    flex-wrap: wrap;
+  }
+
+  .screen-top-actions {
+    margin-left: auto;
+  }
+
+  .screen-top .screen-title {
+    order: 1;
+    flex-basis: 100%;
+    white-space: normal;
+  }
+}

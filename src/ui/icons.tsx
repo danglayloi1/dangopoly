@@ -42,6 +42,8 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'autoTheme'
+  | 'person'
+  | 'bot'
   | 'save'
   | 'trophy'
   | 'chart'
@@ -266,6 +268,26 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <path d="M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M5 5 L7 7 M17 5 L15 7 M5 19 L7 17" fill="none" />
       <circle cx="12" cy="12" r="5.5" fill={YELLOW} />
       <path d="M22 13 A8 8 0 1 0 30 25 A6 6 0 1 1 22 13 Z" fill={INDIGO} />
+    </>
+  ),
+  // A player at the table
+  person: (
+    <>
+      <circle cx="16" cy="10" r="5.5" fill={CREAM} />
+      <path d="M6 28 Q6 18 16 18 Q26 18 26 28 Z" fill={RED} />
+    </>
+  ),
+  // A computer player: a little robot head with an antenna
+  bot: (
+    <>
+      <path d="M16 4 V8" fill="none" />
+      <circle cx="16" cy="4" r="1.6" fill={YELLOW} />
+      <rect x="6" y="8" width="20" height="16" rx="4" fill={SKY} />
+      <circle cx="12" cy="15" r="2.4" fill={CREAM} />
+      <circle cx="20" cy="15" r="2.4" fill={CREAM} />
+      <path d="M12 20 H20" fill="none" />
+      <path d="M4 14 V18 M28 14 V18" fill="none" />
+      <path d="M11 24 V28 M21 24 V28" fill="none" />
     </>
   ),
   save: (

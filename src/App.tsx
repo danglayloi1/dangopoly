@@ -26,7 +26,7 @@ export default function App() {
 }
 
 /** The screens reached from the menu (a game or a room is shown on top of them). */
-type Screen = 'title' | 'menu' | 'local' | 'online' | 'settings';
+type Screen = 'title' | 'menu' | 'local' | 'bots' | 'online' | 'settings';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -194,6 +194,8 @@ function Screens() {
         return <TitleScreen onEnter={() => go('menu')} />;
       case 'local':
         return <SetupScreen onStart={start} onBack={back} saved={saved} />;
+      case 'bots':
+        return <SetupScreen onStart={start} onBack={back} saved={saved} vsBots />;
       case 'online':
         return (
           <main className="setup">
@@ -210,6 +212,7 @@ function Screens() {
             onContinue={() => saved && play(resumeClock(saved))}
             onDiscard={discardSaved}
             onLocal={() => go('local')}
+            onBots={() => go('bots')}
             onOnline={() => go('online')}
             onTutorial={() => play(createTutorialGame(lang), true)}
             onSettings={() => go('settings')}

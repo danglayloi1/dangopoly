@@ -76,7 +76,8 @@ export function TradeOfferPanel({ game, offer, dispatch, onShowSpace }: Props) {
           <Icon name="handshake" /> {t.offerTitle(to.name, from.name)}
         </span>
       </div>
-      {!online && <p className="muted pass-device">{t.passDevice(to.name)}</p>}
+      {/* Pass the device, when there's someone to pass it to: two people at the table. */}
+      {!online && !to.bot && !from.bot && <p className="muted pass-device">{t.passDevice(to.name)}</p>}
 
       <div className="offer-sides">
         <div className="offer-side">
@@ -89,7 +90,7 @@ export function TradeOfferPanel({ game, offer, dispatch, onShowSpace }: Props) {
         </div>
       </div>
 
-      {!mayAct && <p className="waiting-note">{t.waitingAnswer(to.name)}</p>}
+      {!mayAct && <p className="waiting-note">{to.bot ? t.botThinking(to.name) : t.waitingAnswer(to.name)}</p>}
       {mayAct && (
         <div className="action-buttons">
           <button className="primary big" onClick={() => dispatch({ type: 'ACCEPT_TRADE' })}>

@@ -126,7 +126,11 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
         </div>
       )}
 
-      {!mayAct && waitingOn !== null && <p className="waiting-note">{t.waitingFor(game.players[waitingOn].name)}</p>}
+      {!mayAct && waitingOn !== null && (
+        <p className="waiting-note">
+          {game.players[waitingOn].bot ? t.botThinking(game.players[waitingOn].name) : t.waitingFor(game.players[waitingOn].name)}
+        </p>
+      )}
 
       {mayAct && (
         <div className="action-buttons">
