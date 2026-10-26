@@ -3057,3 +3057,159 @@ body {
 .summary-share-note:empty {
   display: none;
 }
+
+/* ===== The public room list (Online screen) ===== */
+.room-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.room-list-header h2 {
+  margin: 0;
+}
+
+.room-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* One room, like a ticket: who's in, how it's going, and Join / Watch. */
+.room-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.room-row.stage-playing {
+  border-left-color: var(--gold);
+}
+
+.room-row.stage-over {
+  border-left-color: var(--border);
+}
+
+.room-tokens {
+  display: flex;
+}
+
+.room-tokens > span {
+  margin-left: -8px;
+}
+
+.room-tokens > span:first-child {
+  margin-left: 0;
+}
+
+.room-tokens > span.away {
+  opacity: 0.45;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.room-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.room-stage {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+
+.room-stage.lobby {
+  color: var(--accent);
+}
+
+.room-stage.playing {
+  color: var(--gold);
+}
+
+.room-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.room-actions button {
+  white-space: nowrap;
+}
+
+/* Phones: the buttons go under the room's details. */
+@media (max-width: 520px) {
+  .room-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .room-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+/* A checkbox with its label on one line (the host's "show in the list"). */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.check-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.watchers-note {
+  margin: -4px 0 0;
+}
+
+/* Watching a game: a small note at the bottom, between the chat and music buttons, that only the
+   players can move. */
+.spectator-note {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 19;
+  margin: 0;
+  width: max-content;
+  max-width: calc(100vw - 170px);
+  padding: 4px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-align: center;
+}

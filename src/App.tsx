@@ -10,6 +10,7 @@ import { MenuScreen } from './ui/MenuScreen';
 import { MusicPanel } from './ui/MusicPanel';
 import { OnlineCard } from './ui/OnlineCard';
 import { OnlineScreen } from './ui/OnlineScreen';
+import { RoomList } from './ui/RoomList';
 import { ScreenTop } from './ui/Header';
 import { clearSavedGame, loadSavedGame, resumeClock } from './ui/savedGame';
 import { RecordsScreen } from './ui/RecordsScreen';
@@ -202,6 +203,7 @@ function Screens() {
           <main className="setup">
             <ScreenTop title={t.online} onBack={back} />
             <OnlineCard onCreateRoom={() => openRoom(newRoomCode(), true)} onJoinRoom={(code) => openRoom(code, false)} />
+            <RoomList onOpen={(code) => openRoom(code, false)} />
           </main>
         );
       case 'settings':

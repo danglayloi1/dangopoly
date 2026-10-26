@@ -16,7 +16,17 @@ import {
   type RulesChoice,
 } from '../src/engine/game';
 import type { Action, Dice, GameState } from '../src/engine/types';
-import { CHAT_KEEP, CHAT_MAX_LENGTH, type ChatMessage, type ErrorCode, type FirstTurn, type FirstTurnRound, type Profile, type RoomView } from '../src/net/protocol';
+import {
+  CHAT_KEEP,
+  CHAT_MAX_LENGTH,
+  type ChatMessage,
+  type ErrorCode,
+  type FirstTurn,
+  type FirstTurnRound,
+  type Profile,
+  type RoomListing,
+  type RoomView,
+} from '../src/net/protocol';
 import { orderFrom } from '../src/ui/firstTurn';
 
 export interface Seat extends Profile {
@@ -31,6 +41,7 @@ export interface RoomState {
   game: GameState | null;
   firstTurn: FirstTurnRound[] | null;
   chat?: ChatMessage[]; // missing in rooms saved before chat
+  listed?: boolean; // in the public room list; missing means yes (rooms are listed unless the host hides them)
 }
 
 /** Random numbers come from outside, so tests can fix them. */
@@ -211,7 +222,31 @@ export function act(room: RoomState, seat: number, raw: unknown, now: number = D
   }
 }
 
-export function view(room: RoomState, you: number | null, online: ReadonlySet<number>): RoomView {
+/** The host shows the room in the public room list, or hides it (then only its link opens it). */
+export function setListed(room: RoomState, seat: number, listed: unknown): Result<RoomState> {
+  if (seat !== room.host) return fail('notHost');
+  if (typeof listed !== 'boolean') return fail('badMessage');
+  return ok({ ...room, listed });
+}
+
+/**
+ * What the public room list shows about this room, or null when it shouldn't be listed: the host
+ * hid it, or nobody is connected (a room nobody is in isn't worth showing).
+ */
+export function listing(room: RoomState, online: ReadonlySet<number>, watchers: number, now: number = Date.now()): RoomListing | null {
+  if (room.listed === false || online.size === 0) return null;
+  return {
+    code: room.code,
+    stage: !room.game ? 'lobby' : room.game.phase.kind === 'gameOver' ? 'over' : 'playing',
+    host: room.seats[room.host]?.name ?? '',
+    players: room.seats.map(({ name, token, color }, i) => ({ name, token, color, online: online.has(i) })),
+    watchers,
+    round: room.game && room.game.phase.kind !== 'gameOver' ? room.game.round : null,
+    updatedAt: now,
+  };
+}
+
+export function view(room: RoomState, you: number | null, online: ReadonlySet<number>, watchers = 0): RoomView {
   return {
     code: room.code,
     stage: room.game ? 'playing' : 'lobby',
@@ -221,6 +256,8 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
     game: room.game,
     firstTurn: room.firstTurn,
     chat: room.chat ?? [],
+    listed: room.listed !== false,
+    watchers,
   };
 }
 

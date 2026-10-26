@@ -1021,16 +1021,23 @@ const scenes = {
     await dang.page.waitForURL((url) => url.search === `?room=${code}`);
     check(true, 'once it exists, the address is the room link');
 
-    // Lan and Minh open the link and join.
+    // Lan finds the room in the public room list and joins from there; Minh opens the link.
+    await openFromMenu(lan.page, /Chơi online/);
+    const listed = lan.page.locator('.room-row').filter({ hasText: code });
+    await listed.waitFor({ timeout: 20_000 });
+    const listedText = await listed.textContent();
+    check(/Phòng của Đăng/.test(listedText) && /Đang chờ/.test(listedText) && /1\/4/.test(listedText), `the new room shows in the room list (${listedText.trim()})`);
+    await listed.getByRole('button', { name: 'Vào' }).click();
+    await lan.page.waitForURL((url) => url.search === `?room=${code}`);
     for (const p of [lan, minh]) {
-      await p.page.goto(`${BASE_URL}?room=${code}`);
+      if (p === minh) await p.page.goto(`${BASE_URL}?room=${code}`);
       await p.page.waitForSelector('.lobby-seat');
       await p.page.getByPlaceholder('Tên').fill(p.name);
       await button(p, 'Vào phòng').click();
       await p.page.waitForSelector('.badge-you');
     }
     await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 3);
-    check(true, 'Lan and Minh join from the link; everyone sees 3 players');
+    check(true, 'Lan (from the list) and Minh (from the link) join; everyone sees 3 players');
     await together('lobby');
 
     // Đăng types his own starting money, then starts; the server rolls for who goes first and every
@@ -1042,6 +1049,23 @@ const scenes = {
     check(order.every((o) => o === order[0]), `every phone shows the same playing order (${order[0]})`);
     await together('who-goes-first');
     for (const p of phones) await button(p, /Vào chơi/).click();
+
+    // Hoa isn't playing: she finds the game in the room list and watches it.
+    const hoa = await openPhone('Hoa');
+    await openFromMenu(hoa.page, /Chơi online/);
+    const playing = hoa.page.locator('.room-row').filter({ hasText: code });
+    await playing.filter({ hasText: 'Đang chơi' }).waitFor({ timeout: 20_000 });
+    check(true, 'the room list shows the game as being played');
+    await playing.getByRole('button', { name: /Xem/ }).click();
+    await hoa.page.waitForSelector('.board');
+    await hoa.page.locator('.spectator-note').waitFor();
+    check((await hoa.page.locator('.action-panel .action-buttons button').count()) === 0, 'a watcher sees the game, with no buttons');
+    await dang.page.locator('.room-chip-watchers').waitFor({ timeout: 10_000 });
+    check((await dang.page.locator('.room-chip-watchers').textContent()).includes('1'), 'the players see that 1 person is watching');
+    await hoa.page.screenshot({ path: path.join(outDir, 'watcher.png') });
+    await hoa.ctx.close();
+    await dang.page.locator('.room-chip-watchers').waitFor({ state: 'detached', timeout: 10_000 });
+    check(true, 'when the watcher leaves, the count goes away');
     for (const p of phones) await p.page.waitForSelector('.board[data-busy="false"]');
     const cash = await Promise.all(phones.map((p) => p.page.locator('.player-card .player-cash').allTextContents()));
     check(cash.flat().every((c) => c === '12tr'), `everyone starts with the amount the host typed (${cash[0].join(', ')})`);
