@@ -321,6 +321,20 @@ Friends play from their own phones. One player creates a room and shares its cod
     chat is open, and none on the sender's own phone.
   - Only one of the 😊 palette and the chat is open at a time: opening one closes the other.
 - **Rematch:** after the game, the host's "Ván mới cùng phòng" takes the room back to the lobby, with the same seats and choices. The host can change the settings and start again.
+- **Room list ("Phòng đang mở"):** the Online screen lists the rooms open right now, refreshed every 5 seconds.
+  - Each row shows whose room it is, the players' tokens, whether it is waiting (Đang chờ), playing (Đang chơi,
+    with the round) or finished (Đã xong), how many are playing and watching, and the code.
+  - **Vào** joins a room that is waiting and has a free seat; **Xem** watches any room.
+  - Waiting rooms come first (those with a free seat first), then games being played, then finished ones.
+    Only rooms with someone connected are listed, at most 50.
+  - Rooms are listed unless the host unticks **"Hiện phòng trong danh sách"** in the lobby; then only the link
+    or code opens the room.
+  - How it works: one more Durable Object (`RoomDirectory`) keeps the list. Each room sends it a short
+    listing whenever something on it changes (and every 30 minutes, so a quiet game stays listed), and
+    nothing when only the game moves on. `GET /rooms` on the room server returns the list, to the game's own
+    pages only. A listing nobody has refreshed for 2 hours is dropped.
+- **Watching:** anyone without a seat watches. They see the game as it is played but get no buttons, and a
+  note at the bottom says so. The players see how many are watching (👁 in the top bar, and in the lobby).
 
 ---
 

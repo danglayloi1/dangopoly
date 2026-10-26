@@ -1,13 +1,16 @@
 // The online room server on Cloudflare: a Worker that sends each phone's WebSocket to its room,
-// and one Durable Object per room that keeps the room (see room.ts) and talks to the phones.
+// one Durable Object per room that keeps the room (see room.ts) and talks to the phones, and one
+// more that keeps the public room list (see directory.ts), served at GET /rooms.
 
 import { DurableObject } from 'cloudflare:workers';
-import { isReactionId, isRoomCode, MAX_MESSAGE_BYTES, type ErrorCode, type ServerMessage } from '../src/net/protocol';
+import { isReactionId, isRoomCode, MAX_MESSAGE_BYTES, type ErrorCode, type RoomListing, type ServerMessage } from '../src/net/protocol';
+import { listingKey, STALE_MS, visibleRooms } from './directory';
 import * as Room from './room';
 import type { RoomState } from './room';
 
 interface Env {
   ROOMS: DurableObjectNamespace<GameRoom>;
+  DIRECTORY: DurableObjectNamespace<RoomDirectory>;
   ALLOWED_ORIGINS: string; // comma-separated web addresses allowed to connect
 }
 
@@ -28,6 +31,9 @@ const RATE_WINDOW_MS = 10_000;
 const MAX_MESSAGES_PER_WINDOW = 40;
 const REACTION_GAP_MS = 1_200;
 const CHAT_GAP_MS = 1_000;
+const RELIST_MS = 30 * 60 * 1000; // a quiet room still refreshes its listing this often, so it doesn't go stale
+
+const directory = (env: Env) => env.DIRECTORY.get(env.DIRECTORY.idFromName('directory'));
 
 /** Dice, seeds and seat keys from the platform's secure random numbers. */
 const RANDOM: Room.Randomness = {
@@ -45,18 +51,64 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/') return new Response('Dangopoly room server\n');
+    // Browsers say which site is asking: only the game's own pages may connect or read the list.
+    const origin = request.headers.get('Origin');
+    const allowed = !origin || env.ALLOWED_ORIGINS.split(',').includes(origin);
+    if (url.pathname === '/rooms') {
+      if (!allowed) return new Response('Forbidden\n', { status: 403 });
+      const rooms = await directory(env).list();
+      return Response.json(rooms, {
+        headers: { 'Cache-Control': 'no-store', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) },
+      });
+    }
     const code = url.pathname.match(/^\/room\/([A-Z0-9]+)$/)?.[1];
     if (!code || !isRoomCode(code)) return new Response('Not found\n', { status: 404 });
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket\n', { status: 426 });
-    // Browsers say which site opened the connection: only the game's own pages may.
-    const origin = request.headers.get('Origin');
-    if (origin && !env.ALLOWED_ORIGINS.split(',').includes(origin)) return new Response('Forbidden\n', { status: 403 });
+    if (!allowed) return new Response('Forbidden\n', { status: 403 });
     return env.ROOMS.get(env.ROOMS.idFromName(code)).fetch(request);
   },
 } satisfies ExportedHandler<Env>;
 
+/** The public room list: each room reports its listing (or null to be taken off); phones read it. */
+export class RoomDirectory extends DurableObject<Env> {
+  private rooms: Map<string, RoomListing> | null = null;
+
+  private async load(): Promise<Map<string, RoomListing>> {
+    if (!this.rooms) {
+      const stored = await this.ctx.storage.list<RoomListing>({ prefix: 'room:' });
+      this.rooms = new Map([...stored.values()].map((r) => [r.code, r]));
+    }
+    return this.rooms;
+  }
+
+  async report(code: string, listing: RoomListing | null): Promise<void> {
+    const rooms = await this.load();
+    if (listing) {
+      rooms.set(code, listing);
+      await this.ctx.storage.put(`room:${code}`, listing);
+    } else if (rooms.delete(code)) {
+      await this.ctx.storage.delete(`room:${code}`);
+    }
+  }
+
+  async list(): Promise<RoomListing[]> {
+    const rooms = await this.load();
+    const now = Date.now();
+    // Listings that went stale belong to rooms that vanished without saying so: tidy them away.
+    for (const r of [...rooms.values()]) {
+      if (now - r.updatedAt >= STALE_MS) {
+        rooms.delete(r.code);
+        await this.ctx.storage.delete(`room:${r.code}`);
+      }
+    }
+    return visibleRooms(rooms.values(), now);
+  }
+}
+
 export class GameRoom extends DurableObject<Env> {
   private room: RoomState | null | undefined; // undefined until loaded from storage
+  private reported = ''; // the listing last sent to the room list (see listingKey)
+  private reportedAt = 0;
 
   async fetch(request: Request): Promise<Response> {
     if (this.ctx.getWebSockets().length >= MAX_CONNECTIONS) return new Response('Room busy\n', { status: 429 });
@@ -101,7 +153,7 @@ export class GameRoom extends DurableObject<Env> {
       case 'look':
         if (!room) return this.error(ws, 'noRoom');
         ws.serializeAttachment({ ...conn, watching: true });
-        return this.send(ws, { t: 'room', room: Room.view(room, seat, this.online()) });
+        return this.broadcast(); // everyone sees one more watcher
       case 'join': {
         if (!room) return this.error(ws, 'noRoom');
         if (seat !== null) return this.error(ws, 'badMessage'); // already has a seat
@@ -128,6 +180,7 @@ export class GameRoom extends DurableObject<Env> {
         if (!left.ok) return this.error(ws, left.error);
         ws.serializeAttachment({ ...conn, key: null });
         await this.save(left.value);
+        if (!left.value) await this.report(conn.code); // the room is gone: off the list
         return this.broadcast();
       }
       case 'start':
@@ -142,6 +195,9 @@ export class GameRoom extends DurableObject<Env> {
       case 'rematch':
         if (!room || seat === null) return this.error(ws, 'badMessage');
         return this.apply(ws, Room.rematch(room, seat));
+      case 'listed':
+        if (!room || seat === null) return this.error(ws, 'badMessage');
+        return this.apply(ws, Room.setListed(room, seat, msg.listed));
       case 'chat': {
         if (!room || seat === null) return this.error(ws, 'badMessage');
         if (conn.lastChat && now - conn.lastChat < CHAT_GAP_MS) return this.error(ws, 'tooFast');
@@ -180,8 +236,10 @@ export class GameRoom extends DurableObject<Env> {
 
   /** Rooms nobody has touched for a week are deleted. */
   async alarm(): Promise<void> {
+    const code = (await this.load())?.code;
     for (const ws of this.ctx.getWebSockets()) ws.close(1000, 'Room closed');
     await this.save(null);
+    await this.report(code);
   }
 
   // -------------------------------------------------------------------------
@@ -227,16 +285,43 @@ export class GameRoom extends DurableObject<Env> {
     return seats;
   }
 
+  /** Phones in the room without a seat, just watching. */
+  private watchers(): number {
+    const room = this.room;
+    if (!room) return 0;
+    return this.ctx.getWebSockets().filter((ws) => {
+      const { key, watching } = ws.deserializeAttachment() as Connection;
+      return watching && (key === null || Room.seatOfKey(room, key) === null);
+    }).length;
+  }
+
+  /** Tells the room list about this room when what it shows has changed (and now and then, to stay fresh). */
+  private async report(code: string | undefined = this.room?.code): Promise<void> {
+    if (!code) return;
+    const listing = this.room ? Room.listing(this.room, this.online(), this.watchers()) : null;
+    const key = listingKey(listing);
+    if (key === this.reported && (listing === null || Date.now() - this.reportedAt < RELIST_MS)) return;
+    this.reported = key;
+    this.reportedAt = Date.now();
+    try {
+      await directory(this.env).report(code, listing);
+    } catch {
+      // the list is a nicety: a game never waits on it or fails because of it
+    }
+  }
+
   private broadcast(): void {
     const room = this.room;
     if (!room) return;
     const online = this.online();
+    const watchers = this.watchers();
     for (const ws of this.ctx.getWebSockets()) {
       const { key, watching } = ws.deserializeAttachment() as Connection;
       if (!watching) continue;
       const seat = key ? Room.seatOfKey(room, key) : null;
-      this.send(ws, { t: 'room', room: Room.view(room, seat, online) });
+      this.send(ws, { t: 'room', room: Room.view(room, seat, online, watchers) });
     }
+    void this.report();
   }
 
   private send(ws: WebSocket, msg: ServerMessage): void {

@@ -7,3 +7,6 @@ export const ROOM_SERVER: string =
 export function roomLink(code: string): string {
   return `${location.origin}${location.pathname}?room=${code}`;
 }
+
+/** The same server over plain HTTP(S), for the public room list (GET /rooms). */
+export const ROOM_SERVER_HTTP: string = ROOM_SERVER.replace(/^ws/, 'http');

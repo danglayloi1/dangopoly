@@ -19,6 +19,9 @@ npm test         # runs the rule tests
 npm run build    # builds the final website into dist/
 ```
 
+**Open rooms:** the Online screen lists the rooms open right now: join one that's waiting for
+players, or watch any game being played (hosts can keep their room off the list).
+
 **Online extras:** tap 😊 to send a quick reaction (15 emoji, 8 Nghệ phrases like *Răng rứa?*) that
 pops up on every phone; tap 💬 to chat with the room, in the lobby and during the game (new messages
 also pop up on screen during the game); after a game

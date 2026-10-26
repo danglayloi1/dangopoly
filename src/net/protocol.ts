@@ -27,7 +27,8 @@ export type ClientMessage =
   | { t: 'act'; action: Action }
   | { t: 'react'; reaction: ReactionId } // a quick reaction, shown on every phone
   | { t: 'chat'; text: string } // a chat message (kept: the last CHAT_KEEP of them)
-  | { t: 'rematch' }; // host, after the game: back to the lobby with everyone still seated
+  | { t: 'rematch' } // host, after the game: back to the lobby with everyone still seated
+  | { t: 'listed'; listed: boolean }; // host: show the room in the public room list, or not
 
 /** One round of the "who goes first" dice; seats are numbered in the final playing order. */
 export type FirstTurnRound = { seat: number; dice: Dice }[];
@@ -59,6 +60,19 @@ export interface RoomView {
   game: GameState | null;
   firstTurn: FirstTurnRound[] | null; // the dice that decided the order, if they were rolled
   chat: ChatMessage[]; // the most recent messages, oldest first
+  listed: boolean; // shown in the public room list (anyone can find it), not just by its link
+  watchers: number; // phones in the room without a seat, just watching
+}
+
+/** A room as the public room list shows it (GET /rooms on the room server). */
+export interface RoomListing {
+  code: string;
+  stage: 'lobby' | 'playing' | 'over';
+  host: string; // the host's name
+  players: { name: string; token: TokenId; color: PlayerColorId; online: boolean }[];
+  watchers: number;
+  round: number | null; // during a game
+  updatedAt: number; // ms since 1970
 }
 
 export type ErrorCode =

@@ -106,6 +106,11 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
           <h2>
             {t.inRoom} ({room.seats.length}/{MAX_PLAYERS})
           </h2>
+          {room.watchers > 0 && (
+            <p className="muted watchers-note">
+              <Icon name="eye" /> {t.watchersCount(room.watchers)}
+            </p>
+          )}
           <ul className="lobby-seats">
             {room.seats.map((s, i) => (
               <li key={i} className={`lobby-seat${s.online ? '' : ' away'}`} style={{ '--player': colorHex(s.color) } as CSSProperties}>
@@ -158,6 +163,10 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
 
       {isHost && room && (
         <section className="setup-card">
+          <label className="check-row listed-toggle">
+            <input type="checkbox" checked={room.listed} onChange={(e) => send({ t: 'listed', listed: e.target.checked })} />
+            <span>{t.listedLabel}</span>
+          </label>
           <StartingCashPicker text={cashText} onText={setCashText} />
           <RulesPicker rules={rules} onChange={setRules} />
           <div className="first-turn-choice">

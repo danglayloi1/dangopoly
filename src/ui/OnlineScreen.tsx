@@ -99,10 +99,18 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
         t.reconnecting
       ) : seat === null ? (
         <>
-          <Icon name="eye" /> {t.watching} · {room.code}
+          {/* the note at the bottom says it's watching; the chip stays short for small screens */}
+          <Icon name="eye" /> {room.code}
         </>
       ) : (
         room.code
+      )}
+      {room.watchers > 0 && (
+        <span className="room-chip-watchers" title={t.watchersCount(room.watchers)} aria-label={t.watchersCount(room.watchers)}>
+          {' · '}
+          <Icon name="eye" />
+          {room.watchers}
+        </span>
       )}
     </span>
   );
@@ -110,6 +118,11 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
   return (
     <ViewerProvider value={{ online: true, seat, connected: room.seats.map((s) => s.online) }}>
       <GameTable game={game} dispatch={dispatch} presentation={presentation} onLeave={onLeave} headerExtra={status} next={next} newBadges={newBadges}>
+        {seat === null && (
+          <p className="spectator-note" role="status">
+            <Icon name="eye" /> {t.spectating}
+          </p>
+        )}
         {state.error && state.error !== 'notAllowed' && (
           <p className="online-toast" role="alert">
             {t.onlineErrors[state.error]}
