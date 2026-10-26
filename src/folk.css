@@ -3020,3 +3020,40 @@ body {
   gap: 10px;
   padding-top: 4px;
 }
+
+/* A chat message floating up with the reactions: a little speech bubble; tap it to open the chat. */
+.chat-bubble {
+  /* as wide as the message on one line, up to a limit; longer ones wrap onto a second line */
+  width: max-content;
+  max-width: min(360px, calc(100vw - 32px));
+  border-radius: 18px 18px 18px 4px;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  animation-duration: 5s;
+}
+
+.chat-bubble .reaction-name {
+  flex-shrink: 0;
+}
+
+.chat-bubble-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.summary-share-note {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.summary-share-note:empty {
+  display: none;
+}

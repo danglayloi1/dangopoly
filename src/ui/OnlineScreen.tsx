@@ -12,6 +12,7 @@ import { Lobby } from './Lobby';
 import { Reactions } from './Reactions';
 import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
+import { useChatPopups } from './useChatPopups';
 import { useRecordGame } from './useRecordGame';
 import { ViewerProvider } from './viewer';
 import type { NextGame } from './WinnerPanel';
@@ -61,6 +62,9 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
   const dispatch = (action: Action) => state.send({ t: 'act', action });
   const seat = room.you;
   const newBadges = useRecordGame(game, seat === null ? null : [seat], true); // this phone's own player
+  // The 😊 palette or the chat: opening one closes the other.
+  const [panel, setPanel] = useState<'reactions' | 'chat' | null>(null);
+  const chatPopups = useChatPopups(room.chat, seat, panel === 'chat');
   // The dice for who goes first are shown once, at the start (before anyone has moved).
   const [showFirstTurn, setShowFirstTurn] = useState(room.firstTurn !== null && game.log.length <= 1);
   const myMove = seat !== null && whoseMove(game) === seat;
@@ -115,8 +119,18 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
           room={room}
           reactions={state.reactions}
           onSend={seat === null ? null : (reaction) => state.send({ t: 'react', reaction })}
+          open={panel === 'reactions'}
+          onOpenChange={(open) => setPanel(open ? 'reactions' : null)}
+          chatPopups={chatPopups}
+          onOpenChat={() => setPanel('chat')}
         />
-        <ChatBox room={room} onSend={seat === null ? null : (text) => state.send({ t: 'chat', text })} besideReactions={seat !== null} />
+        <ChatBox
+          room={room}
+          onSend={seat === null ? null : (text) => state.send({ t: 'chat', text })}
+          besideReactions={seat !== null}
+          open={panel === 'chat'}
+          onOpenChange={(open) => setPanel(open ? 'chat' : null)}
+        />
         {showFirstTurn && room.firstTurn && (
           <FirstTurnResult rounds={room.firstTurn} seats={room.seats} onClose={() => setShowFirstTurn(false)} />
         )}

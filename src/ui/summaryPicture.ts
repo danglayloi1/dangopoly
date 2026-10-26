@@ -224,17 +224,33 @@ export async function drawSummary(
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
-/** Shares the picture (phones), or saves it as a file where sharing files isn't possible. */
-export async function shareOrSave(blob: Blob, fileName: string, title: string, share: boolean): Promise<void> {
+// The picture is drawn as soon as the summary opens, so these run straight from the tap: browsers
+// only let a page share or copy right after the person taps something.
+
+/** Opens the phone's share sheet with the picture. False if this browser can't (or the share failed). */
+export async function sharePicture(blob: Blob, fileName: string, title: string): Promise<boolean> {
   const file = new File([blob], fileName, { type: 'image/png' });
-  if (share && navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title });
-      return;
-    } catch (error) {
-      if ((error as DOMException).name === 'AbortError') return; // the person closed the share sheet
-    }
+  if (!navigator.canShare?.({ files: [file] })) return false;
+  try {
+    await navigator.share({ files: [file], title });
+    return true;
+  } catch (error) {
+    return (error as DOMException).name === 'AbortError'; // closing the share sheet isn't a failure
   }
+}
+
+/** Puts the picture on the clipboard, to paste into a chat. False if this browser won't. */
+export async function copyPicture(blob: Blob): Promise<boolean> {
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Saves the picture as a file. */
+export function savePicture(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -251,4 +267,9 @@ export function canSharePictures(): boolean {
   } catch {
     return false;
   }
+}
+
+/** Whether this browser can copy a picture to the clipboard (show the Copy button only then). */
+export function canCopyPictures(): boolean {
+  return typeof ClipboardItem !== 'undefined' && typeof navigator.clipboard?.write === 'function';
 }

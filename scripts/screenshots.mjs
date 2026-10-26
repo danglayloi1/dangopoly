@@ -757,6 +757,16 @@ const scenes = {
     check(['Trận thắng đầu', 'Dựng đình', 'Hạ máy khó'].every((b) => badges.some((text) => text.includes(b))), `the summary shows the new badges (${badges.length})`);
     await shot('summary-badges');
 
+    // Copy: the picture lands on the clipboard as a PNG, ready to paste into a chat.
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(BASE_URL).origin });
+    await click(/Sao chép ảnh/);
+    await page.locator('.summary-share-note', { hasText: /Đã chép ảnh/ }).waitFor({ timeout: 10_000 });
+    const copied = await page.evaluate(async () => {
+      const items = await navigator.clipboard.read();
+      return items[0].types.includes('image/png') ? (await items[0].getType('image/png')).size : 0;
+    });
+    check(copied > 50_000, `the picture is copied to the clipboard as a PNG (${Math.round(copied / 1024)} KB)`);
+
     const [download] = await Promise.all([page.waitForEvent('download'), click(/Lưu ảnh/)]);
     const file = path.join(outDir, 'summary-picture.png');
     await download.saveAs(file);
@@ -1112,8 +1122,17 @@ const scenes = {
     await minh.page.getByRole('button', { name: 'Gửi' }).click();
     await dang.page.locator('.chat-unread', { hasText: '1' }).waitFor();
     check(true, "Đăng's 💬 button shows 1 unread message");
+    // The message also floats up on the others' screens, like a reaction (not on the sender's).
+    for (const p of [dang, lan]) await p.page.locator('.chat-bubble', { hasText: 'đổi Cảng Vũng Áng' }).waitFor();
+    check((await minh.page.locator('.chat-bubble').count()) === 0, 'the message pops up on the other phones, not the sender’s');
+    await together('chat-popup');
+    // Only one of 😊 and 💬 is open at a time.
+    await button(dang, 'Thả cảm xúc').click();
+    await dang.page.locator('.reaction-palette').waitFor();
     await dang.page.getByRole('button', { name: /Trò chuyện/ }).click();
     await dang.page.locator('.chat-message', { hasText: 'đổi Cảng Vũng Áng' }).waitFor();
+    check((await dang.page.locator('.reaction-palette').count()) === 0, 'opening the chat closes the reactions');
+    check((await dang.page.locator('.chat-bubble').count()) === 0, 'and the message bubble goes away once the chat is open');
     await dang.page.getByPlaceholder('Nhắn gì đó…').fill('Răng rứa? Đưa 3tr đã 😂');
     await dang.page.getByRole('button', { name: 'Gửi' }).click();
     await minh.page.locator('.chat-message', { hasText: 'Đưa 3tr đã' }).waitFor();
