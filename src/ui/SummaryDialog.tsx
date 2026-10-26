@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { formatMoney } from '../engine/money';
 import { worthOfAll } from '../engine/rounds';
 import type { GameState, PlayerStats } from '../engine/types';
@@ -6,7 +6,7 @@ import { useLang } from '../i18n/LangContext';
 import { playerColor } from './look';
 import { BADGES, type NewBadges } from './records';
 import { awards } from './summary';
-import { canSharePictures, drawSummary, shareOrSave } from './summaryPicture';
+import { canCopyPictures, canSharePictures, copyPicture, drawSummary, savePicture, sharePicture } from './summaryPicture';
 import { TokenIcon } from './TokenIcon';
 import { useModalDialog } from './useModalDialog';
 import { WorthChart } from './WorthChart';
@@ -20,7 +20,6 @@ const STAT_ORDER: readonly (keyof PlayerStats)[] = ['rentReceived', 'rentPaid', 
 export function SummaryDialog({ game, newBadges = [], onClose }: { game: GameState; newBadges?: NewBadges[]; onClose: () => void }) {
   const { t } = useLang();
   const rankingRef = useRef<HTMLOListElement>(null);
-  const [drawing, setDrawing] = useState(false);
   const { dialogProps, close } = useModalDialog(onClose);
   const winner = game.phase.kind === 'gameOver' ? game.players[game.phase.winner] : null;
   const worth = worthOfAll(game);
@@ -36,33 +35,53 @@ export function SummaryDialog({ game, newBadges = [], onClose }: { game: GameSta
           ? t.winner(winner.name)
           : '';
 
-  // The summary as a picture to share or keep (see summaryPicture.ts).
+  // The summary as a picture to share, copy or keep (see summaryPicture.ts). It's drawn as soon as
+  // the summary opens: browsers only let a page share or copy right after a tap, so it must be ready.
+  const FILE = 'dangopoly-tong-ket.png';
   const [canShare] = useState(canSharePictures);
-  const picture = async (share: boolean) => {
-    setDrawing(true);
-    try {
-      // The tokens as drawn in the ranking above, so the picture shows the same ones.
-      const tokens = new Map<number, SVGSVGElement>();
-      rankingRef.current?.querySelectorAll('li').forEach((li, i) => {
-        const svg = li.querySelector<SVGSVGElement>('svg.token-icon');
-        if (svg) tokens.set(ranking[i].id, svg);
-      });
-      const blob = await drawSummary(game, ranking.map((p) => p.id), worth, tokens, {
-        title: t.pictureTitle,
-        edition: t.edition,
-        how,
-        rounds: t.summaryRounds(game.round),
-        bankrupt: t.bankrupt,
-        titlesHeading: t.titlesHeading,
-        titles: awards(game).map((a) => `${t.titles[a.title].name}: ${game.players[a.player].name}`),
-        newBadges: t.newBadges,
-        badges: newBadges.flatMap(({ player, badges }) => badges.map((id) => `${game.players[player].name}: ${t.badges[id].name}`)),
-        site: 'danglayloi1.github.io/dangopoly',
-      });
-      if (blob) await shareOrSave(blob, 'dangopoly-tong-ket.png', t.pictureTitle, share);
-    } finally {
-      setDrawing(false);
+  const [canCopy] = useState(canCopyPictures);
+  const [picture, setPicture] = useState<Blob | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    // The tokens as drawn in the ranking above, so the picture shows the same ones.
+    const tokens = new Map<number, SVGSVGElement>();
+    rankingRef.current?.querySelectorAll('li').forEach((li, i) => {
+      const svg = li.querySelector<SVGSVGElement>('svg.token-icon');
+      if (svg) tokens.set(ranking[i].id, svg);
+    });
+    void drawSummary(game, ranking.map((p) => p.id), worth, tokens, {
+      title: t.pictureTitle,
+      edition: t.edition,
+      how,
+      rounds: t.summaryRounds(game.round),
+      bankrupt: t.bankrupt,
+      titlesHeading: t.titlesHeading,
+      titles: awards(game).map((a) => `${t.titles[a.title].name}: ${game.players[a.player].name}`),
+      newBadges: t.newBadges,
+      badges: newBadges.flatMap(({ player, badges }) => badges.map((id) => `${game.players[player].name}: ${t.badges[id].name}`)),
+      site: 'danglayloi1.github.io/dangopoly',
+    }).then((blob) => !cancelled && setPicture(blob));
+    return () => {
+      cancelled = true;
+    };
+  }, [newBadges, t]);
+
+  const share = async () => {
+    if (!picture) return;
+    if (!(await sharePicture(picture, FILE, t.pictureTitle))) {
+      savePicture(picture, FILE);
+      setNote(t.pictureSaved);
     }
+  };
+  const copy = async () => {
+    if (!picture) return;
+    setNote((await copyPicture(picture)) ? t.pictureCopied : t.pictureCopyFailed);
+  };
+  const save = () => {
+    if (!picture) return;
+    savePicture(picture, FILE);
+    setNote(t.pictureSaved);
   };
 
   return (
@@ -90,6 +109,26 @@ export function SummaryDialog({ game, newBadges = [], onClose }: { game: GameSta
             </li>
           ))}
         </ol>
+
+        {/* Right under the ranking: the picture is what people share first. */}
+        <div className="summary-share">
+          {canShare && (
+            <button className="primary" disabled={!picture} onClick={share}>
+              {t.sharePicture}
+            </button>
+          )}
+          {canCopy && (
+            <button className={canShare ? 'secondary' : 'primary'} disabled={!picture} onClick={copy}>
+              {t.copyPicture}
+            </button>
+          )}
+          <button className="secondary" disabled={!picture} onClick={save}>
+            <Icon name="save" /> {t.savePicture}
+          </button>
+        </div>
+        <p className="summary-share-note muted center" role="status">
+          {picture ? note : t.picturePreparing}
+        </p>
 
         {newBadges.length > 0 && (
           <section className="summary-badges">
@@ -164,17 +203,6 @@ export function SummaryDialog({ game, newBadges = [], onClose }: { game: GameSta
             </table>
           </div>
         </section>
-
-        <div className="summary-share">
-          {canShare && (
-            <button className="primary" disabled={drawing} onClick={() => picture(true)}>
-              {t.sharePicture}
-            </button>
-          )}
-          <button className={canShare ? 'secondary' : 'primary'} disabled={drawing} onClick={() => picture(false)}>
-            <Icon name="save" /> {t.savePicture}
-          </button>
-        </div>
       </div>
     </dialog>
   );

@@ -316,6 +316,10 @@ Friends play from their own phones. One player creates a room and shares its cod
   - The room keeps the last 30 messages, so a phone that comes back sees them.
   - Each message is at most 200 characters, with control and invisible characters removed, and is shown as plain text.
   - At most one message per second per phone.
+  - During a game, a new message from someone else also **pops up** with the reactions: the sender's token,
+    name and the message (two lines at most) for 5 seconds. Tapping it opens the chat. No pop-ups while the
+    chat is open, and none on the sender's own phone.
+  - Only one of the 😊 palette and the chat is open at a time: opening one closes the other.
 - **Rematch:** after the game, the host's "Ván mới cùng phòng" takes the room back to the lobby, with the same seats and choices. The host can change the settings and start again.
 
 ---
@@ -417,6 +421,12 @@ tutorial doesn't count.
 
 The end-of-game summary lists the **new badges**. It can be turned into a **picture** (1080×1350 PNG,
 always in Giấy dó colors): the ranking with each player's token, the wealth chart, titles and new
-badges, and the board's river painting when there is room. **Chia sẻ ảnh** opens the phone's share
-sheet where the browser can share files; **Lưu ảnh** saves the file.
+badges, and the board's river painting when there is room. The picture is drawn as soon as the summary
+opens, because browsers only let a page share or copy right after a tap:
+- **Chia sẻ ảnh** opens the phone's share sheet (shown where the browser can share files);
+- **Sao chép ảnh** puts the picture on the clipboard, to paste into a chat (shown where the browser can
+  copy images);
+- **Lưu ảnh** saves the file.
+
+A line under the buttons says what happened (copied, saved, or that this browser won't copy).
 

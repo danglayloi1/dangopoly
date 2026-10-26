@@ -44,6 +44,7 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
   const startingCash = parseMillions(cashText);
   const [firstTurn, setFirstTurn] = useState<FirstTurn>('roll');
   const [rules, setRules] = useState<RulesChoice>(CLASSIC_RULES);
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Before joining, move off tokens and colors that others have taken meanwhile.
   useEffect(() => {
@@ -200,7 +201,9 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
         </p>
       )}
 
-      {room && me !== null && <ChatBox room={room} onSend={(text) => send({ t: 'chat', text })} besideReactions={false} />}
+      {room && me !== null && (
+        <ChatBox room={room} onSend={(text) => send({ t: 'chat', text })} besideReactions={false} open={chatOpen} onOpenChange={setChatOpen} />
+      )}
     </main>
   );
 }

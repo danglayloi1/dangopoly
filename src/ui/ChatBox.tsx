@@ -8,15 +8,16 @@ interface Props {
   room: RoomView;
   onSend: ((text: string) => void) | null; // null when only watching
   besideReactions: boolean; // in a game the 😊 button is in the corner, so this one sits next to it
+  open: boolean; // in a game, only one of the chat and the reactions is open at a time
+  onOpenChange: (open: boolean) => void;
 }
 
 /**
  * Online chat: a 💬 button (with the number of unread messages) that opens the room's recent
  * messages and a box to write in. Messages are shown as plain text.
  */
-export function ChatBox({ room, onSend, besideReactions }: Props) {
+export function ChatBox({ room, onSend, besideReactions, open, onOpenChange: setOpen }: Props) {
   const { t, lang } = useLang();
-  const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const messages = room.chat;
   const lastId = messages.at(-1)?.id ?? 0;
@@ -86,7 +87,7 @@ export function ChatBox({ room, onSend, besideReactions }: Props) {
         aria-label={unread > 0 ? `${t.chatLabel} (${unread})` : t.chatLabel}
         title={t.chatLabel}
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
       >
         <Icon name="chat" size={26} />
         {unread > 0 && !open && <span className="chat-unread">{unread > 9 ? '9+' : unread}</span>}
