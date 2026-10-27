@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ROOM_SERVER } from './config';
 import { RoomConnection, type ConnectionStatus } from './connection';
-import type { ClientMessage, ErrorCode, ReactionId, RoomView } from './protocol';
+import type { ClientMessage, ErrorCode, ReactionId, RoomView, ThrowItem } from './protocol';
 import { forgetSeat, rememberSeat, seatKeyFor } from './seats';
 
 /** A reaction someone sent, shown for a few seconds. */
@@ -11,11 +11,22 @@ export interface ShownReaction {
   reaction: ReactionId;
 }
 
+/** Something thrown at a player's token, shown while it flies. */
+export interface ShownThrow {
+  id: number;
+  from: number;
+  target: number;
+  item: ThrowItem;
+}
+
+const THROW_SHOWN_MS = 1_800;
+
 const REACTION_SHOWN_MS = 3_000;
 
 export interface RoomState {
   status: ConnectionStatus;
   reactions: ShownReaction[];
+  throws: ShownThrow[];
   room: RoomView | null;
   error: ErrorCode | null; // the last refusal, shown until the next message is sent
   missing: boolean; // there's no room with this code
@@ -33,6 +44,7 @@ export function useRoom(code: string, creating: boolean): RoomState {
   const [error, setError] = useState<ErrorCode | null>(null);
   const [missing, setMissing] = useState(false);
   const [reactions, setReactions] = useState<ShownReaction[]>([]);
+  const [throws, setThrows] = useState<ShownThrow[]>([]);
   const nextReaction = useRef(0);
   const connection = useRef<RoomConnection | null>(null);
   const waitingToCreate = useRef(creating);
@@ -54,6 +66,10 @@ export function useRoom(code: string, creating: boolean): RoomState {
         } else if (msg.t === 'room') {
           setRoom(msg.room);
           setMissing(false);
+        } else if (msg.t === 'thrown') {
+          const shown = { id: nextReaction.current++, from: msg.from, target: msg.target, item: msg.item };
+          setThrows((list) => [...list.slice(-3), shown]);
+          setTimeout(() => setThrows((list) => list.filter((x) => x !== shown)), THROW_SHOWN_MS);
         } else if (msg.t === 'reaction') {
           const shown = { id: nextReaction.current++, seat: msg.seat, reaction: msg.reaction };
           setReactions((list) => [...list.slice(-5), shown]);
@@ -79,5 +95,5 @@ export function useRoom(code: string, creating: boolean): RoomState {
     connection.current?.send(msg);
   }, []);
 
-  return { status, room, error, missing, send, reactions };
+  return { status, room, error, missing, send, reactions, throws };
 }

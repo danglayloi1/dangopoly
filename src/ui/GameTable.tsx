@@ -65,6 +65,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
             onSummary={() => setSummary(true)}
             busy={busy}
             rolling={rolling}
+            fumbled={presentation.fumbled}
           />
         </Board>
 

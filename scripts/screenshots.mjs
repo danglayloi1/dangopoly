@@ -788,6 +788,48 @@ const scenes = {
     check(errors === 0, `no errors on the page (${errors})`);
   },
 
+  /** The silly bits: dice rolling under the table, and a computer player talking in character. */
+  async fun({ page, shot, setup }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    await openFromMenu(page, /Chơi với máy/);
+    const rows = page.locator('.player-row');
+    await rows.nth(2).getByRole('button', { name: /Bỏ người chơi/ }).click();
+    await rows.first().locator('input').fill('Đăng');
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+
+    // Find a game where the next roll goes under the table, then roll.
+    const seed = await page.evaluate(() => {
+      const h = window.__dangopoly;
+      const g = h.getGame();
+      for (let s = 1; s < 200_000; s++) if (h.diceFumbled(h.applyAction({ ...g, rngState: s }, { type: 'ROLL' }))) return s;
+      return null;
+    });
+    await setup(new Function('game', `game.rngState = ${seed};`));
+    await page.evaluate(() => window.__dangopoly.dispatch({ type: 'ROLL' }));
+    await page.locator('.dice-fumble').waitFor({ timeout: 3_000 });
+    check(true, 'now and then the dice roll under the table, and are rolled again');
+    await shot('dice-under-table');
+    await page.waitForSelector('.board[data-busy="false"]', { timeout: 15_000 });
+
+    // Cu Đơ lands on "Vào nhà tạm giữ" and says something about it, in character.
+    await setup((game) => {
+      game.current = 1;
+      game.phase = { kind: 'awaitRoll' };
+      game.players[1].position = 23;
+      game.lastCard = null;
+    });
+    await page.evaluate(() => window.__dangopoly.dispatch({ type: 'ROLL', dice: [3, 4] }));
+    const bubble = page.locator('.talk-bubble', { hasText: 'Cu Đơ' });
+    await bubble.waitFor({ timeout: 10_000 });
+    const said = await bubble.locator('.talk-text').textContent();
+    check(['Vô đây nghỉ mệt chút thôi.', 'Tau vô đây chơi cho biết!'].includes(said), `a bot talks in character when it goes to jail ("${said}")`);
+    await shot('bot-talks');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /**
    * The effects after a move, each caught mid-way: the page's clock is under the script's control
    * (page.clock), so a move plays out exactly as far as needed and then everything is frozen.
@@ -1139,6 +1181,14 @@ const scenes = {
     for (const p of phones) await p.page.locator('.reaction-bubble', { hasText: 'Răng rứa?' }).waitFor();
     check(true, "Lan's reaction shows on every phone");
     await together('reaction');
+
+    // Lan throws a slipper at Đăng's token: it flies across every phone and lands with a "Bộp!".
+    await button(lan, 'Thả cảm xúc').click();
+    await lan.page.getByRole('button', { name: 'Ném Dép' }).click();
+    await lan.page.locator('.throw-target', { hasText: 'Đăng' }).click();
+    for (const p of phones) await p.page.locator('.fx-throw-hit', { hasText: 'Bộp!' }).waitFor({ timeout: 5_000 });
+    check(true, 'a thrown slipper lands on Đăng’s token on every phone');
+    await together('slipper');
 
     // Chat: Minh writes; Đăng sees a count on 💬 and opens it.
     await button(minh, 'Trò chuyện').click();

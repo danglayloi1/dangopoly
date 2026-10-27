@@ -3213,3 +3213,273 @@ body {
   font-size: 0.85rem;
   text-align: center;
 }
+
+/* ===== Computer players talking: speech-bubble stickers at the top ===== */
+/* Sticker look (after playful sites like Clockout and Emily Lonetto in A1): a white die-cut edge,
+   a slight tilt and a hard shadow, so each line reads like something slapped onto the screen. */
+.bot-talk {
+  position: fixed;
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  width: min(420px, calc(100vw - 24px));
+}
+
+.talk-bubble {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 14px 6px 6px;
+  border: 2px solid var(--ink);
+  border-radius: 18px 18px 18px 4px;
+  background: var(--surface);
+  box-shadow:
+    0 0 0 4px #fffaf0,
+    4px 5px 0 4px var(--ink);
+  transform: rotate(var(--tilt, -1.5deg));
+  animation: talk-pop calc(3.8s / var(--fx, 1)) ease-out forwards;
+}
+
+.talk-bubble > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.talk-bubble strong {
+  font-size: 0.75rem;
+  color: var(--player);
+}
+
+.talk-text {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+@keyframes talk-pop {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--tilt, -1.5deg)) scale(0.6);
+  }
+  8% {
+    opacity: 1;
+    transform: rotate(var(--tilt, -1.5deg)) scale(1.06);
+  }
+  14%,
+  85% {
+    opacity: 1;
+    transform: rotate(var(--tilt, -1.5deg)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--tilt, -1.5deg)) translateY(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talk-bubble {
+    animation: none;
+  }
+}
+
+:root[data-anim='off'] .talk-bubble {
+  animation: none;
+}
+
+/* ===== Throwing things online (dép, bánh chưng, hoa) ===== */
+.throw-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding-bottom: 8px;
+  margin-bottom: 2px;
+  border-bottom: 1.5px dashed var(--border);
+  font-weight: 800;
+}
+
+/* Sticker-like buttons: a white die-cut edge, tilted a little each. */
+.throw-choice {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: #fffaf0;
+  box-shadow: 2px 2px 0 var(--ink);
+  transform: rotate(-4deg);
+}
+
+.throw-choice:nth-of-type(2) {
+  transform: rotate(3deg);
+}
+
+.throw-choice:hover {
+  transform: rotate(0) scale(1.08);
+}
+
+.throw-targets {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+
+.throw-targets p {
+  margin: 0;
+  font-weight: 800;
+}
+
+.throw-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  border-left: 6px solid var(--player);
+  border-radius: 10px;
+  background: var(--surface);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* The flying thing: it arcs from the thrower to the target, spinning, then bounces off. */
+.fx-throw {
+  position: fixed;
+  z-index: 30;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.fx-throw-item {
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  filter: drop-shadow(0 0 0 #fffaf0) drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.35));
+  animation: throw-fly calc(0.7s / var(--fx, 1)) cubic-bezier(0.3, 0.1, 0.4, 1) forwards;
+}
+
+.fx-throw.landed .fx-throw-item {
+  animation: throw-bounce 0.6s ease-out forwards;
+  translate: var(--dx) var(--dy);
+}
+
+@keyframes throw-fly {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.8);
+  }
+  50% {
+    transform: translate(calc(var(--dx) * 0.5), calc(var(--dy) * 0.5 - 90px)) rotate(360deg) scale(1.2);
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(1);
+  }
+}
+
+@keyframes throw-bounce {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(26px, 30px) rotate(200deg);
+    opacity: 0;
+  }
+}
+
+.fx-throw-hit {
+  position: absolute;
+  left: var(--dx);
+  top: var(--dy);
+  transform: translate(-50%, -150%) rotate(-6deg);
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fffaf0;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-weight: 900;
+  white-space: nowrap;
+  animation: pop-in 0.25s ease-out backwards;
+}
+
+.fx-throw.item-hoa .fx-throw-hit {
+  color: var(--accent);
+}
+
+/* The token that got hit flinches. */
+.cell-token.hit {
+  animation: token-hit 0.6s ease-out;
+}
+
+@keyframes token-hit {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translate(-3px, 2px) rotate(-14deg) scale(0.85);
+  }
+  45% {
+    transform: translate(3px, -1px) rotate(10deg);
+  }
+  70% {
+    transform: rotate(-5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-throw-item,
+  .cell-token.hit {
+    animation: none;
+  }
+}
+
+/* The dice rolled under the table: a little sticker note while they're rolled again. */
+.dice-fumble {
+  margin: 0;
+  padding: 3px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fffaf0;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-weight: 800;
+  font-size: 0.9em;
+  transform: rotate(-2deg);
+  animation: pop-in 0.25s ease-out backwards;
+}
+
+.action-panel:has(.dice-fumble) .die-cube.rolling {
+  animation-name: die-fumble;
+}
+
+/* Off the edge of the table and back. */
+@keyframes die-fumble {
+  0% {
+    transform: translate(0, 0) rotateX(0) rotateY(0);
+  }
+  40% {
+    transform: translate(70px, 50px) rotateX(540deg) rotateY(180deg) scale(0.6);
+    opacity: 0.3;
+  }
+  60% {
+    transform: translate(70px, 50px) scale(0.3);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(0, 0) rotateX(720deg) rotateY(360deg);
+    opacity: 1;
+  }
+}

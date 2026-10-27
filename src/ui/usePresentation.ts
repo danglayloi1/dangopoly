@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, LogEntry } from '../engine/types';
 import { speedFactor } from './animation';
-import { EFFECT_MS, effectsFor, hasMotion, newLogEntries, planMoves, soundFor, type Effect } from './motion';
+import { diceFumbled, EFFECT_MS, effectsFor, hasMotion, newLogEntries, planMoves, soundFor, type Effect } from './motion';
 import { playSound } from './sound';
 
 const DICE_MS = 650;
@@ -19,6 +19,7 @@ export interface ShownEffect {
 export interface Presentation {
   positions: number[]; // where each token is drawn right now
   rolling: boolean; // the dice are tumbling
+  fumbled: boolean; // ...after rolling off the table first (see diceFumbled)
   busy: boolean; // a move is playing out: hold back results and buttons
   effects: ShownEffect[]; // seals, flying coins, banners… (see effectsFor)
 }
@@ -32,6 +33,7 @@ export function usePresentation(game: GameState): Presentation {
   const actual = game.players.map((p) => p.position);
   const [positions, setPositions] = useState(actual);
   const [rolling, setRolling] = useState(false);
+  const [fumbled, setFumbled] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [effects, setEffects] = useState<ShownEffect[]>([]);
   const nextEffect = useRef(0);
@@ -76,6 +78,14 @@ export function usePresentation(game: GameState): Presentation {
     void (async () => {
       if (entries.some((e) => e.type === 'rolled')) {
         setRolling(true);
+        if (diceFumbled(game)) {
+          // Off the table they go... and rolled again.
+          setFumbled(true);
+          playSound('dice');
+          await sleep(DICE_MS * 1.6 * factor);
+          if (cancelled) return;
+          setFumbled(false);
+        }
         playSound('dice');
         await sleep(DICE_MS * factor);
         if (cancelled) return;
@@ -103,5 +113,5 @@ export function usePresentation(game: GameState): Presentation {
     };
   }, [game]);
 
-  return { positions, rolling, busy: pending || animating, effects };
+  return { positions, rolling, fumbled, busy: pending || animating, effects };
 }

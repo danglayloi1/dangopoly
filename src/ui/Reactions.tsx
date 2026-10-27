@@ -1,6 +1,7 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useLang } from '../i18n/LangContext';
-import { REACTIONS, type ChatMessage, type ReactionId, type RoomView } from '../net/protocol';
+import { REACTIONS, THROW_ITEMS, type ChatMessage, type ReactionId, type RoomView, type ThrowItem } from '../net/protocol';
+import { Icon, type IconName } from './icons';
 import type { ShownReaction } from '../net/useRoom';
 import { colorHex } from './look';
 import { TokenIcon } from './TokenIcon';
@@ -13,16 +14,28 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   chatPopups: ChatMessage[]; // new chat messages, floating up with the reactions
   onOpenChat: () => void; // tapping a message bubble opens the chat
+  onThrow: ((target: number, item: ThrowItem) => void) | null; // in a game: throw something at someone
 }
+
+const ITEM_ICONS: Record<ThrowItem, IconName> = { dep: 'slipper', banhChung: 'banhChung', hoa: 'blossom' };
 
 /**
  * Online: a 😊 button in the corner opens quick reactions (emoji and Nghệ phrases); whatever anyone
  * sends floats up on every phone for a moment, with the sender's token and name. New chat messages
  * float up the same way.
  */
-export function Reactions({ room, reactions, onSend, open, onOpenChange, chatPopups, onOpenChat }: Props) {
+export function Reactions({ room, reactions, onSend, open, onOpenChange, chatPopups, onOpenChat, onThrow }: Props) {
   const { t } = useLang();
-  const setOpen = onOpenChange;
+  // Throwing: first the thing, then who at.
+  const [aiming, setAiming] = useState<ThrowItem | null>(null);
+  useEffect(() => {
+    if (!open) setAiming(null); // closed some other way (e.g. the chat opened): start over next time
+  }, [open]);
+  const setOpen = (next: boolean) => {
+    setAiming(null);
+    onOpenChange(next);
+  };
+  const targets = room.seats.flatMap((s, i) => (i === room.you ? [] : [{ seat: i, ...s }]));
 
   return (
     <>
@@ -61,7 +74,40 @@ export function Reactions({ room, reactions, onSend, open, onOpenChange, chatPop
         <div className="reactions">
           {open && (
             <div className="reaction-palette" role="group" aria-label={t.reactionsLabel}>
-              {(Object.keys(REACTIONS) as ReactionId[]).map((id) => (
+              {onThrow && aiming && (
+                <div className="throw-targets">
+                  <p>{t.throwAt(t.throwItems[aiming])}</p>
+                  {targets.map((s) => (
+                    <button
+                      key={s.seat}
+                      type="button"
+                      className="throw-target"
+                      style={{ '--player': colorHex(s.color) } as CSSProperties}
+                      onClick={() => {
+                        onThrow(s.seat, aiming);
+                        setOpen(false);
+                      }}
+                    >
+                      <TokenIcon token={s.token} color={colorHex(s.color)} size={26} />
+                      {s.name}
+                    </button>
+                  ))}
+                  <button type="button" className="link" onClick={() => setAiming(null)}>
+                    ← {t.back}
+                  </button>
+                </div>
+              )}
+              {onThrow && !aiming && targets.length > 0 && (
+                <div className="throw-row">
+                  <span>{t.throwLabel}:</span>
+                  {THROW_ITEMS.map((item) => (
+                    <button key={item} type="button" className="throw-choice" title={t.throwItems[item]} aria-label={`${t.throwLabel} ${t.throwItems[item]}`} onClick={() => setAiming(item)}>
+                      <Icon name={ITEM_ICONS[item]} size={26} />
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!aiming && (Object.keys(REACTIONS) as ReactionId[]).map((id) => (
                 <button
                   key={id}
                   type="button"

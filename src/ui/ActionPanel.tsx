@@ -25,10 +25,11 @@ interface Props {
   onSummary: () => void;
   busy: boolean; // a move is being animated: show only the turn and the dice
   rolling: boolean;
+  fumbled?: boolean; // the dice rolled off the table first (just for show)
 }
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
-export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, next, onSummary, busy, rolling }: Props) {
+export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, next, onSummary, busy, rolling, fumbled = false }: Props) {
   const { t, lang, uiLang } = useLang();
   const { phase } = game;
   const player = game.players[game.current];
@@ -69,6 +70,11 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
           {turnBanner}
           <Dice dice={game.dice} rolling={rolling} />
         </div>
+        {fumbled && (
+          <p className="dice-fumble" role="status">
+            {t.diceFumble}
+          </p>
+        )}
       </div>
     );
   }

@@ -43,6 +43,8 @@ export type IconName =
   | 'moon'
   | 'autoTheme'
   | 'person'
+  | 'slipper'
+  | 'banhChung'
   | 'bot'
   | 'save'
   | 'trophy'
@@ -268,6 +270,21 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <path d="M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M5 5 L7 7 M17 5 L15 7 M5 19 L7 17" fill="none" />
       <circle cx="12" cy="12" r="5.5" fill={YELLOW} />
       <path d="M22 13 A8 8 0 1 0 30 25 A6 6 0 1 1 22 13 Z" fill={INDIGO} />
+    </>
+  ),
+  // Dép lào: the sole and its strap (thrown, lovingly, online)
+  slipper: (
+    <>
+      <path d="M16 3 C9 3 7 9 8 16 C9 24 11 29 16 29 C21 29 23 24 24 16 C25 9 23 3 16 3 Z" fill={SKY} />
+      <path d="M9 13 L16 17.5 L23 13" fill="none" stroke={RED} strokeWidth={3} />
+      <circle cx="16" cy="17.5" r="1.6" fill={RED} />
+    </>
+  ),
+  // Bánh chưng: a green square cake tied with bamboo strings
+  banhChung: (
+    <>
+      <rect x="5" y="5" width="22" height="22" rx="2" fill={GREEN} />
+      <path d="M5 12.5 H27 M5 19.5 H27 M12.5 5 V27 M19.5 5 V27" fill="none" stroke={CREAM} strokeWidth={1.6} />
     </>
   ),
   // A player at the table

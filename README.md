@@ -23,7 +23,7 @@ npm run build    # builds the final website into dist/
 players, or watch any game being played (hosts can keep their room off the list).
 
 **Online extras:** tap 😊 to send a quick reaction (15 emoji, 8 Nghệ phrases like *Răng rứa?*) that
-pops up on every phone; tap 💬 to chat with the room, in the lobby and during the game (new messages
+pops up on every phone, or to throw a dép, a bánh chưng or a flower at someone's token; tap 💬 to chat with the room, in the lobby and during the game (new messages
 also pop up on screen during the game); after a game
 the host can start **a new game in the same room**.
 
@@ -33,7 +33,7 @@ that round. At the end, a summary shows the ranking, a chart of everyone's wealt
 
 After **Vào chơi**, the menu offers: play on one device, **play against the computer** (1–3 bots,
 each Dễ, Vừa or Khó), play online, the guided practice game
-(**🎓 Hướng dẫn chơi**), **Thành tích** (records and 15 badges for everyone who plays on this device), and settings (language, six color themes with previews, effect speed, sound volume).
+(**🎓 Hướng dẫn chơi**), **Thành tích** (records and 18 badges for everyone who plays on this device), and settings (language, six color themes with previews, effect speed, sound volume).
 
 **Music:** the 🎵 button in the corner opens a Spotify player with Nghệ Tĩnh folk songs (dân ca ví giặm),
 or any Spotify playlist you paste in. Nothing is loaded from Spotify until you open it. The player in
@@ -45,7 +45,7 @@ plays it in the Spotify app instead.
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
-`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `records` (badges, the
+`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (dice under the table, a bot talking), `records` (badges, the
 summary picture and the records screen), `layout` (cards fitting small boards, the phone
 player strip, screen transitions; add `--mobile`), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).

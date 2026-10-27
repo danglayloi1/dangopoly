@@ -79,3 +79,15 @@ describe('records', () => {
     expect(Object.keys(records)).toEqual([recordKey('Đăng')]);
   });
 });
+
+describe('silly badges', () => {
+  it('rewards going broke, paying lots of rent, and never buying anything', () => {
+    const game = finished((s) => {
+      s.stats[1].rentPaid = 16 * TR;
+      s.stats[0].bought = 0;
+    });
+    expect(badgesEarned(game, 1)).toEqual(expect.arrayContaining(['brokeButHappy', 'unlucky'])); // Lan went bankrupt
+    expect(badgesEarned(game, 0)).toContain('tourist');
+    expect(badgesEarned(game, 1)).not.toContain('tourist'); // going bankrupt isn't sightseeing
+  });
+});
