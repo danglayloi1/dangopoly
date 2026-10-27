@@ -1185,8 +1185,10 @@ const scenes = {
     // Lan throws a slipper at Đăng's token: it flies across every phone and lands with a "Bộp!".
     await button(lan, 'Thả cảm xúc').click();
     await lan.page.getByRole('button', { name: 'Ném Dép' }).click();
+    // The "Bộp!" shows for about a second, so watch all three phones at once, from before the throw.
+    const landed = phones.map((p) => p.page.locator('.fx-throw-hit', { hasText: 'Bộp!' }).waitFor({ timeout: 10_000 }));
     await lan.page.locator('.throw-target', { hasText: 'Đăng' }).click();
-    for (const p of phones) await p.page.locator('.fx-throw-hit', { hasText: 'Bộp!' }).waitFor({ timeout: 5_000 });
+    await Promise.all(landed);
     check(true, 'a thrown slipper lands on Đăng’s token on every phone');
     await together('slipper');
 
