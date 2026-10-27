@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CARDS } from '../src/data/cards';
 import { applyAction, createGame } from '../src/engine/game';
 import type { GameState, LogEntry } from '../src/engine/types';
-import { effectsFor, hasMotion, newLogEntries, planMoves, soundFor, stepPath } from '../src/ui/motion';
+import { diceFumbled, effectsFor, FUMBLE_ODDS, hasMotion, newLogEntries, planMoves, soundFor, stepPath } from '../src/ui/motion';
 
 function newGame(): GameState {
   return createGame({
@@ -173,5 +173,16 @@ describe('effects after a move', () => {
       game,
     ).map((e) => e.kind);
     expect(kinds).toEqual(['build', 'jail', 'bankrupt', 'festival', 'coinRain']);
+  });
+});
+
+describe('dice rolling under the table', () => {
+  it('happens about once in FUMBLE_ODDS rolls, decided by the game alone', () => {
+    const game = newGame();
+    let fumbles = 0;
+    for (let rng = 1; rng <= 40_000; rng++) if (diceFumbled({ ...game, rngState: rng * 2654435761 })) fumbles++;
+    expect(fumbles / 40_000).toBeGreaterThan(0.5 / FUMBLE_ODDS);
+    expect(fumbles / 40_000).toBeLessThan(2 / FUMBLE_ODDS);
+    expect(diceFumbled(game)).toBe(diceFumbled(structuredClone(game))); // same game, same answer on every phone
   });
 });

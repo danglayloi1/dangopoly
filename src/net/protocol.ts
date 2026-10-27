@@ -26,6 +26,7 @@ export type ClientMessage =
   | { t: 'start'; startingCash: number; firstTurn: FirstTurn; rules: RulesChoice } // host only
   | { t: 'act'; action: Action }
   | { t: 'react'; reaction: ReactionId } // a quick reaction, shown on every phone
+  | { t: 'throw'; target: number; item: ThrowItem } // throw something at another player's token, just for fun
   | { t: 'chat'; text: string } // a chat message (kept: the last CHAT_KEEP of them)
   | { t: 'rematch' } // host, after the game: back to the lobby with everyone still seated
   | { t: 'listed'; listed: boolean }; // host: show the room in the public room list, or not
@@ -96,7 +97,8 @@ export type ServerMessage =
   | { t: 'welcome'; seat: number; key: string } // keep the key to rejoin this seat
   | { t: 'room'; room: RoomView }
   | { t: 'error'; code: ErrorCode }
-  | { t: 'reaction'; seat: number; reaction: ReactionId };
+  | { t: 'reaction'; seat: number; reaction: ReactionId }
+  | { t: 'thrown'; from: number; target: number; item: ThrowItem };
 
 /** Quick reactions: emoji, then Nghệ phrases. */
 export const REACTIONS = {
@@ -128,6 +130,11 @@ export const REACTIONS = {
 export type ReactionId = keyof typeof REACTIONS;
 
 export const isReactionId = (v: unknown): v is ReactionId => typeof v === 'string' && Object.hasOwn(REACTIONS, v);
+
+/** Things to throw at another player's token: a slipper (dép), a bánh chưng, or a flower. Just for fun. */
+export const THROW_ITEMS = ['dep', 'banhChung', 'hoa'] as const;
+export type ThrowItem = (typeof THROW_ITEMS)[number];
+export const isThrowItem = (v: unknown): v is ThrowItem => (THROW_ITEMS as readonly unknown[]).includes(v);
 
 export const MAX_MESSAGE_BYTES = 8 * 1024;
 

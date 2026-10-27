@@ -128,6 +128,18 @@ export type Effect =
 const MAX_MONEY = 4;
 
 /** The effects for what just happened. `game` is the state after it, for where players stand. */
+/** About one roll in this many, the dice roll off the table first. */
+export const FUMBLE_ODDS = 40;
+
+/**
+ * Now and then the dice roll under the table and are rolled again: only for show (the result is
+ * the same). Decided by the game itself, so every phone in an online game shows the same mishap.
+ */
+export function diceFumbled(game: GameState): boolean {
+  const h = Math.imul((game.rngState ^ 0x5bd1e995) >>> 0, 0x27d4eb2d) >>> 0;
+  return (h ^ (h >>> 15)) % FUMBLE_ODDS === 0;
+}
+
 export function effectsFor(entries: readonly LogEntry[], game: GameState): Effect[] {
   const at = (player: number): number => game.players[player].position;
   const others = (player: number) => game.players.filter((p) => p.id !== player && !p.bankrupt).map((p) => p.id);

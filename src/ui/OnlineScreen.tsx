@@ -12,6 +12,7 @@ import { Lobby } from './Lobby';
 import { Reactions } from './Reactions';
 import { useNow } from './useNow';
 import { usePresentation } from './usePresentation';
+import { Throws } from './Throws';
 import { useChatPopups } from './useChatPopups';
 import { useRecordGame } from './useRecordGame';
 import { ViewerProvider } from './viewer';
@@ -118,6 +119,7 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
   return (
     <ViewerProvider value={{ online: true, seat, connected: room.seats.map((s) => s.online) }}>
       <GameTable game={game} dispatch={dispatch} presentation={presentation} onLeave={onLeave} headerExtra={status} next={next} newBadges={newBadges}>
+        <Throws throws={state.throws} />
         {seat === null && (
           <p className="spectator-note" role="status">
             <Icon name="eye" /> {t.spectating}
@@ -136,6 +138,7 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
           onOpenChange={(open) => setPanel(open ? 'reactions' : null)}
           chatPopups={chatPopups}
           onOpenChat={() => setPanel('chat')}
+          onThrow={seat === null ? null : (target, item) => state.send({ t: 'throw', target, item })}
         />
         <ChatBox
           room={room}

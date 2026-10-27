@@ -14,7 +14,9 @@ export type SoundName =
   | 'trade'
   | 'bankrupt'
   | 'win'
-  | 'enter';
+  | 'enter'
+  | 'whoosh'
+  | 'thud';
 
 const MUTE_KEY = 'dangopoly.muted';
 const VOLUME_KEY = 'dangopoly.volume';
@@ -166,6 +168,13 @@ const SOUNDS: Record<SoundName, (c: AudioContext, t: number) => void> = {
   // a little fanfare
   win: (c, t) => {
     [523, 659, 784, 1047].forEach((f, i) => tone(c, t + i * 0.13, f, i === 3 ? 0.6 : 0.18, { type: 'square', gain: 0.06 }));
+  },
+  // Something flying past: a quick airy swish
+  whoosh: (c, t) => noise(c, t, 0.35, { freq: 1200, q: 0.6, gain: 0.25 }),
+  // ...and landing on someone: bộp!
+  thud: (c, t) => {
+    noise(c, t, 0.09, { freq: 500, q: 1.5, gain: 0.5 });
+    tone(c, t, 150, 0.12, { type: 'sine', gain: 0.25, slideTo: 80 });
   },
   // Entering the game: a plucked five-note run, like a đàn tranh
   enter: (c, t) => {

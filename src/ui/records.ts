@@ -26,7 +26,11 @@ export type BadgeId =
   | 'quickWin'
   | 'beatHard'
   | 'loneWolf'
-  | 'online';
+  | 'online'
+  // The silly ones: badges for bad luck, worn with pride
+  | 'brokeButHappy'
+  | 'unlucky'
+  | 'tourist';
 
 /** Every badge, in the order the collection shows them, with its drawing. */
 export const BADGES: readonly { id: BadgeId; icon: IconName }[] = [
@@ -45,6 +49,9 @@ export const BADGES: readonly { id: BadgeId; icon: IconName }[] = [
   { id: 'beatHard', icon: 'bot' },
   { id: 'loneWolf', icon: 'person' },
   { id: 'online', icon: 'globe' },
+  { id: 'brokeButHappy', icon: 'slipper' },
+  { id: 'unlucky', icon: 'moon' },
+  { id: 'tourist', icon: 'wave' },
 ];
 
 export const VETERAN_GAMES = 10;
@@ -86,6 +93,9 @@ export function badgesEarned(game: GameState, player: number, online = false): B
   if (won && bots.some((p) => p.bot === 'hard')) badges.push('beatHard');
   if (won && bots.length === 3) badges.push('loneWolf');
   if (online) badges.push('online');
+  if (game.players[player].bankrupt) badges.push('brokeButHappy');
+  if (stats.rentPaid >= 15 * TR) badges.push('unlucky');
+  if (stats.bought === 0 && !game.players[player].bankrupt) badges.push('tourist');
   return badges;
 }
 

@@ -69,6 +69,7 @@ export function Board({ game, positions, busy, onSelectSpace, effects, children 
                 {here.map((p) => (
                   <span
                     key={p.id}
+                    data-player={p.id} // where online throws land (see Throws.tsx)
                     className={`cell-token${p.id === game.current ? ' current' : ''}${p.inJail ? ' jailed' : ''}`}
                   >
                     <TokenIcon token={p.token} color={playerColor(p)} size="100%" title={p.name} />

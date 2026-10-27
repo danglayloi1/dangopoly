@@ -335,6 +335,10 @@ Friends play from their own phones. One player creates a room and shares its cod
     pages only. A listing nobody has refreshed for 2 hours is dropped.
 - **Watching:** anyone without a seat watches. They see the game as it is played but get no buttons, and a
   note at the bottom says so. The players see how many are watching (👁 in the top bar, and in the lobby).
+- **Throwing things:** in a game, the 😊 palette has a "Ném" row: a dép (slipper), a bánh chưng or a flower.
+  Pick one, then a player: it flies in an arc from your token to theirs, spinning, and lands with "Bộp!",
+  "Huỵch!" or "Thơm ghê!" while their token flinches. The room passes it to every phone without storing
+  it, at most one throw every 3 seconds per phone. Just for fun: nothing in the game changes.
 
 ---
 
@@ -410,7 +414,7 @@ every game finished and Khó won about half. Online rooms are for people only.
 ## 16. Records, badges and the summary picture
 
 **Thành tích** on the menu shows everyone who has finished a game on this device: games, wins and best
-fortune, and their **badges** (15, earned once each and kept with the date). Records are kept by name,
+fortune, and their **badges** (18, earned once each and kept with the date). Records are kept by name,
 ignoring case and extra spaces, in this browser only. Computer players get none. A game is recorded the
 moment it ends: on one device for every person at the table, online for this phone's own player. The
 tutorial doesn't count.
@@ -432,6 +436,9 @@ tutorial doesn't count.
 | Hạ máy khó | win a game against a Khó bot |
 | Một chọi ba | beat three bots at once |
 | Chơi online | finish an online game |
+| Tay trắng vẫn vui | go bankrupt (a silly one) |
+| Thánh xui | pay 15tr in rent in one game (a silly one) |
+| Đi dạo cho vui | finish a game without buying a single place (a silly one) |
 
 The end-of-game summary lists the **new badges**. It can be turned into a **picture** (1080×1350 PNG,
 always in Giấy dó colors): the ranking with each player's token, the wealth chart, titles and new
@@ -444,3 +451,19 @@ opens, because browsers only let a page share or copy right after a tap:
 
 A line under the buttons says what happened (copied, saved, or that this browser won't copy).
 
+
+## 17. Just for fun
+
+None of these change the rules; they're there to make people laugh.
+
+- **Computer players talk.** Each of the four has a character: Cu Đơ shows off, Hến counts every đồng,
+  Nhút panics, Bưởi is kind to everyone (a renamed bot gets a character by its seat). After a move has
+  played out, a bot it concerned says one line, in Nghệ dialect (English in English), as a speech-bubble
+  sticker at the top: about going bankrupt, winning, jail, a trade it answered, rent paid or received,
+  buying, building, doubles or getting out of jail (the biggest thing first). Small things get a
+  remark only about half the time, so they don't chatter. `ui/botLines.ts` holds the lines and picks
+  them (tested); `BotTalk.tsx` shows them.
+- **Dice under the table.** About one roll in 40, the dice fly off the table first ("Xúc xắc lăn vô gầm
+  bàn rồi! Gieo lại nờ…") and are rolled again. Only for show: the result is the same. It's decided
+  by the game's own state, so every phone in an online game shows the same mishap.
+- **Throwing things** online, and three **silly badges**: see sections 11 and 16.

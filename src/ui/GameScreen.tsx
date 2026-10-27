@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS } from '../data/cards';
 import { applyAction, GameError } from '../engine/game';
+import { diceFumbled } from './motion';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { GameTable } from './GameTable';
 import { clearSavedGame, saveGame } from './savedGame';
 import { useNow } from './useNow';
+import { BotTalk } from './BotTalk';
 import { useBots } from './useBots';
 import { useRecordGame } from './useRecordGame';
 import { usePresentation } from './usePresentation';
@@ -73,6 +75,9 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
       // e.g. { type: 'ROLL', dice: [2, 3] } to land on an exact space
       dispatch: (action: Action) => setGame((current) => applyAction(current, action)),
       cards: CARDS,
+      // to find a game where the dice roll under the table (see diceFumbled)
+      applyAction,
+      diceFumbled,
     };
     return () => {
       delete w.__dangopoly;
@@ -88,6 +93,7 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
   return (
     <GameTable game={game} dispatch={tutorial.dispatch} presentation={presentation} onLeave={onLeave} headerExtra={autosave} newBadges={newBadges}>
       {tutorial.active && <TutorialBubble tutorial={tutorial} onExit={onLeave} />}
+      <BotTalk game={game} busy={presentation.busy} />
     </GameTable>
   );
 }
