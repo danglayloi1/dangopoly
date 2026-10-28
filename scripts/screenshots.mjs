@@ -17,6 +17,19 @@ const mobile = flags.includes('--mobile');
 const dark = flags.includes('--dark');
 const outDir = path.join('screenshots', `${scene}${mobile ? '-mobile' : ''}${dark ? '-dark' : ''}`);
 
+/**
+ * A browser tab can crash, most often when this computer runs low on memory (the online scene runs
+ * several phones at once). Say so the moment it happens: otherwise the scene only stops 30 s later
+ * on a click that can't happen, and the timeout looks like a bug in the game.
+ */
+function reportCrash(page, who) {
+  page.on('crash', () =>
+    console.error(
+      `CRASH: ${who}'s browser tab crashed, so the steps after this will time out. Usually the computer ran low on memory: run the scene again. If it keeps crashing at the same step, look into the game.`,
+    ),
+  );
+}
+
 /** From the entry screen, through the menu, to one of its screens (e.g. /Chơi trên một máy/). */
 async function openFromMenu(p, choice) {
   // Loading the same address again keeps the remembered screen, so start from a blank page.
@@ -1029,6 +1042,7 @@ const scenes = {
         errors++;
         console.error(`${name}: ${e.message}`);
       });
+      reportCrash(page, name);
       return { name, ctx, page };
     };
     const phones = [await openPhone('Đăng'), await openPhone('Lan'), await openPhone('Minh')];
@@ -1250,6 +1264,7 @@ async function main() {
   });
   const page = await context.newPage();
   page.on('pageerror', (error) => console.error('Page error:', error.message));
+  reportCrash(page, 'The page');
   page.on('dialog', (dialog) => dialog.accept()); // answer "OK" to confirm() prompts
 
   let count = 0;
