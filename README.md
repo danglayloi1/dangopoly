@@ -51,7 +51,7 @@ plays it in the Spotify app instead.
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
-`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (dice under the table, a bot talking), `viet` (each Chế độ Việt rule on screen), `missions` (secret missions on one device and online), `roads` (a rush-hour jam and a wandering buffalo), `records` (badges, the
+`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (the dice going off the table, all three ways; a bot talking), `viet` (each Chế độ Việt rule on screen), `missions` (secret missions on one device and online), `roads` (a rush-hour jam and a wandering buffalo), `records` (badges, the
 summary picture and the records screen), `layout` (cards fitting small boards, the phone
 player strip, screen transitions; add `--mobile`), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).
