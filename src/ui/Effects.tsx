@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { formatMoney } from '../engine/money';
-import type { GameState } from '../engine/types';
+import type { FumbleKind, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { cellPosition } from './geometry';
 import { Icon } from './icons';
@@ -69,6 +69,8 @@ export function BoardEffects({ effects, game }: { effects: ShownEffect[]; game: 
                 <span>{t.anVaShout}</span>
               </div>
             );
+          case 'fumble':
+            return <FumbleScene key={id} game={game} player={e.player} how={e.how} />;
           case 'bankrupt': {
             const p = game.players[e.player];
             return (
@@ -87,6 +89,42 @@ export function BoardEffects({ effects, game }: { effects: ShownEffect[]; game: 
         }
       })}
     </>
+  );
+}
+
+/**
+ * The dice go off the table, in the middle of the board: under it (the player peeks after them), or
+ * Con Vàng runs off with them, or a hen pecks them away. Then a sticker: roll again!
+ */
+function FumbleScene({ game, player, how }: { game: GameState; player: number; how: FumbleKind }) {
+  const { t } = useLang();
+  const p = game.players[player];
+  return (
+    <div className={`fx fx-fumble how-${how}`} style={area('bank')} role="status">
+      <div className="fumble-stage">
+        <strong className="fumble-caption">{t.fumbleCaption[how]}</strong>
+        <span className="fumble-table" aria-hidden="true" />
+        <span className="fumble-dice" aria-hidden="true">
+          <span className="fumble-die">
+            <Icon name="dice" size="100%" />
+          </span>
+          <span className="fumble-die">
+            <Icon name="dice" size="100%" />
+          </span>
+        </span>
+        <span className="fumble-critter" aria-hidden="true">
+          {how === 'table' ? <TokenIcon token={p.token} color={playerColor(p)} size="100%" /> : <Icon name={how} size="100%" />}
+        </span>
+        {how === 'table' && (
+          <span className="fumble-bubble" aria-hidden="true">
+            {t.fumbleWhere}
+          </span>
+        )}
+        <span className="fumble-again" aria-hidden="true">
+          {t.fumbleAgain}
+        </span>
+      </div>
+    </div>
   );
 }
 

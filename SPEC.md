@@ -460,12 +460,16 @@ None of these change the rules; they're there to make people laugh.
   Nhút panics, Bưởi is kind to everyone (a renamed bot gets a character by its seat). After a move has
   played out, a bot it concerned says one line, in Nghệ dialect (English in English), as a speech-bubble
   sticker at the top: about going bankrupt, winning, jail, a trade it answered, rent paid or received,
-  buying, building, doubles or getting out of jail (the biggest thing first). Small things get a
+  buying, building, doubles, losing the dice or getting out of jail (the biggest thing first). Small things get a
   remark only about half the time, so they don't chatter. `ui/botLines.ts` holds the lines and picks
   them (tested); `BotTalk.tsx` shows them.
-- **Dice under the table.** About one roll in 40, the dice fly off the table first ("Xúc xắc lăn vô gầm
-  bàn rồi! Gieo lại nờ…") and are rolled again. Only for show: the result is the same. It's decided
-  by the game's own state, so every phone in an online game shows the same mishap.
+- **Dice off the table.** About one roll in 40, the dice go off the table and the roll doesn't count
+  (`diceFumbled` in `engine/rng.ts`; the log entry says how). It happens one of three ways, each
+  a 3-second scene in the middle of the board while the buttons wait. The dice roll under the
+  table and the player's token peeks after them ("Mô rồi?"), or Con Vàng the dog runs off with
+  them, or a hen pecks them away. Then the same player presses **Gieo lại** and rolls fresh dice.
+  Dice chosen on purpose (the tutorial) never go off the table, and in jail it doesn't use up an
+  attempt. It comes from the game's seeded randomness, so every phone online sees the same mishap.
 - **Throwing things** online, and three **silly badges**: see sections 11 and 16.
 
 ## 18. Chế độ Việt

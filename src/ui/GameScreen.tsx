@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS } from '../data/cards';
 import { applyAction, GameError } from '../engine/game';
-import { diceFumbled } from './motion';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { GameTable } from './GameTable';
@@ -75,9 +74,8 @@ export function GameScreen({ initialGame, onLeave, tutorial: tutorialMode = fals
       // e.g. { type: 'ROLL', dice: [2, 3] } to land on an exact space
       dispatch: (action: Action) => setGame((current) => applyAction(current, action)),
       cards: CARDS,
-      // to find a game where the dice roll under the table (see diceFumbled)
+      // to find a game where the dice roll off the table (see diceFumbled in engine/rng)
       applyAction,
-      diceFumbled,
     };
     return () => {
       delete w.__dangopoly;

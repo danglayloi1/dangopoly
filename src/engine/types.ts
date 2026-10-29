@@ -185,11 +185,14 @@ export type TurnActionType = Exclude<ActionType, PropertyAction['type'] | 'PROPO
 
 export type JailReason = 'space' | 'doubles' | 'card';
 export type JailExit = 'doubles' | 'fine' | 'card' | 'forcedFine';
+/** How the dice got lost when they roll off the table (see diceFumbled). */
+export type FumbleKind = 'table' | 'dog' | 'chicken';
 
 /** Structured history, so the UI can show it in either language. */
 export type LogEntry =
   | { type: 'turnStarted'; player: number }
   | { type: 'rolled'; player: number; dice: Dice }
+  | { type: 'diceFumbled'; player: number; how: FumbleKind } // the roll doesn't count: roll again
   | { type: 'moved'; player: number; to: number }
   | { type: 'passedStart'; player: number; amount: number }
   | { type: 'bought'; player: number; space: number; price: number }

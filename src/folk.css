@@ -349,7 +349,7 @@ button.secondary:disabled {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='30' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-opacity='.55'%3E%3Cpath d='M10 10 h18 M60 20 h12 M110 8 h22 M160 22 h14'/%3E%3C/svg%3E")
       repeat-x 0 64% / 40% auto;
   opacity: 0.8;
-  animation: board-life calc(70s / var(--fx, 1)) linear infinite;
+  animation: board-life calc(70s * var(--fx, 1)) linear infinite;
 }
 
 /* One bird tile is 34% wide (34/66 of the leftover per tile); the glints drift slowly the other way. */
@@ -2777,7 +2777,7 @@ body {
 /* Only opacity and a small shift, and nothing is left behind once it ends (no transform that would
    change how fixed pop-ups inside are placed). */
 .screen-transition {
-  animation: screen-forward calc(0.26s / var(--fx, 1)) ease-out backwards;
+  animation: screen-forward calc(0.26s * var(--fx, 1)) ease-out backwards;
   overflow-x: clip;
 }
 
@@ -2994,7 +2994,7 @@ body {
   border-left: 8px solid var(--player);
   border-radius: 10px;
   background: var(--surface);
-  animation: pop-in calc(0.4s / var(--fx, 1)) ease-out backwards;
+  animation: pop-in calc(0.4s * var(--fx, 1)) ease-out backwards;
 }
 
 .summary-badges li > span:last-child {
@@ -3245,7 +3245,7 @@ body {
     0 0 0 4px #fffaf0,
     4px 5px 0 4px var(--ink);
   transform: rotate(var(--tilt, -1.5deg));
-  animation: talk-pop calc(3.8s / var(--fx, 1)) ease-out forwards;
+  animation: talk-pop calc(3.8s * var(--fx, 1)) ease-out forwards;
 }
 
 .talk-bubble > span {
@@ -3369,7 +3369,7 @@ body {
   left: -20px;
   top: -20px;
   filter: drop-shadow(0 0 0 #fffaf0) drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.35));
-  animation: throw-fly calc(0.7s / var(--fx, 1)) cubic-bezier(0.3, 0.1, 0.4, 1) forwards;
+  animation: throw-fly calc(0.7s * var(--fx, 1)) cubic-bezier(0.3, 0.1, 0.4, 1) forwards;
 }
 
 .fx-throw.landed .fx-throw-item {
@@ -3447,13 +3447,14 @@ body {
   }
 }
 
-/* The dice rolled under the table: a little sticker note while they're rolled again. */
+/* The dice went off the table: a note in the panel while the dice spin away (the scene is on the board). */
 .dice-fumble {
   margin: 0;
   padding: 3px 12px;
   border: 2px solid var(--ink);
   border-radius: 999px;
   background: #fffaf0;
+  color: #2b2420;
   box-shadow: 2px 2px 0 var(--ink);
   font-weight: 800;
   font-size: 0.9em;
@@ -3462,25 +3463,425 @@ body {
 }
 
 .action-panel:has(.dice-fumble) .die-cube.rolling {
-  animation-name: die-fumble;
+  animation: die-fumble calc(1.2s * var(--fx, 1)) ease-in forwards;
 }
 
-/* Off the edge of the table and back. */
+/* Off the edge of the table, and gone. */
 @keyframes die-fumble {
   0% {
     transform: translate(0, 0) rotateX(0) rotateY(0);
   }
-  40% {
-    transform: translate(70px, 50px) rotateX(540deg) rotateY(180deg) scale(0.6);
-    opacity: 0.3;
-  }
   60% {
-    transform: translate(70px, 50px) scale(0.3);
-    opacity: 0;
+    transform: translate(70px, 40px) rotateX(540deg) rotateY(180deg) scale(0.6);
+    opacity: 0.6;
   }
   100% {
-    transform: translate(0, 0) rotateX(720deg) rotateY(360deg);
+    transform: translate(90px, 70px) rotateX(720deg) rotateY(360deg) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* The scene in the middle of the board (FumbleScene): a little stage with a table, the dice and
+   whoever takes them. Sizes are in the stage's width (cqw), so it scales with the board. The whole
+   scene lasts 3s (EFFECT_MS.fumble) and every part runs on that same clock. */
+.fx-fumble {
+  z-index: 7;
+  --fumble-t: calc(3s * var(--fx, 1));
+}
+
+.fumble-stage {
+  position: relative;
+  container-type: inline-size;
+  width: min(84%, 420px);
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: #fffaf0;
+  color: #2b2420;
+  box-shadow:
+    0 0 0 4px #fffaf0,
+    4px 5px 0 4px var(--ink);
+  animation: fumble-stage var(--fumble-t) ease-out forwards;
+}
+
+.fumble-caption {
+  position: absolute;
+  inset: 4cqw 3cqw auto;
+  text-align: center;
+  font-size: 5.4cqw;
+  font-weight: 900;
+  line-height: 1.15;
+  animation: fumble-caption var(--fumble-t) ease-out forwards;
+}
+
+/* The table top the dice roll along. Under the table (how-table) it stops short, so they fall off. */
+.fumble-table {
+  position: absolute;
+  left: -1cqw;
+  right: -1cqw;
+  top: 62%;
+  height: 3.4cqw;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  background: #9a6a3e;
+}
+
+.how-table .fumble-table {
+  right: 22cqw;
+}
+
+.fumble-dice,
+.fumble-critter {
+  position: absolute;
+  left: 0;
+  bottom: 38%;
+}
+
+.fumble-dice {
+  left: 8cqw;
+  display: flex;
+  gap: 1.5cqw;
+}
+
+.fumble-die {
+  display: block;
+  width: 9cqw;
+  height: 9cqw;
+}
+
+.fumble-critter {
+  width: 22cqw;
+  height: 22cqw;
+}
+
+.fumble-again,
+.fumble-bubble {
+  position: absolute;
+  padding: 0.25em 0.7em;
+  border: 2px solid currentColor;
+  background: #fffaf0;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fumble-again {
+  left: 50%;
+  bottom: 4cqw;
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 currentColor;
+  color: #b8322a;
+  font-size: 5.6cqw;
+  translate: -50% 0;
+  animation: fumble-again var(--fumble-t) ease-out forwards;
+}
+
+/* Under the table: the dice roll off the end, then the player's token peeks out from under it. */
+.how-table .fumble-dice {
+  animation: fumble-dice-table var(--fumble-t) linear forwards;
+}
+
+.how-table .fumble-die {
+  animation: fumble-spin-table var(--fumble-t) linear forwards;
+}
+
+.how-table .fumble-critter {
+  left: 74cqw;
+  bottom: 0;
+  width: 15cqw;
+  height: 15cqw;
+  transform-origin: 50% 100%;
+  animation: fumble-peek var(--fumble-t) ease-out forwards;
+}
+
+.fumble-bubble {
+  right: 27cqw;
+  bottom: 5cqw;
+  border-radius: 999px 999px 4px 999px;
+  font-size: 4.2cqw;
+  animation: fumble-bubble var(--fumble-t) ease-out forwards;
+}
+
+/* Con Vàng: the dice stop in the middle, the dog trots in, and off it goes with them. */
+.how-dog .fumble-critter {
+  bottom: calc(38% - 4cqw); /* the drawing has room under its paws */
+}
+
+.how-dog .fumble-dice {
+  animation: fumble-dice-dog var(--fumble-t) ease-in-out forwards;
+}
+
+.how-dog .fumble-die {
+  animation: fumble-spin-short var(--fumble-t) ease-out forwards;
+}
+
+.how-dog .fumble-critter {
+  animation:
+    fumble-dog var(--fumble-t) ease-in-out forwards,
+    fumble-trot calc(0.16s * var(--fx, 1)) ease-in-out infinite alternate;
+}
+
+/* The hen: walks in, pecks three times, the dice fly off, and she struts away. */
+.how-chicken .fumble-dice {
+  animation: fumble-dice-chicken var(--fumble-t) ease-out forwards;
+}
+
+.how-chicken .fumble-die {
+  animation: fumble-spin-chicken var(--fumble-t) ease-out forwards;
+}
+
+.how-chicken .fumble-critter {
+  bottom: calc(38% - 2cqw);
+  width: 20cqw;
+  height: 20cqw;
+  transform-origin: 50% 100%;
+  animation: fumble-hen var(--fumble-t) ease-in-out forwards;
+}
+
+@keyframes fumble-stage {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-3deg);
+  }
+  6% {
     opacity: 1;
+    transform: scale(1.04) rotate(1deg);
+  }
+  10%,
+  92% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes fumble-caption {
+  0%,
+  4% {
+    opacity: 0;
+    transform: translateY(-3cqw);
+  }
+  9%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fumble-again {
+  0%,
+  76% {
+    opacity: 0;
+    transform: rotate(-6deg) scale(2);
+  }
+  81% {
+    opacity: 1;
+    transform: rotate(-6deg) scale(0.92);
+  }
+  85%,
+  100% {
+    opacity: 1;
+    transform: rotate(-6deg) scale(1);
+  }
+}
+
+@keyframes fumble-dice-table {
+  0% {
+    transform: translate(0, 0);
+  }
+  32% {
+    transform: translate(58cqw, 0);
+  }
+  44% {
+    transform: translate(68cqw, 24cqw);
+    opacity: 1;
+  }
+  48%,
+  100% {
+    transform: translate(70cqw, 30cqw);
+    opacity: 0;
+  }
+}
+
+@keyframes fumble-spin-table {
+  0% {
+    transform: rotate(0);
+  }
+  44%,
+  100% {
+    transform: rotate(900deg);
+  }
+}
+
+@keyframes fumble-peek {
+  0%,
+  50% {
+    transform: translateY(110%);
+  }
+  56% {
+    transform: translateY(0);
+  }
+  61% {
+    transform: rotate(-14deg);
+  }
+  66% {
+    transform: rotate(12deg);
+  }
+  71% {
+    transform: rotate(-14deg);
+  }
+  76%,
+  86% {
+    transform: rotate(0);
+  }
+  93%,
+  100% {
+    transform: translateY(110%);
+  }
+}
+
+@keyframes fumble-bubble {
+  0%,
+  56% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60%,
+  86% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes fumble-dice-dog {
+  0% {
+    transform: translate(0, 0);
+  }
+  24%,
+  44% {
+    transform: translate(34cqw, 0);
+  }
+  47% {
+    transform: translate(36cqw, -5cqw);
+  }
+  74%,
+  100% {
+    transform: translate(114cqw, -5cqw);
+  }
+}
+
+@keyframes fumble-spin-short {
+  0% {
+    transform: rotate(0);
+  }
+  24%,
+  100% {
+    transform: rotate(540deg);
+  }
+}
+
+@keyframes fumble-dog {
+  0%,
+  20% {
+    transform: translateX(-30cqw);
+  }
+  44% {
+    transform: translateX(22cqw);
+  }
+  74%,
+  100% {
+    transform: translateX(102cqw);
+  }
+}
+
+@keyframes fumble-trot {
+  to {
+    translate: 0 -1.6cqw;
+  }
+}
+
+@keyframes fumble-dice-chicken {
+  0% {
+    transform: translate(0, 0);
+  }
+  24%,
+  54% {
+    transform: translate(40cqw, 0);
+  }
+  70% {
+    transform: translate(70cqw, -50cqw);
+    opacity: 1;
+  }
+  74%,
+  100% {
+    transform: translate(76cqw, -60cqw);
+    opacity: 0;
+  }
+}
+
+@keyframes fumble-spin-chicken {
+  0% {
+    transform: rotate(0);
+  }
+  24%,
+  54% {
+    transform: rotate(540deg);
+  }
+  74%,
+  100% {
+    transform: rotate(1300deg);
+  }
+}
+
+/* Separate translate, rotate and scale, so turning around (scale) doesn't mirror the walk. */
+@keyframes fumble-hen {
+  0%,
+  14% {
+    translate: 105cqw 0;
+    rotate: 0deg;
+    scale: -1 1;
+  }
+  40%,
+  43% {
+    translate: 62cqw 0;
+    rotate: 0deg;
+  }
+  46% {
+    rotate: 28deg;
+  }
+  49% {
+    rotate: 0deg;
+  }
+  52% {
+    rotate: 28deg;
+  }
+  55% {
+    rotate: 0deg;
+  }
+  58% {
+    rotate: 28deg;
+  }
+  61% {
+    rotate: 0deg;
+    scale: -1 1;
+  }
+  64% {
+    translate: 62cqw 0;
+    scale: 1 1;
+  }
+  90%,
+  100% {
+    translate: 110cqw 0;
+    rotate: 0deg;
+    scale: 1 1;
   }
 }
 
@@ -3556,7 +3957,7 @@ body {
   font-size: clamp(10px, 1.8cqw, 15px);
   white-space: nowrap;
   transform: rotate(-6deg);
-  animation: sticker-slap calc(1.6s / var(--fx, 1)) ease-out forwards;
+  animation: sticker-slap calc(1.6s * var(--fx, 1)) ease-out forwards;
 }
 
 .fx-sticker.good span {
@@ -3571,7 +3972,7 @@ body {
 /* The tantrum: the sticker shakes like someone stamping their feet. */
 .fx-anva span {
   animation:
-    sticker-slap calc(2.2s / var(--fx, 1)) ease-out forwards,
+    sticker-slap calc(2.2s * var(--fx, 1)) ease-out forwards,
     tantrum 0.18s ease-in-out 6 alternate;
 }
 
@@ -3795,7 +4196,7 @@ body {
   font-size: clamp(15px, 3.2cqw, 26px);
   box-shadow: 2px 2px 0 var(--ink);
   z-index: 2;
-  animation: buffalo-sway calc(2.4s / var(--fx, 1)) ease-in-out infinite alternate;
+  animation: buffalo-sway calc(2.4s * var(--fx, 1)) ease-in-out infinite alternate;
 }
 
 @keyframes buffalo-sway {

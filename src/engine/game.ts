@@ -18,7 +18,7 @@ import { jailFreeCardIndex, shuffledDeck } from './deck';
 import { rentFor } from './rent';
 import { checkMissions, dealMissions, type MissionId } from './missions';
 import { BUFFALO_FEE, BUFFALO_RIDE, isRushHour, jamOnPath, XE_OM_FEE } from './roads';
-import { nextUint32, rollDie } from './rng';
+import { diceFumbled, nextUint32, rollDie } from './rng';
 import {
   buildCost,
   cardPrize,
@@ -37,6 +37,7 @@ import type {
   Action,
   BotLevel,
   Dice,
+  FumbleKind,
   GameState,
   JailReason,
   PaymentReason,
@@ -337,6 +338,10 @@ function roll(s: GameState, forced?: Dice): void {
     }
     dice = [forced[0], forced[1]];
   } else {
+    if (diceFumbled(s.rngState)) {
+      fumble(s);
+      return;
+    }
     const [d1, afterFirst] = rollDie(s.rngState);
     const [d2, afterSecond] = rollDie(afterFirst);
     s.rngState = afterSecond;
@@ -367,6 +372,19 @@ function roll(s: GameState, forced?: Dice): void {
   }
   s.extraRoll = doubles;
   moveByDice(s, player); // every dice move goes through moveByDice (rush-hour jams are checked there)
+}
+
+const FUMBLES: readonly FumbleKind[] = ['table', 'dog', 'chicken'];
+
+/**
+ * The dice rolled off the table (under it, or a dog or a chicken got them): the roll doesn't count
+ * and the same player rolls again. Only random rolls fumble; dice chosen by the tutorial never do.
+ */
+function fumble(s: GameState): void {
+  const [r, next] = nextUint32(s.rngState);
+  s.rngState = next;
+  s.lastCard = null;
+  s.log.push({ type: 'diceFumbled', player: s.current, how: FUMBLES[r % FUMBLES.length] });
 }
 
 /** In jail, the roll is an attempt to get out with doubles. Leaving jail never earns an extra roll. */

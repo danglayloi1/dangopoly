@@ -3,7 +3,7 @@
 import { BOARD_SIZE, JAIL_SPACE } from '../data/board';
 import { CARDS } from '../data/cards';
 import type { MissionId } from '../engine/missions';
-import type { Festival, GameState, LogEntry } from '../engine/types';
+import type { Festival, FumbleKind, GameState, LogEntry } from '../engine/types';
 import type { SoundName } from './sound';
 
 /** How many old entries must match, and how far back from the end of the new log to look for them. */
@@ -73,7 +73,7 @@ export function planMoves(entries: readonly LogEntry[], shownPositions: readonly
 
 /** True if these entries need the dice or a token to animate. */
 export function hasMotion(entries: readonly LogEntry[]): boolean {
-  return entries.some((e) => e.type === 'rolled' || e.type === 'moved' || e.type === 'wentToJail');
+  return entries.some((e) => e.type === 'rolled' || e.type === 'moved' || e.type === 'wentToJail' || e.type === 'diceFumbled');
 }
 
 /** The sound for an event, if any. Moving and passing Start are played during the hops instead. */
@@ -144,22 +144,11 @@ export type Effect =
   | { kind: 'haggle'; space: number; won: boolean } // a sticker: "Bớt 20%!" or "Lên giá!"
   | { kind: 'anVa'; space: number; player: number } // a tantrum on the board
   | { kind: 'mission'; player: number; mission: MissionId; reward: number } // a secret mission is done
-  | { kind: 'roadSticker'; space: number; word: 'jam' | 'ride' }; // "Kẹt xe!" / "Ụm bò!" on the board
+  | { kind: 'roadSticker'; space: number; word: 'jam' | 'ride' } // "Kẹt xe!" / "Ụm bò!" on the board
+  | { kind: 'fumble'; player: number; how: FumbleKind }; // the dice go off the table: a little scene mid-board
 
 /** At most this many coin flights per move, so a big card ("pay everyone") stays readable. */
 const MAX_MONEY = 4;
-
-/** About one roll in this many, the dice roll off the table first. */
-export const FUMBLE_ODDS = 40;
-
-/**
- * Now and then the dice roll under the table and are rolled again: only for show (the result is
- * the same). Decided by the game itself, so every phone in an online game shows the same mishap.
- */
-export function diceFumbled(game: GameState): boolean {
-  const h = Math.imul((game.rngState ^ 0x5bd1e995) >>> 0, 0x27d4eb2d) >>> 0;
-  return (h ^ (h >>> 15)) % FUMBLE_ODDS === 0;
-}
 
 /** The effects for what just happened. `game` is the state after it, for where players stand. */
 export function effectsFor(entries: readonly LogEntry[], game: GameState): Effect[] {
@@ -217,6 +206,9 @@ export function effectsFor(entries: readonly LogEntry[], game: GameState): Effec
       case 'haggled':
         effects.push({ kind: 'haggle', space: e.space, won: e.won });
         break;
+      case 'diceFumbled':
+        effects.push({ kind: 'fumble', player: e.player, how: e.how });
+        break;
       case 'anVa':
         effects.push({ kind: 'anVa', space: at(e.player), player: e.player });
         break;
@@ -254,4 +246,5 @@ export const EFFECT_MS: Record<Effect['kind'], number> = {
   anVa: 2200,
   mission: 3200,
   roadSticker: 1600,
+  fumble: 3000, // the buttons wait for it: the player rolls again after
 };
