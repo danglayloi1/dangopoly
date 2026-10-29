@@ -26,7 +26,7 @@ interface Props {
   onSummary: () => void;
   busy: boolean; // a move is being animated: show only the turn and the dice
   rolling: boolean;
-  fumbled?: boolean; // the dice rolled off the table first (just for show)
+  fumbled?: boolean; // the dice went off the table: the roll doesn't count
 }
 
 /** The middle of the board: whose turn it is, the dice, what just happened, and the buttons. */
@@ -166,7 +166,13 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
           {allowed.includes('ROLL') && (
             <button className="primary big" data-tutorial="roll" onClick={() => dispatch({ type: 'ROLL' })} autoFocus>
               <Icon name="dice" />{' '}
-              {waitingInJail ? t.rollForDoubles : game.dice && game.dice[0] === game.dice[1] ? t.rollAgain : t.roll}
+              {waitingInJail
+                ? t.rollForDoubles
+                : game.log.at(-1)?.type === 'diceFumbled'
+                  ? t.rollRedo
+                  : game.dice && game.dice[0] === game.dice[1]
+                    ? t.rollAgain
+                    : t.roll}
             </button>
           )}
           {allowed.includes('PAY_JAIL_FINE') && (

@@ -813,19 +813,39 @@ const scenes = {
     await startInListedOrder(page);
     await page.waitForSelector('.board');
 
-    // Find a game where the next roll goes under the table, then roll.
-    const seed = await page.evaluate(() => {
-      const h = window.__dangopoly;
-      const g = h.getGame();
-      for (let s = 1; s < 200_000; s++) if (h.diceFumbled(h.applyAction({ ...g, rngState: s }, { type: 'ROLL' }))) return s;
-      return null;
-    });
-    await setup(new Function('game', `game.rngState = ${seed};`));
-    await page.evaluate(() => window.__dangopoly.dispatch({ type: 'ROLL' }));
-    await page.locator('.dice-fumble').waitFor({ timeout: 3_000 });
-    check(true, 'now and then the dice roll under the table, and are rolled again');
-    await shot('dice-under-table');
-    await page.waitForSelector('.board[data-busy="false"]', { timeout: 15_000 });
+    // Each way the dice can go off the table: find a game where the next roll does it that way, then roll.
+    for (const how of ['table', 'dog', 'chicken']) {
+      const seed = await page.evaluate((how) => {
+        const h = window.__dangopoly;
+        const g = h.getGame();
+        for (let s = 1; s < 200_000; s++) {
+          const last = h.applyAction({ ...g, rngState: s }, { type: 'ROLL' }).log.at(-1);
+          if (last.type === 'diceFumbled' && last.how === how) return s;
+        }
+        return null;
+      }, how);
+      await setup(new Function('game', `game.rngState = ${seed};`));
+      const before = await page.evaluate(() => window.__dangopoly.getGame().players[0].position);
+      await page.evaluate(() => window.__dangopoly.dispatch({ type: 'ROLL' }));
+      await page.locator(`.fx-fumble.how-${how}`).waitFor({ timeout: 3_000 });
+      // Hold the scene at its best moment for the picture: the token peeks, the dog grabs, the hen pecks.
+      const moment = { table: 1900, dog: 1500, chicken: 1450 }[how];
+      await page.evaluate((t) => {
+        for (const a of document.querySelector('.fx-fumble').getAnimations({ subtree: true })) {
+          a.pause();
+          a.currentTime = t;
+        }
+      }, moment);
+      await shot(`dice-fumble-${how}`);
+      await page.waitForSelector('.board[data-busy="false"]', { timeout: 15_000 });
+      const after = await page.evaluate(() => window.__dangopoly.getGame());
+      const redo = await page.locator('.action-panel [data-tutorial="roll"]').textContent();
+      check(
+        after.players[0].position === before && after.phase.kind === 'awaitRoll' && after.current === 0 && /Gieo lại|Đổ lại/.test(redo),
+        `the dice go off the table (${how}): the roll doesn't count, and the button says "${redo.trim()}"`,
+      );
+    }
+    await shot('dice-fumble-after');
 
     // Cu Đơ lands on "Vào nhà tạm giữ" and says something about it, in character.
     await setup((game) => {

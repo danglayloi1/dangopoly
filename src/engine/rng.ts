@@ -10,6 +10,15 @@ export function nextUint32(state: number): [number, number] {
   return [(t ^ (t >>> 14)) >>> 0, next];
 }
 
+/** About one roll in this many, the dice roll off the table and must be rolled again. */
+export const FUMBLE_ODDS = 40;
+
+/** Whether the roll made from this state goes off the table. A different mix of the state than the dice use. */
+export function diceFumbled(state: number): boolean {
+  const h = Math.imul((state ^ 0x5bd1e995) >>> 0, 0x27d4eb2d) >>> 0;
+  return (h ^ (h >>> 15)) % FUMBLE_ODDS === 0;
+}
+
 /** Returns [die value 1..6, next state]. */
 export function rollDie(state: number): [number, number] {
   const [r, next] = nextUint32(state);

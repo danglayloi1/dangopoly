@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, createGame, GameError, legalActions } from '../src/engine/game';
+import { diceFumbled, FUMBLE_ODDS } from '../src/engine/rng';
 import type { Action, Dice, GameState } from '../src/engine/types';
 
 // Board spots used below:
@@ -109,6 +110,53 @@ describe('rolling and moving', () => {
 
   it('rejects impossible dice', () => {
     expect(() => play(newGame(), roll(0, 7))).toThrow(GameError);
+  });
+});
+
+describe('dice going off the table', () => {
+  /** A copy of the game whose next random roll goes off the table. */
+  function aboutToFumble(): GameState {
+    let rng = 1;
+    while (!diceFumbled(rng)) rng++;
+    return setup(newGame(), (s) => (s.rngState = rng));
+  }
+
+  it('happens about once in FUMBLE_ODDS rolls', () => {
+    let fumbles = 0;
+    for (let rng = 1; rng <= 40_000; rng++) if (diceFumbled(Math.imul(rng, 2654435761) >>> 0)) fumbles++;
+    expect(fumbles / 40_000).toBeGreaterThan(0.5 / FUMBLE_ODDS);
+    expect(fumbles / 40_000).toBeLessThan(2 / FUMBLE_ODDS);
+  });
+
+  it("doesn't count the roll: nobody moves and the same player rolls again", () => {
+    const before = aboutToFumble();
+    const s = play(before, { type: 'ROLL' });
+    expect(s.log.at(-1)).toMatchObject({ type: 'diceFumbled', player: 0 });
+    expect(['table', 'dog', 'chicken']).toContain((s.log.at(-1) as { how: string }).how);
+    expect(s.players[0].position).toBe(0);
+    expect(s.current).toBe(0);
+    expect(s.phase.kind).toBe('awaitRoll');
+    expect(s.dice).toBe(before.dice);
+    expect(s.rngState).not.toBe(before.rngState); // the next roll is a fresh one
+
+    const again = play(s, { type: 'ROLL' });
+    expect(again.log.some((e) => e.type === 'rolled')).toBe(true);
+  });
+
+  it('never happens to dice chosen on purpose (the tutorial)', () => {
+    const s = play(aboutToFumble(), roll(1, 2));
+    expect(s.players[0].position).toBe(3);
+  });
+
+  it('in jail, it does not use up an attempt', () => {
+    const start = setup(aboutToFumble(), (s) => {
+      s.players[0].inJail = true;
+      s.players[0].position = 10;
+    });
+    const s = play(start, { type: 'ROLL' });
+    expect(s.players[0].jailAttempts).toBe(0);
+    expect(s.players[0].inJail).toBe(true);
+    expect(legalActions(s)).toContain('ROLL');
   });
 });
 

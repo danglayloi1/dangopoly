@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, LogEntry } from '../engine/types';
 import { speedFactor } from './animation';
-import { diceFumbled, EFFECT_MS, effectsFor, hasMotion, newLogEntries, planMoves, soundFor, type Effect } from './motion';
+import { EFFECT_MS, effectsFor, hasMotion, newLogEntries, planMoves, soundFor, type Effect } from './motion';
 import { playSound } from './sound';
 
 const DICE_MS = 650;
@@ -19,7 +19,7 @@ export interface ShownEffect {
 export interface Presentation {
   positions: number[]; // where each token is drawn right now
   rolling: boolean; // the dice are tumbling
-  fumbled: boolean; // ...after rolling off the table first (see diceFumbled)
+  fumbled: boolean; // ...off the table: the roll doesn't count (see diceFumbled in engine/rng)
   busy: boolean; // a move is playing out: hold back results and buttons
   effects: ShownEffect[]; // seals, flying coins, banners… (see effectsFor)
 }
@@ -75,23 +75,28 @@ export function usePresentation(game: GameState): Presentation {
     }
 
     setAnimating(true);
+    const fumbles = entries.filter((e) => e.type === 'diceFumbled');
+    const rest = entries.filter((e) => e.type !== 'diceFumbled');
     void (async () => {
-      if (entries.some((e) => e.type === 'rolled')) {
+      if (fumbles.length > 0) {
+        // Off the table they go: the little scene plays out before the player may roll again.
         setRolling(true);
-        if (diceFumbled(game)) {
-          // Off the table they go... and rolled again.
-          setFumbled(true);
-          playSound('dice');
-          await sleep(DICE_MS * 1.6 * factor);
-          if (cancelled) return;
-          setFumbled(false);
-        }
+        setFumbled(true);
+        playSound('dice');
+        playEventSounds(fumbles);
+        await sleep(EFFECT_MS.fumble * factor);
+        if (cancelled) return;
+        setFumbled(false);
+        setRolling(false);
+      }
+      if (rest.some((e) => e.type === 'rolled')) {
+        setRolling(true);
         playSound('dice');
         await sleep(DICE_MS * factor);
         if (cancelled) return;
         setRolling(false);
       }
-      for (const move of planMoves(entries, shownRef.current)) {
+      for (const move of planMoves(rest, shownRef.current)) {
         const stepMs = (move.jump ? 300 : Math.min(STEP_MS, MAX_TRIP_MS / move.path.length)) * factor;
         for (const pos of move.path) {
           if (cancelled) return;
@@ -105,7 +110,7 @@ export function usePresentation(game: GameState): Presentation {
       if (cancelled) return;
       show(final);
       setAnimating(false);
-      playEventSounds(entries);
+      playEventSounds(rest);
     })();
 
     return () => {

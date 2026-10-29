@@ -1,5 +1,5 @@
 import type { UiLang } from '../data/text';
-import type { FestivalId, PlayerStats } from '../engine/types';
+import type { FestivalId, FumbleKind, PlayerStats } from '../engine/types';
 
 /** Festival amounts, already formatted (e.g. "1tr"). */
 export interface FestivalMoney {
@@ -119,7 +119,10 @@ const vi = {
   createRoom: 'Tạo phòng',
   roomCode: 'Mã phòng',
   roomListTitle: 'Phòng đang mở',
-  diceFumble: 'Xúc xắc lăn vô gầm bàn rồi! Gieo lại nờ…',
+  diceFumble: 'Ối! Rơi mất xúc xắc rồi…',
+  fumbleCaption: { table: 'Xúc xắc lăn vào gầm bàn!', dog: 'Con Vàng tha mất xúc xắc!', chicken: 'Con gà mổ mất xúc xắc!' } as Record<FumbleKind, string>,
+  fumbleWhere: 'Đâu rồi?',
+  fumbleAgain: 'Gieo lại đi!',
   missionsButton: 'Nhiệm vụ',
   rushHour: 'Giờ cao điểm',
   jamTitle: (space: string) => `Kẹt xe ở ${space}!`,
@@ -275,6 +278,7 @@ const vi = {
   turnOf: (name: string) => `Lượt của ${name}`,
   roll: 'Gieo xúc xắc',
   rollAgain: 'Đổ đôi! Gieo tiếp',
+  rollRedo: 'Gieo lại',
   buy: (price: string) => `Mua · ${price}`,
   skip: 'Bỏ qua',
   cannotAfford: 'Không đủ tiền mua',
@@ -466,6 +470,12 @@ const vi = {
   log: {
     turnStarted: (p: string) => `Lượt của ${p}`,
     rolled: (p: string, a: number, b: number) => `${p} gieo được ${a} + ${b}`,
+    diceFumbled: (p: string, how: FumbleKind) =>
+      how === 'dog'
+        ? `Con Vàng tha mất xúc xắc của ${p}, phải gieo lại`
+        : how === 'chicken'
+          ? `Con gà mổ mất xúc xắc của ${p}, phải gieo lại`
+          : `Xúc xắc của ${p} lăn vào gầm bàn, phải gieo lại`,
     moved: (p: string, space: string) => `${p} đến ${space}`,
     passedStart: (p: string, amount: string) => `${p} qua Xuất phát, nhận ${amount}`,
     bought: (p: string, space: string, price: string) => `${p} mua ${space} giá ${price}`,
@@ -591,7 +601,10 @@ const en: Strings = {
   createRoom: 'Create a room',
   roomCode: 'Room code',
   roomListTitle: 'Open rooms',
-  diceFumble: 'The dice rolled under the table! Rolling again…',
+  diceFumble: 'Oops! The dice are gone…',
+  fumbleCaption: { table: 'Under the table they go!', dog: 'The dog ran off with the dice!', chicken: 'A chicken pecked the dice away!' },
+  fumbleWhere: 'Where…?',
+  fumbleAgain: 'Roll again!',
   missionsButton: 'Missions',
   rushHour: 'Rush hour',
   jamTitle: (space: string) => `Traffic jam at ${space}!`,
@@ -790,6 +803,7 @@ const en: Strings = {
   turnOf: (name) => `${name}'s turn`,
   roll: 'Roll dice',
   rollAgain: 'Doubles! Roll again',
+  rollRedo: 'Roll again',
   buy: (price) => `Buy · ${price}`,
   skip: 'Skip',
   cannotAfford: 'Not enough cash to buy',
@@ -978,6 +992,12 @@ const en: Strings = {
   log: {
     turnStarted: (p) => `${p}'s turn`,
     rolled: (p, a, b) => `${p} rolled ${a} + ${b}`,
+    diceFumbled: (p, how) =>
+      how === 'dog'
+        ? `A dog ran off with ${p}'s dice: roll again`
+        : how === 'chicken'
+          ? `A chicken pecked ${p}'s dice away: roll again`
+          : `${p}'s dice rolled under the table: roll again`,
     moved: (p, space) => `${p} moved to ${space}`,
     passedStart: (p, amount) => `${p} passed Start and collected ${amount}`,
     bought: (p, space, price) => `${p} bought ${space} for ${price}`,

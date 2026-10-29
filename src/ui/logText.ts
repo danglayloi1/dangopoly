@@ -26,6 +26,8 @@ export function describeLog(entry: LogEntry, state: GameState, ui: UiLang): stri
       return t.turnStarted(name(entry.player));
     case 'rolled':
       return t.rolled(name(entry.player), entry.dice[0], entry.dice[1]);
+    case 'diceFumbled':
+      return t.diceFumbled(name(entry.player), entry.how);
     case 'moved':
       return t.moved(name(entry.player), space(entry.to));
     case 'passedStart':

@@ -112,6 +112,11 @@ export function ngheStrings(vi: Strings): Strings {
     turnOf: (name) => `Tới lượt ${name}`,
     roll: 'Đổ xúc xắc',
     rollAgain: 'Đổ đôi! Đổ phát nựa',
+    rollRedo: 'Đổ lại',
+    diceFumble: 'Ối giời! Rơi mất xúc xắc rồi…',
+    fumbleCaption: { table: 'Xúc xắc lăn vô gầm bàn rồi!', dog: 'Con Vàng tha mất xúc xắc rồi!', chicken: 'Con gà mổ mất xúc xắc rồi tề!' },
+    fumbleWhere: 'Mô rồi?',
+    fumbleAgain: 'Đổ lại đi tề!',
     buy: (price) => `Mua luôn · ${price}`,
     skip: 'Thôi, nỏ mua',
     cannotAfford: 'Nỏ đủ tiền mua',
@@ -215,6 +220,12 @@ export function ngheStrings(vi: Strings): Strings {
       ...vi.log,
       turnStarted: (p) => `Tới lượt ${p}`,
       rolled: (p, a, b) => `${p} đổ được ${a} + ${b}`,
+      diceFumbled: (p, how) =>
+        how === 'dog'
+          ? `Con Vàng tha mất xúc xắc của ${p}, đổ lại`
+          : how === 'chicken'
+            ? `Con gà mổ mất xúc xắc của ${p}, đổ lại`
+            : `Xúc xắc của ${p} lăn vô gầm bàn, đổ lại`,
       moved: (p, space) => `${p} tới ${space}`,
       declined: (p, space) => `${p} nỏ mua ${space}`,
       cannotPay: (p, amount) => `${p} nỏ đủ tiền trả ${amount}`,

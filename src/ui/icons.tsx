@@ -61,7 +61,9 @@ export type IconName =
   | 'purse'
   | 'blossom'
   | 'wave'
-  | 'contrast';
+  | 'contrast'
+  | 'dog'
+  | 'chicken';
 
 const SILVER = '#c0c7cf';
 const BRONZE = '#c27a3a';
@@ -282,6 +284,32 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <circle cx="25" cy="14" r="4.5" fill="#4a4a4a" />
       <path d="M22 10 Q20 4 25 5 M28 10 Q31 4 26 5" fill="none" strokeWidth={2.4} />
       <circle cx="26.5" cy="13.5" r="0.9" fill={CREAM} />
+    </>
+  ),
+  // Con Vàng, the village dog, running off with something in its mouth
+  dog: (
+    <>
+      <path d="M6 15 Q2 12 3 8" fill="none" />
+      <path d="M9 21 L6 26 M12 21 L13 26 M18 21 L16 26 M21 20 L24 25" fill="none" />
+      <path d="M6 18 Q5 12 9 12 L19 12 Q23 12 23 16 L23 19 Q22 21 19 21 L9 21 Q6 21 6 18 Z" fill={YELLOW} />
+      <path d="M20 13 Q20 7 25 7 Q29 7 29 11 L30 13 Q29 15 26 15 Q22 15 20 13 Z" fill={YELLOW} />
+      <path d="M22 8 L20.5 3.5 L25 7 Z" fill={BROWN} />
+      <circle cx="25.5" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="29.6" cy="12.4" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  // A hen from the yard: red comb, yellow beak, a dark green tail
+  chicken: (
+    <>
+      <path d="M12 24 L11 29 M17 24 L18 29 M9 29 H13 M16 29 H20" fill="none" />
+      <path d="M8 17 Q2 13 5 6 Q8 11 11 13 Z" fill={GREEN} />
+      <path d="M6 18 Q6 25 14 25 Q22 25 23 17 L24 13 Q19 13 17 12 Q9 11 6 18 Z" fill={BROWN} />
+      <path d="M11 18 Q14 22 18 18" fill="none" />
+      <circle cx="22" cy="10" r="4" fill={BROWN} />
+      <path d="M19.5 6.8 Q20.5 3.5 22 5.8 Q23.2 3.5 24.8 6.6 Z" fill={RED} />
+      <path d="M25.8 9 L29.5 10.6 L25.8 12.2 Z" fill={YELLOW} />
+      <path d="M24.2 13.4 Q25.4 16.4 23.4 16.2 Z" fill={RED} />
+      <circle cx="23.2" cy="9.4" r="0.9" fill="currentColor" stroke="none" />
     </>
   ),
   // A xe ôm: a motorbike taxi through the traffic

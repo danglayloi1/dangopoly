@@ -16,6 +16,7 @@ export type TalkEvent =
   | 'bought'
   | 'built'
   | 'doubles'
+  | 'fumbled'
   | 'leftJail';
 
 /** The four bot nicknames each have a character; a renamed bot gets one by its seat. */
@@ -38,6 +39,7 @@ export const LINES: Record<Personality, Lines> = {
     jailed: { vi: ['Vô đây nghỉ mệt chút thôi.', 'Tau vô đây chơi cho biết!'], en: ['Just taking a little rest.', "I'm only here to see what it's like!"] },
     leftJail: { vi: ['Tau ra rồi, tránh đường!'], en: ["I'm out, make way!"] },
     doubles: { vi: ['Đổ đôi! Tay tau vàng thiệt!'], en: ['Doubles! Golden hands!'] },
+    fumbled: { vi: ['Tại tau gieo mạnh quá đó!', 'Lần ni gieo cho đẹp nề!'], en: ["I'm just too strong!", 'Watch this one, then!'] },
     built: { vi: ['Xây nhà to nhất xóm!', 'Nhà tau cao hơn nhà mi.'], en: ['Biggest house on the street!', 'My house is taller than yours.'] },
     won: { vi: ['Tau nói rồi mà, tau thắng!'], en: ['Told you so. I win!'] },
     bankrupt: { vi: ['Răng lại rứa được hè…'], en: ['How did this even happen…'] },
@@ -52,6 +54,7 @@ export const LINES: Record<Personality, Lines> = {
     jailed: { vi: ['Ở trong ni khỏi tốn tiền thuê, cũng được.'], en: ['No rent in here. Not bad.'] },
     leftJail: { vi: ['Ra rồi, mà tiếc cấy chỗ ở miễn phí.'], en: ['Out. I’ll miss the free room.'] },
     doubles: { vi: ['Đổ đôi mà nỏ được thêm đồng mô.'], en: ["Doubles, and still not a đồng more."] },
+    fumbled: { vi: ['Mất xúc xắc là tốn tiền mua cấy mới đó!'], en: ['Lost dice cost money, you know!'] },
     built: { vi: ['Xây cấy chòi nhỏ thôi, tiết kiệm.'], en: ['Just a small hut. Saving money.'] },
     won: { vi: ['Tiết kiệm là thắng, thấy chưa!'], en: ['Saving wins. See?'] },
     bankrupt: { vi: ['Tiền tau… tiền tau đi mô hết rồi…'], en: ['My money… where did it all go…'] },
@@ -66,6 +69,7 @@ export const LINES: Record<Personality, Lines> = {
     jailed: { vi: ['Mệ ơi! Cứu tui với!', 'Tau vô tội mà!'], en: ['Mum! Help me!', "I'm innocent!"] },
     leftJail: { vi: ['Phù… thoát rồi.'], en: ['Phew… free at last.'] },
     doubles: { vi: ['Đổ đôi! Tim tau muốn rớt ra ngoài.'], en: ['Doubles! My heart nearly jumped out.'] },
+    fumbled: { vi: ['Ối ối ối! Xúc xắc chạy mất rồi!'], en: ['Oh no oh no! The dice ran away!'] },
     built: { vi: ['Xây nhà… mong đừng ai tới.'], en: ['Built a house… please nobody come.'] },
     won: { vi: ['Tau… tau thắng thiệt à?!'], en: ['I… I actually won?!'] },
     bankrupt: { vi: ['Biết ngay mà! Hu hu…'], en: ['I knew it! Waaah…'] },
@@ -80,6 +84,7 @@ export const LINES: Record<Personality, Lines> = {
     jailed: { vi: ['Ở trong ni cũng mát.'], en: ["It's quite cool in here."] },
     leftJail: { vi: ['Ra rồi, chào cả nhà!'], en: ['Out again, hello everyone!'] },
     doubles: { vi: ['Hên ghê!'], en: ['How lucky!'] },
+    fumbled: { vi: ['Hì, xin lỗi cả nhà, để tau gieo lại.'], en: ['Hehe, sorry everyone, rolling again.'] },
     built: { vi: ['Xây nhà cho cả xóm ở.'], en: ['A house for the whole village.'] },
     won: { vi: ['Thắng rồi, mời cả nhà ăn bưởi!'], en: ['I won! Pomelos for everyone!'] },
     bankrupt: { vi: ['Thôi, chơi vui là chính.'], en: ['Oh well, it’s all for fun.'] },
@@ -89,7 +94,7 @@ export const LINES: Record<Personality, Lines> = {
 };
 
 /** Most important first: a bot says one thing per move, about the biggest thing that happened. */
-const PRIORITY: TalkEvent[] = ['bankrupt', 'won', 'jailed', 'tradeYes', 'tradeNo', 'paidRent', 'gotRent', 'leftJail', 'bought', 'built', 'doubles'];
+const PRIORITY: TalkEvent[] = ['bankrupt', 'won', 'jailed', 'tradeYes', 'tradeNo', 'paidRent', 'gotRent', 'leftJail', 'bought', 'built', 'doubles', 'fumbled'];
 /** Small things are only remarked on now and then. */
 const SOMETIMES: TalkEvent[] = ['bought', 'built', 'doubles', 'gotRent', 'leftJail'];
 
@@ -132,6 +137,9 @@ export function botTalk(entries: readonly LogEntry[], game: GameState, lang: 'vi
         break;
       case 'rolled':
         if (e.dice[0] === e.dice[1]) add(e.player, 'doubles');
+        break;
+      case 'diceFumbled':
+        add(e.player, 'fumbled');
         break;
       case 'builtHouse':
         add(e.player, 'built');
