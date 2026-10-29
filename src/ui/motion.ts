@@ -110,6 +110,14 @@ export function soundFor(entry: LogEntry): SoundName | null {
       return 'thud';
     case 'missionDone':
       return 'win';
+    case 'jam':
+    case 'buffaloMet':
+      return 'thud';
+    case 'xeOm':
+    case 'buffaloLed':
+      return 'pay';
+    case 'buffaloRide':
+      return 'whoosh';
     case 'bankrupt':
       return 'bankrupt';
     case 'won':
@@ -135,7 +143,8 @@ export type Effect =
   | { kind: 'tet'; from: number; to: number; amount: number } // a Tết banner with blossoms
   | { kind: 'haggle'; space: number; won: boolean } // a sticker: "Bớt 20%!" or "Lên giá!"
   | { kind: 'anVa'; space: number; player: number } // a tantrum on the board
-  | { kind: 'mission'; player: number; mission: MissionId; reward: number }; // a secret mission is done
+  | { kind: 'mission'; player: number; mission: MissionId; reward: number } // a secret mission is done
+  | { kind: 'roadSticker'; space: number; word: 'jam' | 'ride' }; // "Kẹt xe!" / "Ụm bò!" on the board
 
 /** At most this many coin flights per move, so a big card ("pay everyone") stays readable. */
 const MAX_MONEY = 4;
@@ -214,6 +223,16 @@ export function effectsFor(entries: readonly LogEntry[], game: GameState): Effec
       case 'missionDone':
         effects.push({ kind: 'mission', player: e.player, mission: e.mission, reward: e.reward });
         break;
+      case 'jam':
+        effects.push({ kind: 'roadSticker', space: e.space, word: 'jam' });
+        break;
+      case 'xeOm':
+      case 'buffaloLed':
+        money(at(e.player), 'bank', e.fee);
+        break;
+      case 'buffaloRide':
+        effects.push({ kind: 'roadSticker', space: at(e.player), word: 'ride' });
+        break;
       default:
         break;
     }
@@ -234,4 +253,5 @@ export const EFFECT_MS: Record<Effect['kind'], number> = {
   haggle: 1600,
   anVa: 2200,
   mission: 3200,
+  roadSticker: 1600,
 };

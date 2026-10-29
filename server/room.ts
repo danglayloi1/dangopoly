@@ -283,7 +283,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
 // ---------------------------------------------------------------------------
 // Checking moves from the network: only known shapes get through to the engine.
 
-const SIMPLE = ['ROLL', 'BUY', 'DECLINE', 'PAY_DEBT', 'DECLARE_BANKRUPTCY', 'END_TURN', 'PAY_JAIL_FINE', 'USE_JAIL_CARD', 'ACCEPT_TRADE', 'REJECT_TRADE', 'TIME_UP', 'HAGGLE', 'AN_VA'] as const;
+const SIMPLE = ['ROLL', 'BUY', 'DECLINE', 'PAY_DEBT', 'DECLARE_BANKRUPTCY', 'END_TURN', 'PAY_JAIL_FINE', 'USE_JAIL_CARD', 'ACCEPT_TRADE', 'REJECT_TRADE', 'TIME_UP', 'HAGGLE', 'AN_VA', 'XE_OM', 'WAIT_IN_JAM', 'LEAD_BUFFALO', 'RIDE_BUFFALO'] as const;
 const ON_SPACE = ['BUILD_HOUSE', 'SELL_HOUSE', 'MORTGAGE', 'UNMORTGAGE'] as const;
 
 const isInt = (v: unknown, min: number, max: number): v is number => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;

@@ -95,7 +95,7 @@ describe('random games', () => {
         seed,
         startingCash: 3_000_000, // low cash so bankruptcies actually happen
         // Chế độ Việt (every rule) in every fourth game, so haggling, tantrums, Tết and the funny cards get played too.
-        rules: { mode, festivals: seed % 2 === 0, ...(seed % 4 === 0 ? { viet: { tet: true, anVa: true, macCa: true, funnyCards: true, missions: true } } : {}) },
+        rules: { mode, festivals: seed % 2 === 0, ...(seed % 4 === 0 ? { viet: { tet: true, anVa: true, macCa: true, funnyCards: true, missions: true, traffic: true, buffalo: true } } : {}) },
       });
       let choice = seed * 7919;
 

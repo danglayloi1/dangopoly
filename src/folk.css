@@ -3759,3 +3759,75 @@ body {
   color: var(--text);
   font-weight: 700;
 }
+
+/* ===== On the roads (Chế độ Việt): rush-hour jams and the wandering buffalo ===== */
+/* A jam spot at rush hour: red hatching and a little xe ôm in the corner. */
+.cell.jammed {
+  background-image: repeating-linear-gradient(-45deg, transparent 0 6px, color-mix(in srgb, var(--accent) 16%, transparent) 6px 9px);
+}
+
+.jam-mark,
+.buffalo-mark {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: #fffaf0;
+  pointer-events: none;
+}
+
+.jam-mark {
+  top: 2px;
+  right: 2px;
+  width: clamp(14px, 2.6cqw, 22px);
+  height: clamp(14px, 2.6cqw, 22px);
+  font-size: clamp(9px, 1.6cqw, 14px);
+}
+
+/* The buffalo stands in the middle of its space, a little sticker with a slow sway. */
+.buffalo-mark {
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: clamp(22px, 4.6cqw, 38px);
+  height: clamp(22px, 4.6cqw, 38px);
+  font-size: clamp(15px, 3.2cqw, 26px);
+  box-shadow: 2px 2px 0 var(--ink);
+  z-index: 2;
+  animation: buffalo-sway calc(2.4s / var(--fx, 1)) ease-in-out infinite alternate;
+}
+
+@keyframes buffalo-sway {
+  from {
+    rotate: -6deg;
+  }
+  to {
+    rotate: 6deg;
+  }
+}
+
+.road-box {
+  border-top-color: var(--gold);
+}
+
+.status-rush {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 10px;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buffalo-mark {
+    animation: none;
+  }
+}
+
+:root[data-anim='off'] .buffalo-mark {
+  animation: none;
+}

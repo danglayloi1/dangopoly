@@ -57,6 +57,12 @@ export function BoardEffects({ effects, game }: { effects: ShownEffect[]; game: 
                 <span>{e.won ? t.haggleWon : t.haggleLost}</span>
               </div>
             );
+          case 'roadSticker':
+            return (
+              <div key={id} className={`fx fx-sticker bad${stickerEdge(e.space)}`} style={area(e.space)} aria-hidden="true">
+                <span>{e.word === 'jam' ? t.jamSticker : t.rideSticker}</span>
+              </div>
+            );
           case 'anVa':
             return (
               <div key={id} className={`fx fx-sticker fx-anva${stickerEdge(e.space)}`} style={area(e.space)} aria-hidden="true">
