@@ -1375,7 +1375,22 @@ const scenes = {
     await button(partner, /Đồng ý/).click();
 
     // A few turns, always pressed on the phone that has the buttons.
-    const prefer = ['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Bỏ qua'];
+    // When a move lands the panel changes size and the pressed button goes away, so Playwright
+    // sometimes times out on a click that did go through. Count it when the log moved on.
+    const press = async (p, locator) => {
+      const log = p.page.locator('.game-log');
+      const before = await log.textContent();
+      try {
+        await locator.click({ timeout: 15_000 });
+      } catch (error) {
+        if ((await log.textContent()) !== before) {
+          console.log(`note: ${p.name}'s click went through, although Playwright timed out`);
+          return;
+        }
+        throw error;
+      }
+    };
+    const prefer =['Mua', 'Gieo', 'Trả', 'Nộp', 'Kết thúc', 'Bỏ qua'];
     let oneAtATime = true;
     let othersSawRoll = null; // checked on the first roll: the other phones play the dice too
     for (let move = 0; move < 14; move++) {
@@ -1392,7 +1407,7 @@ const scenes = {
                   .filter((p) => p !== has[0])
                   .map((p) => p.page.waitForSelector('.die-cube.rolling', { timeout: 5000 }).then(() => true, () => false))
               : null;
-          await b.click();
+          await press(has[0], b);
           if (watch) othersSawRoll = (await Promise.all(watch)).every(Boolean);
           break;
         }
