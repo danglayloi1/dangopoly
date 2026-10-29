@@ -2,6 +2,7 @@
 // A round ends when play comes back around to the first player.
 
 import { BOARD, GROUP_SPACES, isOwnable, START_SALARY, type ColorGroup } from '../data/board';
+import { BUFFALO_CHANCE_IN_5, BUFFALO_SPACES } from './roads';
 import { nextUint32 } from './rng';
 import type { EndReason, Festival, FestivalId, GameState, PlayerStats } from './types';
 
@@ -137,6 +138,7 @@ export function startNextRound(s: GameState): void {
   s.festival = null;
   s.log.push({ type: 'roundStarted', round: s.round });
   if (s.rules.viet?.tet && s.round % TET_EVERY === 0) tet(s);
+  if (s.rules.viet?.buffalo) wanderingBuffalo(s);
   if (s.rules.festivals && s.round % FESTIVAL_EVERY === 0) {
     const id = FESTIVALS[randomBelow(s, FESTIVALS.length)];
     const festival: Festival = { id, group: id === 'denCuong' ? COLOR_GROUPS[randomBelow(s, COLOR_GROUPS.length)] : null };
@@ -144,6 +146,15 @@ export function startNextRound(s: GameState): void {
     s.log.push({ type: 'festival', festival, round: s.round });
     startFestival(s, id);
   }
+}
+
+/** Trâu đi lạc (Chế độ Việt): last round's buffalo wanders off; now and then a new one turns up. */
+function wanderingBuffalo(s: GameState): void {
+  s.buffalo = null;
+  if (randomBelow(s, 5) >= BUFFALO_CHANCE_IN_5) return;
+  const space = BUFFALO_SPACES[randomBelow(s, BUFFALO_SPACES.length)];
+  s.buffalo = space;
+  s.log.push({ type: 'buffaloArrived', space });
 }
 
 /**

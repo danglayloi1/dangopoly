@@ -63,7 +63,7 @@ const isInt = (v: unknown, min: number, max: number): v is number =>
 const isBool = (v: unknown): v is boolean => typeof v === 'boolean';
 const isDeck = (v: unknown): v is CardDeck => v === 'chance' || v === 'community';
 const TOKEN_IDS: readonly string[] = TOKENS.map((t) => t.id);
-const PHASE_KINDS = ['awaitRoll', 'awaitBuy', 'awaitEndTurn', 'inDebt', 'gameOver', 'tradeOffer'];
+const PHASE_KINDS = ['awaitRoll', 'awaitBuy', 'awaitEndTurn', 'inDebt', 'gameOver', 'tradeOffer', 'inJam', 'buffalo'];
 
 function isValidPlayer(v: unknown, index: number): boolean {
   return (

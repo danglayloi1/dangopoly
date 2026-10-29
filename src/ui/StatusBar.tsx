@@ -4,6 +4,7 @@ import { useLang } from '../i18n/LangContext';
 import { festivalText } from './logText';
 import { clockText, useNow } from './useNow';
 import { Icon } from './icons';
+import { isRushHour } from '../engine/roads';
 import { MissionsDialog } from './MissionsDialog';
 import { useViewer } from './viewer';
 
@@ -31,6 +32,11 @@ export function StatusBar({ game }: { game: GameState }) {
       {game.festival && !over && (
         <span className="status-festival">
           <Icon name="lantern" /> <strong>{t.festivalNames[game.festival.id]}</strong> · {festivalText(game.festival, uiLang)}
+        </span>
+      )}
+      {isRushHour(game) && !over && (
+        <span className="status-rush">
+          <Icon name="xeOm" /> {t.rushHour}
         </span>
       )}
       {hasMissions && (

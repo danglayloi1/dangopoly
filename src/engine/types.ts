@@ -57,6 +57,10 @@ export type Phase =
       reason: PaymentReason;
     }
   | { kind: 'gameOver'; winner: number }
+  // Chế độ Việt: stuck in rush-hour traffic on `space`, `remaining` steps short; pay a xe ôm or wait
+  | { kind: 'inJam'; space: number; remaining: number }
+  // Chế độ Việt: landed on the buffalo; lead it home (then land as usual) or ride it
+  | { kind: 'buffalo'; space: number; rentMultiplier?: number; utilityPerPip?: number }
   // A trade offer waits for the other player's answer, then the turn carries on where it was.
   | { kind: 'tradeOffer'; offer: TradeOffer; resume: TradablePhase };
 
@@ -102,6 +106,8 @@ export interface VietRules {
   macCa: boolean; // before buying, haggle once: 20% off, or the seller sulks and adds 10%
   funnyCards: boolean; // extra Cơ hội / Khí vận cards with silly stories
   missions: boolean; // each player gets two secret missions; finishing one pays a reward
+  traffic: boolean; // rush hour: moving through a jam spot stops you, unless you pay a xe ôm
+  buffalo: boolean; // now and then a buffalo wanders onto a space and blocks the way
 }
 
 export type FestivalId =
@@ -166,7 +172,11 @@ export type Action =
   | { type: 'TIME_UP' }
   // Chế độ Việt
   | { type: 'HAGGLE' } // Mặc cả: try for a better price before buying
-  | { type: 'AN_VA' }; // Ăn vạ: the debtor's once-a-game tantrum
+  | { type: 'AN_VA' } // Ăn vạ: the debtor's once-a-game tantrum
+  | { type: 'XE_OM' } // stuck in a jam: pay a xe ôm and go on
+  | { type: 'WAIT_IN_JAM' } // ...or wait, and stay on the jam spot
+  | { type: 'LEAD_BUFFALO' } // a buffalo in the way: pay to have it led home
+  | { type: 'RIDE_BUFFALO' }; // ...or ride it somewhere
 
 export type ActionType = Action['type'];
 export type PropertyAction = Extract<Action, { space: number }>;
@@ -217,7 +227,13 @@ export type LogEntry =
   | { type: 'tetLiXi'; from: number; to: number; amount: number; round: number }
   | { type: 'haggled'; player: number; space: number; price: number; won: boolean }
   | { type: 'anVa'; player: number; forgiven: number }
-  | { type: 'missionDone'; player: number; mission: MissionId; reward: number };
+  | { type: 'missionDone'; player: number; mission: MissionId; reward: number }
+  | { type: 'jam'; player: number; space: number; remaining: number }
+  | { type: 'xeOm'; player: number; fee: number }
+  | { type: 'buffaloArrived'; space: number }
+  | { type: 'buffaloMet'; player: number; space: number }
+  | { type: 'buffaloLed'; player: number; fee: number }
+  | { type: 'buffaloRide'; player: number; steps: number };
 
 export interface GameState {
   players: Player[];
@@ -233,7 +249,8 @@ export interface GameState {
   log: LogEntry[];
   rules: Rules;
   round: number; // 1 for the first round; a round ends when play comes back around to the first player
-  festival: Festival | null; // the festival of this round, if any
+  festival: Festival | null;
+  buffalo?: number | null; // Chế độ Việt: the space a buffalo stands on this round, if any // the festival of this round, if any
   stats: PlayerStats[]; // by player id
   worth: number[][]; // each player's worth at the start of every round (and at the end)
   endReason: EndReason | null;

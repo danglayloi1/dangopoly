@@ -17,6 +17,7 @@ import { houseRefund, isPropertyActionAllowed, mortgageValue } from './buildings
 import { jailFreeCardIndex, shuffledDeck } from './deck';
 import { rentFor } from './rent';
 import { checkMissions, dealMissions, type MissionId } from './missions';
+import { BUFFALO_FEE, BUFFALO_RIDE, isRushHour, jamOnPath, XE_OM_FEE } from './roads';
 import { nextUint32, rollDie } from './rng';
 import {
   buildCost,
@@ -64,7 +65,7 @@ export interface RulesChoice {
 }
 
 /** Chế độ Việt with every rule off. */
-export const NO_VIET: VietRules = { tet: false, anVa: false, macCa: false, funnyCards: false, missions: false };
+export const NO_VIET: VietRules = { tet: false, anVa: false, macCa: false, funnyCards: false, missions: false, traffic: false, buffalo: false };
 
 /** Ăn vạ forgives this share of the debt; Mặc cả takes this much off, or adds the other. */
 export const AN_VA_SHARE = 0.2;
@@ -205,6 +206,10 @@ export function legalActions(state: GameState): TurnActionType[] {
     }
     case 'tradeOffer':
       return ['ACCEPT_TRADE', 'REJECT_TRADE'];
+    case 'inJam':
+      return state.players[state.current].cash >= XE_OM_FEE ? ['XE_OM', 'WAIT_IN_JAM'] : ['WAIT_IN_JAM'];
+    case 'buffalo':
+      return state.players[state.current].cash >= BUFFALO_FEE ? ['LEAD_BUFFALO', 'RIDE_BUFFALO'] : ['RIDE_BUFFALO'];
     case 'gameOver':
       return [];
   }
@@ -302,6 +307,18 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'AN_VA':
       anVa(s);
       break;
+    case 'XE_OM':
+      xeOm(s);
+      break;
+    case 'WAIT_IN_JAM':
+      resolveLanding(s, s.players[s.current]); // stuck here: this is where the move ends
+      break;
+    case 'LEAD_BUFFALO':
+      leadBuffalo(s);
+      break;
+    case 'RIDE_BUFFALO':
+      rideBuffalo(s);
+      break;
   }
   // Secret missions finished by this move (before the log is trimmed, so nothing new is missed).
   if (s.rules.viet?.missions && s.phase.kind !== 'gameOver') checkMissions(s, s.log.slice(logBefore));
@@ -349,8 +366,7 @@ function roll(s: GameState, forced?: Dice): void {
     return;
   }
   s.extraRoll = doubles;
-  moveBy(s, player, dice[0] + dice[1]);
-  resolveLanding(s, player);
+  moveByDice(s, player); // every dice move goes through moveByDice (rush-hour jams are checked there)
 }
 
 /** In jail, the roll is an attempt to get out with doubles. Leaving jail never earns an extra roll. */
@@ -744,7 +760,52 @@ function moveBy(s: GameState, player: Player, steps: number): void {
 }
 
 function moveByDice(s: GameState, player: Player): void {
-  moveBy(s, player, s.dice![0] + s.dice![1]);
+  const steps = s.dice![0] + s.dice![1];
+  // Rush hour (Chế độ Việt): a jam on the way stops the move there, until the player decides.
+  const jam = isRushHour(s) ? jamOnPath(player.position, steps) : null;
+  if (jam !== null) {
+    const toJam = (jam - player.position + BOARD_SIZE) % BOARD_SIZE;
+    moveBy(s, player, toJam);
+    s.phase = { kind: 'inJam', space: jam, remaining: steps - toJam };
+    s.log.push({ type: 'jam', player: player.id, space: jam, remaining: steps - toJam });
+    return;
+  }
+  moveBy(s, player, steps);
+  resolveLanding(s, player);
+}
+
+/** A xe ôm weaves through the jam: pay the fee, go the rest of the way. */
+function xeOm(s: GameState): void {
+  if (s.phase.kind !== 'inJam') return;
+  const player = s.players[s.current];
+  const { remaining } = s.phase;
+  player.cash -= XE_OM_FEE;
+  s.log.push({ type: 'xeOm', player: player.id, fee: XE_OM_FEE });
+  moveBy(s, player, remaining);
+  resolveLanding(s, player);
+}
+
+/** Pay someone to lead the buffalo home; then the landing goes on as usual. */
+function leadBuffalo(s: GameState): void {
+  if (s.phase.kind !== 'buffalo') return;
+  const { rentMultiplier, utilityPerPip } = s.phase;
+  const player = s.players[s.current];
+  player.cash -= BUFFALO_FEE;
+  s.buffalo = null;
+  s.log.push({ type: 'buffaloLed', player: player.id, fee: BUFFALO_FEE });
+  resolveLanding(s, player, { rentMultiplier, utilityPerPip });
+}
+
+/** Climb on the buffalo: it wanders off with you, a few spaces on. */
+function rideBuffalo(s: GameState): void {
+  if (s.phase.kind !== 'buffalo') return;
+  const player = s.players[s.current];
+  const [r, next] = nextUint32(s.rngState);
+  s.rngState = next;
+  const steps = BUFFALO_RIDE.min + (r % (BUFFALO_RIDE.max - BUFFALO_RIDE.min + 1));
+  s.buffalo = null;
+  s.log.push({ type: 'buffaloRide', player: player.id, steps });
+  moveBy(s, player, steps);
   resolveLanding(s, player);
 }
 
@@ -756,6 +817,13 @@ interface RentOptions {
 function resolveLanding(s: GameState, player: Player, options: RentOptions = {}): void {
   const index = player.position;
   const space = BOARD[index];
+
+  // Chế độ Việt: a buffalo stands here and has to be dealt with first.
+  if (s.rules.viet?.buffalo && s.buffalo === index) {
+    s.phase = { kind: 'buffalo', space: index, ...options };
+    s.log.push({ type: 'buffaloMet', player: player.id, space: index });
+    return;
+  }
 
   switch (space.kind) {
     case 'property':

@@ -44,6 +44,8 @@ export type IconName =
   | 'autoTheme'
   | 'person'
   | 'slipper'
+  | 'buffalo'
+  | 'xeOm'
   | 'banhChung'
   | 'bot'
   | 'save'
@@ -270,6 +272,25 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <path d="M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M5 5 L7 7 M17 5 L15 7 M5 19 L7 17" fill="none" />
       <circle cx="12" cy="12" r="5.5" fill={YELLOW} />
       <path d="M22 13 A8 8 0 1 0 30 25 A6 6 0 1 1 22 13 Z" fill={INDIGO} />
+    </>
+  ),
+  // A buffalo that wandered onto the road: body, head and the big curved horns
+  buffalo: (
+    <>
+      <path d="M5 13 Q4 22 8 23 L9 28 M14 23 L14 28 M21 23 L22 28" fill="none" />
+      <path d="M6 12 Q10 9 18 10 L22 12 Q24 20 20 23 L9 23 Q4 22 6 12 Z" fill="#4a4a4a" />
+      <circle cx="25" cy="14" r="4.5" fill="#4a4a4a" />
+      <path d="M22 10 Q20 4 25 5 M28 10 Q31 4 26 5" fill="none" strokeWidth={2.4} />
+      <circle cx="26.5" cy="13.5" r="0.9" fill={CREAM} />
+    </>
+  ),
+  // A xe ôm: a motorbike taxi through the traffic
+  xeOm: (
+    <>
+      <circle cx="8" cy="23" r="4.5" fill={CREAM} />
+      <circle cx="25" cy="23" r="4.5" fill={CREAM} />
+      <path d="M8 23 L13 15 H21 L25 23 M13 15 L11 11 H15 M21 15 L23 11" fill="none" />
+      <path d="M14 15 Q17 12 21 15 Z" fill={RED} />
     </>
   ),
   // Dép lào: the sole and its strap (thrown, lovingly, online)

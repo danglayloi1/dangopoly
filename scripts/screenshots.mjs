@@ -1007,6 +1007,56 @@ const scenes = {
     check(errors === 0, `no errors on the page (${errors})`);
   },
 
+  /** Chế độ Việt on the roads: a rush-hour jam (taking a xe ôm) and a wandering buffalo (riding it). */
+  async roads({ page, shot, click, setup, act }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    await openFromMenu(page, /Chơi trên một máy/);
+    const inputs = page.locator('.player-row input');
+    await inputs.nth(0).fill('Đăng');
+    await inputs.nth(1).fill('Lan');
+    const viet = page.locator('.viet-rules');
+    for (const name of [/Kẹt xe/, /Trâu đi lạc/]) await viet.getByRole('checkbox', { name }).check();
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+
+    // Round 2 is rush hour: the jam spots are marked.
+    await setup((game) => {
+      game.round = 2;
+    });
+    check((await page.locator('.status-rush').isVisible()) && (await page.locator('.cell.jammed').count()) === 3, 'at rush hour the three jam spots are marked');
+    await act({ type: 'ROLL', dice: [2, 4] });
+    check(await page.getByText(/Kẹt xe ở Bến xe Hà Tĩnh/).isVisible(), 'rolling through Bến xe Hà Tĩnh: stuck in traffic');
+    await shot('jam');
+    await click(/Gọi xe ôm/);
+    await page.waitForSelector('.board[data-busy="false"]');
+    const after = await page.evaluate(() => {
+      const g = window.__dangopoly.getGame();
+      return { at: g.players[0].position, cash: g.players[0].cash, phase: g.phase.kind };
+    });
+    check(after.at === 6 && after.cash === 14_700_000 && after.phase === 'awaitBuy', `a xe ôm (300k) goes the rest of the way (${JSON.stringify(after)})`);
+
+    // A buffalo on Đường Quang Trung, in Đăng's way.
+    await setup((game) => {
+      game.round = 1;
+      game.buffalo = 39;
+      game.players[0].position = 32;
+      game.phase = { kind: 'awaitRoll' };
+      game.lastCard = null;
+    });
+    check((await page.locator('.cell[data-space="39"] .buffalo-mark').count()) === 1, 'the buffalo stands on its space');
+    await act({ type: 'ROLL', dice: [3, 4] });
+    check(await page.getByText(/Trâu đi lạc chắn đường/).isVisible(), 'landing on it: deal with the buffalo first');
+    await shot('buffalo');
+    await click(/Cưỡi trâu/);
+    await page.locator('.fx-sticker', { hasText: 'Ụm bò!' }).waitFor({ timeout: 5_000 });
+    const rode = await page.evaluate(() => window.__dangopoly.getGame().players[0].position);
+    check(rode !== 39, `riding the buffalo carries Đăng on (to space ${rode})`);
+    await shot('ride');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /**
    * The effects after a move, each caught mid-way: the page's clock is under the script's control
    * (page.clock), so a move plays out exactly as far as needed and then everything is frozen.

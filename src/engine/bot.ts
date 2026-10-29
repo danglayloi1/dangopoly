@@ -4,6 +4,7 @@
 import { BOARD, GROUP_SPACES, isOwnable, JAIL_FINE } from '../data/board';
 import { canBuildHouse, canMortgage, canSellHouse, canUnmortgage, HOTEL, houseRefund, mortgageValue } from './buildings';
 import { buyPrice, HAGGLE_MARKUP, legalActions, whoseMove } from './game';
+import { BUFFALO_FEE, XE_OM_FEE } from './roads';
 import { buildCost, unmortgagePrice } from './rounds';
 import { canTradeSpace, tradeProblem } from './trading';
 import type { Action, BotLevel, GameState, TradeOffer } from './types';
@@ -74,6 +75,18 @@ export function botAction(state: GameState): Action | null {
 
     case 'awaitEndTurn':
       return improve(state, player, style, level) ?? { type: 'END_TURN' };
+
+    case 'inJam': {
+      // A xe ôm through the jam, if the money can be spared (easy bots: on a whim).
+      const pays = legalActions(state).includes('XE_OM') && (level === 'easy' ? mood(state, 3000) < 0.5 : state.players[player].cash - XE_OM_FEE >= reserveFor(state, player, style, level));
+      return { type: pays ? 'XE_OM' : 'WAIT_IN_JAM' };
+    }
+
+    case 'buffalo': {
+      // Lead it home if the money can be spared; otherwise (or on a whim) climb on.
+      const leads = legalActions(state).includes('LEAD_BUFFALO') && (level === 'easy' ? mood(state, 4000) < 0.5 : state.players[player].cash - BUFFALO_FEE >= reserveFor(state, player, style, level));
+      return { type: leads ? 'LEAD_BUFFALO' : 'RIDE_BUFFALO' };
+    }
 
     case 'gameOver':
       return null;

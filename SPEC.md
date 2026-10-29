@@ -516,3 +516,29 @@ progress ("1/2"). At the end, the summary reveals everyone's missions.
   phone receives those, and they can be run backwards.
 
 A new badge, **Điệp viên**, goes with finishing both missions in one game (19 badges in all).
+
+### On the roads: Kẹt xe giờ cao điểm and Trâu đi lạc
+
+Two more Chế độ Việt options; with them, there are seven.
+
+**Kẹt xe giờ cao điểm (rush-hour traffic).**
+- **When:** two rounds in every four (2–3, 6–7, …) are rush hour. The status bar shows "Giờ cao điểm", and
+  the three jam spots are hatched: Bến xe Hà Tĩnh, Cầu Bến Thủy and Chợ Vinh.
+- **What happens:** a dice move that *passes through* a jam spot stops there (landing exactly on one is just
+  landing). The player then chooses:
+  - **Gọi xe ôm** (300k): go the rest of the way;
+  - **Chờ hết kẹt**: stay on the jam spot and land there as usual.
+- **Bots** take the xe ôm when they can spare the money; easy bots on a whim.
+
+**Trâu đi lạc (wandering buffalo).**
+- **When:** as a round starts, a buffalo turns up 2 times in 5, on a random space that isn't a corner, for
+  that round. A swaying buffalo sticker marks it.
+- **What happens:** landing there means dealing with it first:
+  - **Dắt trâu về** (200k): the buffalo leaves, then the landing goes on as usual (buy, rent, card…);
+  - **Cưỡi trâu** (free): it carries you 2–11 spaces on ("Ụm bò!"), passing Xuất phát pays as usual, and
+    you land where it stops.
+- **Bots** lead it home when they can spare the money, and ride it otherwise.
+
+In the engine, both are new phases (`inJam`, `buffalo`) with two actions each (`XE_OM` / `WAIT_IN_JAM`,
+`LEAD_BUFFALO` / `RIDE_BUFFALO`); the room server accepts those and nothing more. Every dice move now goes
+through `moveByDice`, where jams are checked; outside rush hour it moves and lands exactly as before.

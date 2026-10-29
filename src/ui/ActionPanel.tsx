@@ -1,6 +1,7 @@
 import { BOARD, isOwnable, JAIL_FINE } from '../data/board';
 import { actingPlayer } from '../engine/buildings';
 import { buyPrice, legalActions, whoseMove } from '../engine/game';
+import { BUFFALO_FEE, XE_OM_FEE } from '../engine/roads';
 import { formatMoney } from '../engine/money';
 import { canStartTrade } from '../engine/trading';
 import type { Action, GameState } from '../engine/types';
@@ -129,6 +130,24 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
         </button>
       )}
 
+      {phase.kind === 'inJam' && (
+        <div className="debt road-box">
+          <strong>
+            <Icon name="xeOm" /> {t.jamTitle(BOARD[phase.space].name[lang])}
+          </strong>
+          <span>{t.jamHint(phase.remaining)}</span>
+        </div>
+      )}
+
+      {phase.kind === 'buffalo' && (
+        <div className="debt road-box">
+          <strong>
+            <Icon name="buffalo" /> {t.buffaloTitle}
+          </strong>
+          <span>{t.buffaloHint}</span>
+        </div>
+      )}
+
       {phase.kind === 'inDebt' && (
         <div className="debt">
           <strong>{t.debtTitle(game.players[phase.debtor].name, formatMoney(phase.amount))}</strong>
@@ -182,6 +201,26 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
           {allowed.includes('PAY_DEBT') && phase.kind === 'inDebt' && (
             <button className="primary" onClick={() => dispatch({ type: 'PAY_DEBT' })}>
               {t.payDebt(formatMoney(phase.amount))}
+            </button>
+          )}
+          {allowed.includes('XE_OM') && (
+            <button className="primary" onClick={() => dispatch({ type: 'XE_OM' })} autoFocus>
+              <Icon name="xeOm" /> {t.xeOmButton(formatMoney(XE_OM_FEE))}
+            </button>
+          )}
+          {allowed.includes('WAIT_IN_JAM') && (
+            <button className="secondary" onClick={() => dispatch({ type: 'WAIT_IN_JAM' })}>
+              {t.waitInJam}
+            </button>
+          )}
+          {allowed.includes('LEAD_BUFFALO') && (
+            <button className="primary" onClick={() => dispatch({ type: 'LEAD_BUFFALO' })} autoFocus>
+              {t.leadBuffalo(formatMoney(BUFFALO_FEE))}
+            </button>
+          )}
+          {allowed.includes('RIDE_BUFFALO') && (
+            <button className="secondary" onClick={() => dispatch({ type: 'RIDE_BUFFALO' })}>
+              <Icon name="buffalo" /> {t.rideBuffalo}
             </button>
           )}
           {allowed.includes('AN_VA') && (
