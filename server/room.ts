@@ -13,9 +13,10 @@ import {
   MAX_PLAYERS,
   MAX_ROUNDS,
   MIN_PLAYERS,
+  NO_VIET,
   type RulesChoice,
 } from '../src/engine/game';
-import type { Action, Dice, GameState } from '../src/engine/types';
+import type { Action, Dice, GameState, VietRules } from '../src/engine/types';
 import {
   CHAT_KEEP,
   CHAT_MAX_LENGTH,
@@ -264,7 +265,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
 // ---------------------------------------------------------------------------
 // Checking moves from the network: only known shapes get through to the engine.
 
-const SIMPLE = ['ROLL', 'BUY', 'DECLINE', 'PAY_DEBT', 'DECLARE_BANKRUPTCY', 'END_TURN', 'PAY_JAIL_FINE', 'USE_JAIL_CARD', 'ACCEPT_TRADE', 'REJECT_TRADE', 'TIME_UP'] as const;
+const SIMPLE = ['ROLL', 'BUY', 'DECLINE', 'PAY_DEBT', 'DECLARE_BANKRUPTCY', 'END_TURN', 'PAY_JAIL_FINE', 'USE_JAIL_CARD', 'ACCEPT_TRADE', 'REJECT_TRADE', 'TIME_UP', 'HAGGLE', 'AN_VA'] as const;
 const ON_SPACE = ['BUILD_HOUSE', 'SELL_HOUSE', 'MORTGAGE', 'UNMORTGAGE'] as const;
 
 const isInt = (v: unknown, min: number, max: number): v is number => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
@@ -277,15 +278,26 @@ function cleanSide(raw: unknown) {
   return { spaces: [...spaces] as number[], cash, jailCards };
 }
 
+/** The Chế độ Việt rules the host chose (missing: all off), or null if the shape is wrong. */
+function cleanViet(raw: unknown): VietRules | null {
+  if (raw === undefined) return { ...NO_VIET };
+  if (typeof raw !== 'object' || raw === null) return null;
+  const v = raw as Record<string, unknown>;
+  const keys = Object.keys(NO_VIET) as (keyof VietRules)[];
+  if (!keys.every((k) => v[k] === undefined || typeof v[k] === 'boolean')) return null;
+  return Object.fromEntries(keys.map((k) => [k, v[k] === true])) as unknown as VietRules;
+}
+
 /** The game type the host chose, or null if it isn't one the game offers. */
 export function cleanRules(raw: unknown): RulesChoice | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const { mode, festivals } = raw as Record<string, unknown>;
-  if (typeof festivals !== 'boolean' || typeof mode !== 'object' || mode === null) return null;
+  const viet = cleanViet((raw as Record<string, unknown>).viet);
+  if (typeof festivals !== 'boolean' || typeof mode !== 'object' || mode === null || !viet) return null;
   const m = mode as Record<string, unknown>;
-  if (m.kind === 'classic') return { mode: { kind: 'classic' }, festivals };
-  if (m.kind === 'rounds' && isInt(m.rounds, 1, MAX_ROUNDS)) return { mode: { kind: 'rounds', rounds: m.rounds }, festivals };
-  if (m.kind === 'time' && isInt(m.minutes, 1, MAX_MINUTES)) return { mode: { kind: 'time', minutes: m.minutes }, festivals };
+  if (m.kind === 'classic') return { mode: { kind: 'classic' }, festivals, viet };
+  if (m.kind === 'rounds' && isInt(m.rounds, 1, MAX_ROUNDS)) return { mode: { kind: 'rounds', rounds: m.rounds }, festivals, viet };
+  if (m.kind === 'time' && isInt(m.minutes, 1, MAX_MINUTES)) return { mode: { kind: 'time', minutes: m.minutes }, festivals, viet };
   return null;
 }
 

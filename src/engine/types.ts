@@ -10,6 +10,7 @@ export interface Player {
   id: number; // index in GameState.players
   name: string;
   bot?: BotLevel; // a computer player; people have no level
+  anVaUsed?: boolean; // Chế độ Việt: this player has thrown their one tantrum (Ăn vạ) this game
   token: TokenId;
   color: PlayerColorId;
   cash: number; // đồng
@@ -37,7 +38,8 @@ export type PaymentReason =
 /** What the game is waiting for. Each phase allows only certain actions (see legalActions). */
 export type Phase =
   | { kind: 'awaitRoll' }
-  | { kind: 'awaitBuy'; space: number }
+  // price: what it costs after haggling (Mặc cả), if the player haggled
+  | { kind: 'awaitBuy'; space: number; price?: number; haggled?: boolean }
   | { kind: 'awaitEndTurn' }
   | {
       kind: 'inDebt';
@@ -82,6 +84,15 @@ export type GameMode =
 export interface Rules {
   mode: GameMode;
   festivals: boolean; // every few rounds, a local festival changes one rule for a round
+  viet?: VietRules; // missing: all off (and in games saved before Chế độ Việt)
+}
+
+/** Chế độ Việt: optional rules with a Vietnamese twist, each on or off. */
+export interface VietRules {
+  tet: boolean; // every TET_EVERY rounds it's Tết: the richest gives the poorest lì xì
+  anVa: boolean; // once a game, a player who can't pay a debt throws a tantrum and 20% is forgiven
+  macCa: boolean; // before buying, haggle once: 20% off, or the seller sulks and adds 10%
+  funnyCards: boolean; // extra Cơ hội / Khí vận cards with silly stories
 }
 
 export type FestivalId =
@@ -143,7 +154,10 @@ export type Action =
   | { type: 'ACCEPT_TRADE' }
   | { type: 'REJECT_TRADE' }
   // Timed games: the time is up (sent at the start of a turn; whoever sends it checks the clock)
-  | { type: 'TIME_UP' };
+  | { type: 'TIME_UP' }
+  // Chế độ Việt
+  | { type: 'HAGGLE' } // Mặc cả: try for a better price before buying
+  | { type: 'AN_VA' }; // Ăn vạ: the debtor's once-a-game tantrum
 
 export type ActionType = Action['type'];
 export type PropertyAction = Extract<Action, { space: number }>;
@@ -189,7 +203,11 @@ export type LogEntry =
   | { type: 'festivalAmnesty'; players: number[] }
   | { type: 'festivalLevy'; total: number }
   | { type: 'festivalShare'; to: number; total: number }
-  | { type: 'limitReached'; reason: 'rounds' | 'time' };
+  | { type: 'limitReached'; reason: 'rounds' | 'time' }
+  // Chế độ Việt
+  | { type: 'tetLiXi'; from: number; to: number; amount: number; round: number }
+  | { type: 'haggled'; player: number; space: number; price: number; won: boolean }
+  | { type: 'anVa'; player: number; forgiven: number };
 
 export interface GameState {
   players: Player[];

@@ -13,11 +13,17 @@ export type CardEffect =
   | { kind: 'moveBack'; steps: number }
   | { kind: 'goToJail' }
   | { kind: 'jailFree' } // keep until used (or traded)
-  | { kind: 'repairs'; perHouse: number; perHotel: number };
+  | { kind: 'repairs'; perHouse: number; perHotel: number }
+  // The funny cards (Chế độ Việt) also use:
+  | { kind: 'moveForward'; steps: number }
+  | { kind: 'goHome' } // straight to Xuất phát, without the salary
+  | { kind: 'payNeighbour'; amount: number } // pay the player before you
+  | { kind: 'nothing' };
 
 export interface Card {
   text: LocalText;
   effect: CardEffect;
+  funny?: true; // only shuffled in with Chế độ Việt's funny cards (they come after the classic ones)
 }
 
 const k = (thousands: number) => thousands * 1_000;
@@ -116,6 +122,37 @@ export const CARDS: Record<CardDeck, readonly Card[]> = {
       },
       effect: { kind: 'payEach', amount: k(500) },
     },
+    // ----- Funny cards (Chế độ Việt) -----
+    {
+      text: { vi: 'Mẹ gọi về ăn cơm! Về Xuất phát, không được nhận lương.', en: 'Mum calls you home for dinner! Go to Start, no salary.' },
+      effect: { kind: 'goHome' },
+      funny: true,
+    },
+    {
+      text: { vi: 'Bị chó nhà hàng xóm đuổi. Chạy thêm 3 ô!', en: "The neighbour's dog chases you. Run 3 more spaces!" },
+      effect: { kind: 'moveForward', steps: 3 },
+      funny: true,
+    },
+    {
+      text: { vi: 'Hỏi đường ở Vinh, ai cũng chỉ một kiểu. Lùi 2 ô.', en: 'Everyone in Vinh gives you different directions. Go back 2 spaces.' },
+      effect: { kind: 'moveBack', steps: 2 },
+      funny: true,
+    },
+    {
+      text: { vi: 'Trúng số độc đắc… nhưng là vé năm ngoái. Không được chi hết.', en: "You won the lottery… with last year's ticket. Nothing happens." },
+      effect: { kind: 'nothing' },
+      funny: true,
+    },
+    {
+      text: { vi: 'Xe đạp thủng lốp, phải dắt bộ. Lùi 1 ô.', en: 'Flat bicycle tyre, you have to walk it. Go back 1 space.' },
+      effect: { kind: 'moveBack', steps: 1 },
+      funny: true,
+    },
+    {
+      text: { vi: 'Hát karaoke to quá, cả xóm phàn nàn. Trả mỗi người 100k.', en: 'Karaoke too loud, the whole street complains. Pay each player 100k.' },
+      effect: { kind: 'payEach', amount: k(100) },
+      funny: true,
+    },
   ],
   community: [
     {
@@ -200,7 +237,39 @@ export const CARDS: Record<CardDeck, readonly Card[]> = {
       text: { vi: 'Ông bà lì xì Tết. Nhận 1tr.', en: 'Lucky money from your grandparents. Collect 1tr.' },
       effect: { kind: 'collect', amount: k(1_000) },
     },
+    // ----- Funny cards (Chế độ Việt) -----
+    {
+      text: { vi: 'Ăn cháo lươn quên mang ví. Trả người chơi trước mi 200k.', en: 'Ate eel porridge, forgot your wallet. Pay the player before you 200k.' },
+      effect: { kind: 'payNeighbour', amount: k(200) },
+      funny: true,
+    },
+    {
+      text: { vi: 'Nhặt được ví, trả lại người mất. Được hậu tạ 300k.', en: 'You returned a lost wallet. The owner thanks you with 300k.' },
+      effect: { kind: 'collect', amount: k(300) },
+      funny: true,
+    },
+    {
+      text: { vi: 'Hàng xóm biếu nồi cu đơ, đem bán được 200k.', en: 'The neighbours gave you cu đơ candy. You sell it for 200k.' },
+      effect: { kind: 'collect', amount: k(200) },
+      funny: true,
+    },
+    {
+      text: { vi: 'Đi đám cưới bạn thân, mừng phong bì 500k.', en: "Your best friend's wedding: a 500k gift envelope." },
+      effect: { kind: 'pay', amount: k(500) },
+      funny: true,
+    },
+    {
+      text: { vi: 'Mẹ cho tiền ăn sáng. Nhận 100k.', en: 'Mum gives you breakfast money. Collect 100k.' },
+      effect: { kind: 'collect', amount: k(100) },
+      funny: true,
+    },
   ],
+};
+
+/** How many classic cards each deck has (the funny ones come after them). */
+export const CLASSIC_CARD_COUNT: Record<CardDeck, number> = {
+  chance: CARDS.chance.filter((c) => !c.funny).length,
+  community: CARDS.community.filter((c) => !c.funny).length,
 };
 
 export const DECK_NAMES: Record<CardDeck, LocalText> = {

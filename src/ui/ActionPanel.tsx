@@ -1,6 +1,6 @@
 import { BOARD, isOwnable, JAIL_FINE } from '../data/board';
 import { actingPlayer } from '../engine/buildings';
-import { legalActions, whoseMove } from '../engine/game';
+import { buyPrice, legalActions, whoseMove } from '../engine/game';
 import { formatMoney } from '../engine/money';
 import { canStartTrade } from '../engine/trading';
 import type { Action, GameState } from '../engine/types';
@@ -121,7 +121,11 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
         >
           <span className="offer-icon">{spaceIcon(phase.space)}</span>
           <span className="offer-name">{offer.name[lang]}</span>
-          <span className="offer-price">{formatMoney(offer.price)}</span>
+          <span className="offer-price">
+            {/* After haggling: the old price struck through, the new one beside it. */}
+            {phase.price !== undefined && phase.price !== offer.price && <s className="offer-old-price">{formatMoney(offer.price)}</s>}
+            {formatMoney(buyPrice(game))}
+          </span>
         </button>
       )}
 
@@ -160,10 +164,15 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
             <>
               {allowed.includes('BUY') ? (
                 <button className="primary" data-tutorial="buy" onClick={() => dispatch({ type: 'BUY' })} autoFocus>
-                  {t.buy(formatMoney(offer.price))}
+                  {t.buy(formatMoney(buyPrice(game)))}
                 </button>
               ) : (
                 <span className="muted">{t.cannotAfford}</span>
+              )}
+              {allowed.includes('HAGGLE') && (
+                <button className="secondary" onClick={() => dispatch({ type: 'HAGGLE' })}>
+                  <Icon name="handshake" /> {t.haggle}
+                </button>
               )}
               <button className="secondary" onClick={() => dispatch({ type: 'DECLINE' })}>
                 {t.skip}
@@ -173,6 +182,11 @@ export function ActionPanel({ game, dispatch, onShowSpace, onManage, onTrade, ne
           {allowed.includes('PAY_DEBT') && phase.kind === 'inDebt' && (
             <button className="primary" onClick={() => dispatch({ type: 'PAY_DEBT' })}>
               {t.payDebt(formatMoney(phase.amount))}
+            </button>
+          )}
+          {allowed.includes('AN_VA') && (
+            <button className="primary" onClick={() => dispatch({ type: 'AN_VA' })}>
+              {t.anVaButton}
             </button>
           )}
           {allowed.includes('DECLARE_BANKRUPTCY') && (

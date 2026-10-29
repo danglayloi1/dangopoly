@@ -7,6 +7,10 @@ import type { EndReason, Festival, FestivalId, GameState, PlayerStats } from './
 
 /** With festival mode on, rounds 3, 6, 9… each have a festival. It lasts that one round. */
 export const FESTIVAL_EVERY = 3;
+/** Chế độ Việt: Tết comes every this many rounds; the lì xì is this share of the wealth gap, up to a cap. */
+export const TET_EVERY = 5;
+export const TET_SHARE = 0.1;
+export const TET_MAX = 3_000_000;
 export const FESTIVALS: readonly FestivalId[] = [
   'denCuong', // rent ×2 on one random color set
   'langSen', // double salary at Xuất phát
@@ -132,6 +136,7 @@ export function startNextRound(s: GameState): void {
   s.round++;
   s.festival = null;
   s.log.push({ type: 'roundStarted', round: s.round });
+  if (s.rules.viet?.tet && s.round % TET_EVERY === 0) tet(s);
   if (s.rules.festivals && s.round % FESTIVAL_EVERY === 0) {
     const id = FESTIVALS[randomBelow(s, FESTIVALS.length)];
     const festival: Festival = { id, group: id === 'denCuong' ? COLOR_GROUPS[randomBelow(s, COLOR_GROUPS.length)] : null };
@@ -139,6 +144,25 @@ export function startNextRound(s: GameState): void {
     s.log.push({ type: 'festival', festival, round: s.round });
     startFestival(s, id);
   }
+}
+
+/**
+ * Tết (Chế độ Việt): the richest player gives the poorest lì xì: a tenth of the gap in their wealth,
+ * at most TET_MAX and no more than the cash they hold. A catch-up rule dressed as a custom.
+ */
+function tet(s: GameState): void {
+  const active = s.players.filter((p) => !p.bankrupt);
+  if (active.length < 2) return;
+  const worth = worthOfAll(s);
+  const richest = active.reduce((hi, p) => (worth[p.id] > worth[hi.id] ? p : hi));
+  const poorest = active.reduce((low, p) => (worth[p.id] < worth[low.id] ? p : low));
+  if (richest === poorest) return;
+  const gift = Math.round((Math.min(TET_MAX, (worth[richest.id] - worth[poorest.id]) * TET_SHARE) / 100_000)) * 100_000;
+  const amount = Math.min(gift, richest.cash);
+  if (amount <= 0) return;
+  richest.cash -= amount;
+  poorest.cash += amount;
+  s.log.push({ type: 'tetLiXi', from: richest.id, to: poorest.id, amount, round: s.round });
 }
 
 /** What some festivals do once, as their round starts. */

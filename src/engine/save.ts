@@ -2,7 +2,7 @@
 // because stored data can be old, cut off, or edited by hand; a bad save is ignored, never trusted.
 
 import { BOARD, BOARD_SIZE, isOwnable } from '../data/board';
-import { CARDS, type CardDeck } from '../data/cards';
+import { CARDS, CLASSIC_CARD_COUNT, type CardDeck } from '../data/cards';
 import { defaultPlayerColor, PLAYER_COLOR_IDS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
 import { emptyStats, FESTIVALS } from './rounds';
@@ -85,8 +85,9 @@ function isValidPlayer(v: unknown, index: number): boolean {
   );
 }
 
-function isValidDeck(v: unknown, deck: CardDeck): v is number[] {
-  const size = CARDS[deck].length;
+/** A deck holds the classic cards, plus the funny ones only when Chế độ Việt deals them. */
+function isValidDeck(v: unknown, deck: CardDeck, funny: boolean): v is number[] {
+  const size = funny ? CARDS[deck].length : CLASSIC_CARD_COUNT[deck];
   return Array.isArray(v) && v.every((c) => isInt(c, 0, size - 1)) && new Set(v).size === v.length;
 }
 
@@ -113,7 +114,8 @@ function isValidGame(v: unknown): v is GameState {
   }
   if (!isInt(v.doublesCount, 0, 3) || !isBool(v.extraRoll) || !isInt(v.rngState, 0, 0xffffffff)) return false;
 
-  if (!isRecord(v.decks) || !isValidDeck(v.decks.chance, 'chance') || !isValidDeck(v.decks.community, 'community')) {
+  const funny = isRecord(v.rules) && isRecord(v.rules.viet) && v.rules.viet.funnyCards === true;
+  if (!isRecord(v.decks) || !isValidDeck(v.decks.chance, 'chance', funny) || !isValidDeck(v.decks.community, 'community', funny)) {
     return false;
   }
   if (v.lastCard !== null && !(isRecord(v.lastCard) && isDeck(v.lastCard.deck) && Number.isInteger(v.lastCard.card))) {
@@ -128,6 +130,7 @@ function areValidModeFields(v: Rec, playerCount: number): boolean {
   if (v.rules === undefined) return v.round === undefined && v.stats === undefined;
   const { rules } = v;
   if (!isRecord(rules) || !isBool(rules.festivals) || !isRecord(rules.mode)) return false;
+  if (rules.viet !== undefined && !(isRecord(rules.viet) && Object.values(rules.viet).every(isBool))) return false;
   const mode = rules.mode;
   const modeOk =
     mode.kind === 'classic' ||

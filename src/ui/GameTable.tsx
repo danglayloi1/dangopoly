@@ -85,7 +85,7 @@ export function GameTable({ game, dispatch, presentation, onLeave, headerExtra, 
         />
       )}
       {trading && <TradeDialog game={game} dispatch={dispatch} onClose={() => setTrading(false)} />}
-      <ScreenEffects effects={presentation.effects} />
+      <ScreenEffects effects={presentation.effects} game={game} />
       {children}
       {summary && game.phase.kind === 'gameOver' && <SummaryDialog game={game} newBadges={newBadges} onClose={() => setSummary(false)} />}
       {shownSpace !== null && (

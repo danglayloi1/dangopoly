@@ -17,6 +17,12 @@ function area(spot: Spot): CSSProperties {
   return { gridRow: row + 1, gridColumn: col + 1 };
 }
 
+/** A sticker is wider than its space: on the board's left or right edge it leans inward, so it isn't cut off. */
+function stickerEdge(space: number): string {
+  const { col } = cellPosition(space);
+  return col === 0 ? ' edge-start' : col === 10 ? ' edge-end' : '';
+}
+
 /**
  * Effects on the board: each one is placed in the board's grid on its own space, above the cells.
  * They only decorate; the board underneath already shows the result.
@@ -45,6 +51,18 @@ export function BoardEffects({ effects, game }: { effects: ShownEffect[]; game: 
             );
           case 'jail':
             return <div key={id} className="fx fx-jail" style={area(e.space)} aria-hidden="true" />;
+          case 'haggle':
+            return (
+              <div key={id} className={`fx fx-sticker ${e.won ? 'good' : 'bad'}${stickerEdge(e.space)}`} style={area(e.space)} aria-hidden="true">
+                <span>{e.won ? t.haggleWon : t.haggleLost}</span>
+              </div>
+            );
+          case 'anVa':
+            return (
+              <div key={id} className={`fx fx-sticker fx-anva${stickerEdge(e.space)}`} style={area(e.space)} aria-hidden="true">
+                <span>{t.anVaShout}</span>
+              </div>
+            );
           case 'bankrupt': {
             const p = game.players[e.player];
             return (
@@ -101,7 +119,7 @@ function MoneyFlight({ from, to, amount }: { from: Spot; to: Spot; amount: numbe
 }
 
 /** Effects over the whole screen: the festival banner, and lucky money raining down. */
-export function ScreenEffects({ effects }: { effects: ShownEffect[] }) {
+export function ScreenEffects({ effects, game }: { effects: ShownEffect[]; game: GameState }) {
   const { t, uiLang } = useLang();
   return (
     <>
@@ -119,6 +137,24 @@ export function ScreenEffects({ effects }: { effects: ShownEffect[] }) {
                 </div>
                 <span className="fx-lantern" aria-hidden="true">
                   <Icon name="lantern" />
+                </span>
+              </div>
+            </div>
+          );
+        }
+        if (e.kind === 'tet') {
+          return (
+            <div key={id} className="fx-festival fx-tet" role="status">
+              <div className="fx-festival-scroll">
+                <span className="fx-lantern" aria-hidden="true">
+                  <Icon name="blossom" />
+                </span>
+                <div>
+                  <strong>{t.tetTitle}</strong>
+                  <span>{t.tetText(game.players[e.from].name, game.players[e.to].name, formatMoney(e.amount))}</span>
+                </div>
+                <span className="fx-lantern" aria-hidden="true">
+                  <Icon name="blossom" />
                 </span>
               </div>
             </div>
