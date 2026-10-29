@@ -155,6 +155,30 @@ export function SummaryDialog({ game, newBadges = [], onClose }: { game: GameSta
 
         <WorthChart game={game} />
 
+        {/* Secret missions, all revealed now the game is over. */}
+        {game.players.some((p) => p.missions) && (
+          <section className="summary-missions">
+            <h3>{t.missionsSummary}</h3>
+            <ul>
+              {game.players.map((p) => (
+                <li key={p.id} style={{ '--player': playerColor(p) } as CSSProperties}>
+                  <TokenIcon token={p.token} color={playerColor(p)} size={24} />
+                  <strong>{p.name}</strong>
+                  <span>
+                    {(p.missions ?? []).map((m, i) =>
+                      m.id === null ? null : (
+                        <span key={i} className={`summary-mission${m.done ? ' done' : ''}`}>
+                          {m.done ? '✓' : '✗'} {t.missions[m.id].name}
+                        </span>
+                      ),
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {awards(game).length > 0 && (
           <section>
             <h3>{t.titlesHeading}</h3>

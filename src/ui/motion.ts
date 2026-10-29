@@ -2,6 +2,7 @@
 
 import { BOARD_SIZE, JAIL_SPACE } from '../data/board';
 import { CARDS } from '../data/cards';
+import type { MissionId } from '../engine/missions';
 import type { Festival, GameState, LogEntry } from '../engine/types';
 import type { SoundName } from './sound';
 
@@ -107,6 +108,8 @@ export function soundFor(entry: LogEntry): SoundName | null {
       return entry.won ? 'buy' : 'pay';
     case 'anVa':
       return 'thud';
+    case 'missionDone':
+      return 'win';
     case 'bankrupt':
       return 'bankrupt';
     case 'won':
@@ -131,7 +134,8 @@ export type Effect =
   // Chế độ Việt
   | { kind: 'tet'; from: number; to: number; amount: number } // a Tết banner with blossoms
   | { kind: 'haggle'; space: number; won: boolean } // a sticker: "Bớt 20%!" or "Lên giá!"
-  | { kind: 'anVa'; space: number; player: number }; // a tantrum on the board
+  | { kind: 'anVa'; space: number; player: number } // a tantrum on the board
+  | { kind: 'mission'; player: number; mission: MissionId; reward: number }; // a secret mission is done
 
 /** At most this many coin flights per move, so a big card ("pay everyone") stays readable. */
 const MAX_MONEY = 4;
@@ -207,6 +211,9 @@ export function effectsFor(entries: readonly LogEntry[], game: GameState): Effec
       case 'anVa':
         effects.push({ kind: 'anVa', space: at(e.player), player: e.player });
         break;
+      case 'missionDone':
+        effects.push({ kind: 'mission', player: e.player, mission: e.mission, reward: e.reward });
+        break;
       default:
         break;
     }
@@ -226,4 +233,5 @@ export const EFFECT_MS: Record<Effect['kind'], number> = {
   tet: 3400,
   haggle: 1600,
   anVa: 2200,
+  mission: 3200,
 };

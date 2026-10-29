@@ -28,8 +28,9 @@ also pop up on screen during the game); after a game
 the host can start **a new game in the same room**.
 
 **Chế độ Việt:** optional rules ticked when setting up: Tết lì xì (every 5 rounds the richest helps the
-poorest), Ăn vạ (a once-a-game tantrum knocks 20% off a debt), Mặc cả (haggle before buying) and 11 funny
-Cơ hội / Khí vận cards.
+poorest), Ăn vạ (a once-a-game tantrum knocks 20% off a debt), Mặc cả (haggle before buying), 11 funny
+Cơ hội / Khí vận cards, and Nhiệm vụ bí mật (two secret missions each, kept hidden even from the
+other phones online).
 
 **Game types:** classic (until one player is left), a round limit, or a time limit; with a limit the
 richest player wins. Turn on **🏮 Lễ hội xứ Nghệ** and every 3rd round a festival changes one rule for
@@ -37,7 +38,7 @@ that round. At the end, a summary shows the ranking, a chart of everyone's wealt
 
 After **Vào chơi**, the menu offers: play on one device, **play against the computer** (1–3 bots,
 each Dễ, Vừa or Khó), play online, the guided practice game
-(**🎓 Hướng dẫn chơi**), **Thành tích** (records and 18 badges for everyone who plays on this device), and settings (language, six color themes with previews, effect speed, sound volume).
+(**🎓 Hướng dẫn chơi**), **Thành tích** (records and 19 badges for everyone who plays on this device), and settings (language, six color themes with previews, effect speed, sound volume).
 
 **Music:** the 🎵 button in the corner opens a Spotify player with Nghệ Tĩnh folk songs (dân ca ví giặm),
 or any Spotify playlist you paste in. Nothing is loaded from Spotify until you open it. The player in
@@ -49,7 +50,7 @@ plays it in the Spotify app instead.
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
-`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (dice under the table, a bot talking), `viet` (each Chế độ Việt rule on screen), `records` (badges, the
+`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (dice under the table, a bot talking), `viet` (each Chế độ Việt rule on screen), `missions` (secret missions on one device and online), `records` (badges, the
 summary picture and the records screen), `layout` (cards fitting small boards, the phone
 player strip, screen transitions; add `--mobile`), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).

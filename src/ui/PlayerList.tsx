@@ -3,6 +3,7 @@ import { BOARD } from '../data/board';
 import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
+import { missionsDone } from '../engine/missions';
 import { holdingsOf, type Holding } from './holdings';
 import { Icon } from './icons';
 import { groupFill, playerColor } from './look';
@@ -91,6 +92,11 @@ export function PlayerList({ game, onShowSpace }: Props) {
                 {p.bot && (
                   <span className="badge badge-bot" title={`${t.botBadge} · ${t.botLevels[p.bot]}`}>
                     <Icon name="bot" /> {t.botLevels[p.bot]}
+                  </span>
+                )}
+                {p.missions && (
+                  <span className="badge badge-missions" title={t.missionsDoneCount(missionsDone(p), p.missions.length)}>
+                    <Icon name="scroll" /> {missionsDone(p)}/{p.missions.length}
                   </span>
                 )}
                 {viewer.online && p.id === viewer.seat && <span className="badge badge-you">{t.youBadge}</span>}

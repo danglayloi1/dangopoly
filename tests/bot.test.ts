@@ -177,7 +177,7 @@ describe('whole games', () => {
         rules: {
           mode: { kind: 'rounds', rounds: 40 },
           festivals: seed % 2 === 0,
-          ...(seed % 3 === 0 ? { viet: { tet: true, anVa: true, macCa: true, funnyCards: true } } : {}), // Chế độ Việt in a third of the games
+          ...(seed % 3 === 0 ? { viet: { tet: true, anVa: true, macCa: true, funnyCards: true, missions: true } } : {}), // Chế độ Việt in a third of the games
         },
       });
       for (let step = 0; step < 20_000 && s.phase.kind !== 'gameOver'; step++) {

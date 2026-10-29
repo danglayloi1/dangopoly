@@ -3,7 +3,7 @@ import type { VietRules } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import { Icon, type IconName } from './icons';
 
-const VIET_ICONS: Record<keyof VietRules, IconName> = { tet: 'blossom', anVa: 'person', macCa: 'handshake', funnyCards: 'chance' };
+const VIET_ICONS: Record<keyof VietRules, IconName> = { tet: 'blossom', anVa: 'person', macCa: 'handshake', funnyCards: 'chance', missions: 'scroll' };
 
 export const ROUND_CHOICES = [10, 15, 20, 30];
 export const MINUTE_CHOICES = [20, 30, 45, 60];

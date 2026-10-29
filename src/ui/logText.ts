@@ -102,6 +102,8 @@ export function describeLog(entry: LogEntry, state: GameState, ui: UiLang): stri
       return t.haggled(name(entry.player), space(entry.space), formatMoney(entry.price), entry.won);
     case 'anVa':
       return t.anVa(name(entry.player), formatMoney(entry.forgiven));
+    case 'missionDone':
+      return t.missionDone(name(entry.player), STRINGS[ui].missions[entry.mission].name, formatMoney(entry.reward));
   }
 }
 

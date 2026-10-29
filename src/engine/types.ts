@@ -1,7 +1,14 @@
+import type { MissionId } from './missions';
 import type { ColorGroup } from '../data/board';
 import type { CardDeck } from '../data/cards';
 import type { PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
+
+/** One secret mission. Online, others' unfinished ones arrive with id null: they're secret. */
+export interface MissionSlot {
+  id: MissionId | null;
+  done: boolean;
+}
 
 /** How well a computer player plays (see engine/bot.ts). */
 export type BotLevel = 'easy' | 'normal' | 'hard';
@@ -11,6 +18,7 @@ export interface Player {
   name: string;
   bot?: BotLevel; // a computer player; people have no level
   anVaUsed?: boolean; // Chế độ Việt: this player has thrown their one tantrum (Ăn vạ) this game
+  missions?: MissionSlot[]; // Chế độ Việt: secret missions (see engine/missions.ts)
   token: TokenId;
   color: PlayerColorId;
   cash: number; // đồng
@@ -93,6 +101,7 @@ export interface VietRules {
   anVa: boolean; // once a game, a player who can't pay a debt throws a tantrum and 20% is forgiven
   macCa: boolean; // before buying, haggle once: 20% off, or the seller sulks and adds 10%
   funnyCards: boolean; // extra Cơ hội / Khí vận cards with silly stories
+  missions: boolean; // each player gets two secret missions; finishing one pays a reward
 }
 
 export type FestivalId =
@@ -207,7 +216,8 @@ export type LogEntry =
   // Chế độ Việt
   | { type: 'tetLiXi'; from: number; to: number; amount: number; round: number }
   | { type: 'haggled'; player: number; space: number; price: number; won: boolean }
-  | { type: 'anVa'; player: number; forgiven: number };
+  | { type: 'anVa'; player: number; forgiven: number }
+  | { type: 'missionDone'; player: number; mission: MissionId; reward: number };
 
 export interface GameState {
   players: Player[];

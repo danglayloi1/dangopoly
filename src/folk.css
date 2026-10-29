@@ -3621,3 +3621,141 @@ body {
     animation: none;
   }
 }
+
+/* ===== Secret missions ===== */
+.missions-dialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  background-image: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+}
+
+.missions-dialog::backdrop {
+  background: rgba(20, 14, 10, 0.75); /* darker: nobody else should read over a shoulder */
+}
+
+.missions-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.missions-body p {
+  margin: 0;
+}
+
+.mission-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 8px solid var(--player);
+}
+
+.mission-pass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Each mission like a sealed note; a finished one gets its tick and a gold edge. */
+.mission-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mission-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.mission-list li > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.mission-list li > span:last-child > span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.mission-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.mission-list li.done {
+  box-shadow: 3px 3px 0 var(--gold);
+}
+
+.mission-list li.done .mission-mark {
+  background: var(--gold);
+  color: #fff;
+}
+
+.status-missions {
+  margin-left: auto;
+}
+
+.badge-missions {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* A finished mission: the festival banner in ink and gold. */
+.fx-mission .fx-festival-scroll {
+  background-color: #2f4f6f;
+  border-color: #d9ae4f;
+}
+
+.summary-missions ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-missions li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.summary-mission {
+  margin-right: 10px;
+  color: var(--muted);
+}
+
+.summary-mission.done {
+  color: var(--text);
+  font-weight: 700;
+}

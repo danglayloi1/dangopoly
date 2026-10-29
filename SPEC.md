@@ -414,7 +414,7 @@ every game finished and Khó won about half. Online rooms are for people only.
 ## 16. Records, badges and the summary picture
 
 **Thành tích** on the menu shows everyone who has finished a game on this device: games, wins and best
-fortune, and their **badges** (18, earned once each and kept with the date). Records are kept by name,
+fortune, and their **badges** (19, earned once each and kept with the date). Records are kept by name,
 ignoring case and extra spaces, in this browser only. Computer players get none. A game is recorded the
 moment it ends: on one device for every person at the table, online for this phone's own player. The
 tutorial doesn't count.
@@ -484,3 +484,35 @@ Computer players use them too: they haggle over a place they want when they coul
 seller sulks (easy bots now and then). Khó bots keep their tantrum for when they would otherwise go
 bankrupt; the others throw it the first time they're short. The room server accepts the options and the two
 new moves (`HAGGLE`, `AN_VA`) and nothing else; a haggled price always comes from the game, never from a phone.
+
+### Nhiệm vụ bí mật (secret missions)
+
+A fifth Chế độ Việt option. Each player gets two secret missions, nobody sharing one, from 14 written for
+this board. Finishing one pays **3tr** at once, and a banner reveals it to everyone; the player cards show
+progress ("1/2"). At the end, the summary reveals everyone's missions.
+
+| Mission | Do this |
+|---|---|
+| Người Hà Tĩnh / Người xứ Nghệ | own 3 places in Hà Tĩnh (before Cầu Bến Thủy) / in Nghệ An (after it) |
+| Dân phố Vinh | own 2 places in Vinh city |
+| Mê biển | own 2 beaches |
+| Điện nước đầy đủ | own both the power plant and the dam |
+| Ông trùm vận tải | own 2 transport spaces |
+| Gom đủ bộ | own a whole color set |
+| Thợ xây | build 3 houses |
+| Chủ nợ khó tính | make someone go bankrupt |
+| Đi khắp xứ Nghệ | pass Xuất phát 3 times |
+| Túi rủng rỉnh | hold 25tr in cash at once |
+| Thu tô | collect 5tr in rent |
+| Tay đổ đôi | roll doubles 3 times |
+| Khách quen | go to jail twice |
+
+**Keeping them secret:**
+- **On one device**, "Nhiệm vụ" in the bar under the top asks whose missions to show, then says "Đưa máy
+  cho Đăng. Người khác quay đi chỗ khác nhé!" before anything appears.
+- **Online**, it shows the phone's own missions. The room server blanks out every other player's unfinished
+  missions in what it sends each phone (spectators see none), and reveals them all once the game is over.
+- The room also deals missions from its own secure randomness, not from the game's random numbers: every
+  phone receives those, and they can be run backwards.
+
+A new badge, **Điệp viên**, goes with finishing both missions in one game (19 badges in all).
