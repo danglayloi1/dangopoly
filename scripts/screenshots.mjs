@@ -859,7 +859,7 @@ const scenes = {
     await startInListedOrder(page);
     await page.waitForSelector('.board');
     const rules = await page.evaluate(() => window.__dangopoly.getGame().rules.viet);
-    check(rules && Object.values(rules).every(Boolean), 'the four Chế độ Việt rules are on in the game');
+    check(rules && ['tet', 'anVa', 'macCa', 'funnyCards'].every((k) => rules[k]), 'the four ticked Chế độ Việt rules are on in the game');
 
     // Mặc cả: Đăng is offered Đường Quang Trung and haggles.
     await setup((game) => {
@@ -911,6 +911,99 @@ const scenes = {
     const card = await page.locator('.drawn-card').textContent();
     check(/Mẹ gọi về ăn cơm/.test(card), 'a funny card is drawn');
     await shot('funny-card');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
+  /**
+   * Secret missions: on one device (choose whose, pass the device, reveal; finishing one), then two
+   * phones online, checking what the server actually sends each phone (needs `npm run server` too).
+   */
+  async missions({ page, shot, click, setup, act, browser }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+
+    // --- One device ---
+    await openFromMenu(page, /Chơi trên một máy/);
+    const inputs = page.locator('.player-row input');
+    await inputs.nth(0).fill('Đăng');
+    await inputs.nth(1).fill('Lan');
+    await page.locator('.viet-rules').getByRole('checkbox', { name: /Nhiệm vụ bí mật/ }).check();
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+    await click(/^.?Nhiệm vụ$/);
+    await page.getByRole('button', { name: 'Đăng' }).click();
+    check(await page.getByText(/Đưa máy cho Đăng/).isVisible(), 'on one device: choose whose, then "pass the device" before anything shows');
+    await shot('pass-device');
+    await click(/Xem nhiệm vụ/);
+    check((await page.locator('.mission-list li').count()) === 2, 'Đăng sees his two missions');
+    await shot('my-missions');
+    await page.locator('.missions-dialog').getByRole('button', { name: 'Đóng' }).last().click();
+
+    // Đăng finishes "Điện nước đầy đủ" the moment he owns both.
+    await setup((game) => {
+      game.players[0].missions = [
+        { id: 'powerWater', done: false },
+        { id: 'rich', done: false },
+      ];
+      game.ownership[12] = { owner: 0, houses: 0, mortgaged: false };
+      game.ownership[28] = { owner: 0, houses: 0, mortgaged: false };
+      game.phase = { kind: 'awaitEndTurn' };
+    });
+    await act({ type: 'END_TURN' }, { wait: false });
+    await page.locator('.fx-mission').waitFor({ timeout: 5_000 });
+    const chip = await page.locator('.player-card').first().locator('.badge-missions').textContent();
+    const cash = await page.evaluate(() => window.__dangopoly.getGame().players[0].cash);
+    check(chip.includes('1/2') && cash === 18_000_000, `finishing one pays 3tr and shows 1/2 (${chip.trim()}, ${cash})`);
+    await shot('mission-done');
+
+    // --- Online: two phones; what does each one receive? ---
+    const phone = async (name) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const p = await ctx.newPage();
+      reportCrash(p, name);
+      p.on('pageerror', () => errors++);
+      const rooms = [];
+      p.on('websocket', (ws) => ws.on('framereceived', (frame) => {
+        try {
+          const msg = JSON.parse(frame.payload);
+          if (msg.t === 'room' && msg.room.game) rooms.push(msg.room);
+        } catch {
+          // not JSON
+        }
+      }));
+      return { name, ctx, page: p, rooms };
+    };
+    const dang = await phone('Đăng');
+    const lan = await phone('Lan');
+    await openFromMenu(dang.page, /Chơi online/);
+    await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.getByPlaceholder('Tên').fill('Lan');
+    await lan.page.getByRole('button', { name: 'Vào phòng' }).first().click();
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 2);
+    await dang.page.locator('.viet-rules').getByRole('checkbox', { name: /Nhiệm vụ bí mật/ }).check();
+    await dang.page.getByRole('radio', { name: /Theo thứ tự/ }).click().catch(() => {});
+    await dang.page.getByRole('button', { name: /Bắt đầu ván/ }).click();
+    for (const p of [dang, lan]) await p.page.waitForSelector('.board');
+    await dang.page.waitForTimeout(800);
+
+    const seen = (p, seat) => p.rooms.at(-1).game.players.map((pl, i) => ({ mine: i === seat, ids: pl.missions.map((m) => m.id) }));
+    const dangSees = seen(dang, dang.rooms.at(-1).you);
+    const lanSees = seen(lan, lan.rooms.at(-1).you);
+    const ownOk = (v) => v.find((x) => x.mine).ids.every((id) => id !== null);
+    const othersHidden = (v) => v.filter((x) => !x.mine).every((x) => x.ids.every((id) => id === null));
+    check(ownOk(dangSees) && ownOk(lanSees), 'online, each phone receives its own two missions');
+    check(othersHidden(dangSees) && othersHidden(lanSees), "and the server sends nobody the other player's unfinished missions");
+    const mine = (v) => v.find((x) => x.mine).ids;
+    check(mine(dangSees).every((id) => !mine(lanSees).includes(id)), 'nobody shares a mission');
+    await dang.page.getByRole('button', { name: /Nhiệm vụ/ }).first().click();
+    check((await dang.page.locator('.mission-list li').count()) === 2 && !(await dang.page.getByText(/Đưa máy/).count()), 'online, Nhiệm vụ shows your own missions straight away');
+    await dang.page.screenshot({ path: path.join(outDir, 'online-missions.png') });
+    for (const p of [dang, lan]) await p.ctx.close();
     check(errors === 0, `no errors on the page (${errors})`);
   },
 

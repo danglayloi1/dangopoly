@@ -203,7 +203,7 @@ describe('Chế độ Việt online', () => {
     expect(cleanRules({ mode: { kind: 'classic' }, festivals: false, viet: { tet: true, macCa: true } })).toEqual({
       mode: { kind: 'classic' },
       festivals: false,
-      viet: { tet: true, anVa: false, macCa: true, funnyCards: false },
+      viet: { tet: true, anVa: false, macCa: true, funnyCards: false, missions: false },
     });
     expect(cleanRules({ mode: { kind: 'classic' }, festivals: false, viet: { tet: 'yes' } })).toBeNull();
     expect(cleanAction({ type: 'HAGGLE', price: 1 })).toEqual({ type: 'HAGGLE' }); // no choosing your own price

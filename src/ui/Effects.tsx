@@ -160,6 +160,21 @@ export function ScreenEffects({ effects, game }: { effects: ShownEffect[]; game:
             </div>
           );
         }
+        if (e.kind === 'mission') {
+          return (
+            <div key={id} className="fx-festival fx-mission" role="status">
+              <div className="fx-festival-scroll">
+                <span className="fx-lantern" aria-hidden="true">
+                  <Icon name="scroll" />
+                </span>
+                <div>
+                  <strong>{t.missionDoneTitle}</strong>
+                  <span>{t.missionDoneText(game.players[e.player].name, t.missions[e.mission].name, formatMoney(e.reward))}</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
         if (e.kind === 'coinRain') {
           return (
             <div key={id} className="fx-rain" aria-hidden="true">

@@ -28,6 +28,7 @@ import {
   type RoomListing,
   type RoomView,
 } from '../src/net/protocol';
+import { dealMissions } from '../src/engine/missions';
 import { orderFrom } from '../src/ui/firstTurn';
 
 export interface Seat extends Profile {
@@ -165,6 +166,9 @@ export function start(
     startingCash: startingCash as number,
     rules,
     now,
+    // Dealt from the room's own secure randomness, not the game's: every phone receives the game's
+    // random numbers, and the missions must not be worked out from them.
+    missions: rules.viet?.missions ? dealMissions(seats.length, random.seed()) : undefined,
   });
   return ok({ ...room, seats, host, game, firstTurn: firstTurn === 'roll' ? rounds : null });
 }
@@ -247,6 +251,20 @@ export function listing(room: RoomState, online: ReadonlySet<number>, watchers: 
   };
 }
 
+/**
+ * The game as one phone may see it: others' unfinished secret missions are blanked out (finished
+ * ones are public). Once the game is over everything is shown, for the summary.
+ */
+function gameFor(game: GameState | null, you: number | null): GameState | null {
+  if (!game || !game.rules.viet?.missions || game.phase.kind === 'gameOver') return game;
+  return {
+    ...game,
+    players: game.players.map((p) =>
+      p.id === you || !p.missions ? p : { ...p, missions: p.missions.map((m) => (m.done ? m : { id: null, done: false })) },
+    ),
+  };
+}
+
 export function view(room: RoomState, you: number | null, online: ReadonlySet<number>, watchers = 0): RoomView {
   return {
     code: room.code,
@@ -254,7 +272,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
     host: room.host,
     seats: room.seats.map(({ name, token, color }, i) => ({ name, token, color, online: online.has(i) })),
     you,
-    game: room.game,
+    game: gameFor(room.game, you),
     firstTurn: room.firstTurn,
     chat: room.chat ?? [],
     listed: room.listed !== false,

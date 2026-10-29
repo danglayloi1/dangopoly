@@ -16,6 +16,7 @@ import type { TokenId } from '../data/tokens';
 import { houseRefund, isPropertyActionAllowed, mortgageValue } from './buildings';
 import { jailFreeCardIndex, shuffledDeck } from './deck';
 import { rentFor } from './rent';
+import { checkMissions, dealMissions, type MissionId } from './missions';
 import { nextUint32, rollDie } from './rng';
 import {
   buildCost,
@@ -63,7 +64,7 @@ export interface RulesChoice {
 }
 
 /** Chế độ Việt with every rule off. */
-export const NO_VIET: VietRules = { tet: false, anVa: false, macCa: false, funnyCards: false };
+export const NO_VIET: VietRules = { tet: false, anVa: false, macCa: false, funnyCards: false, missions: false };
 
 /** Ăn vạ forgives this share of the debt; Mặc cả takes this much off, or adds the other. */
 export const AN_VA_SHARE = 0.2;
@@ -79,6 +80,7 @@ export interface NewGameOptions {
   seed?: number;
   startingCash?: number;
   rules?: RulesChoice;
+  missions?: MissionId[][]; // secret missions dealt by the caller (online: the room, with its own randomness)
   now?: number; // when the game starts (ms since 1970), for a time limit; defaults to the clock
 }
 
@@ -89,7 +91,7 @@ export const LOG_LIMIT = 200;
 /** Failed rolls for doubles allowed in jail; on the last one the fine must be paid. */
 export const MAX_JAIL_ATTEMPTS = 3;
 
-export function createGame({ players, seed, startingCash = STARTING_CASH, rules = CLASSIC_RULES, now }: NewGameOptions): GameState {
+export function createGame({ players, seed, startingCash = STARTING_CASH, rules = CLASSIC_RULES, now, missions }: NewGameOptions): GameState {
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
     throw new GameError(`A game needs ${MIN_PLAYERS} to ${MAX_PLAYERS} players`);
   }
@@ -127,6 +129,16 @@ export function createGame({ players, seed, startingCash = STARTING_CASH, rules 
   const [chance, afterChance] = shuffledDeck(deckSize('chance'), rngState);
   const [community, afterCommunity] = shuffledDeck(deckSize('community'), afterChance);
   rngState = afterCommunity;
+  // Secret missions: dealt by the caller online, otherwise from this game's own random numbers.
+  let dealt: MissionId[][] | null = null;
+  if (rules.viet?.missions) {
+    if (missions) dealt = missions;
+    else {
+      const [r, next] = nextUint32(rngState);
+      rngState = next;
+      dealt = dealMissions(players.length, r);
+    }
+  }
 
   return {
     players: players.map((p, id) => ({
@@ -141,6 +153,7 @@ export function createGame({ players, seed, startingCash = STARTING_CASH, rules 
       inJail: false,
       jailAttempts: 0,
       jailCards: [],
+      ...(dealt ? { missions: dealt[id].map((m) => ({ id: m, done: false })) } : {}),
     })),
     current: 0,
     ownership: {},
@@ -238,6 +251,7 @@ export function applyAction(state: GameState, action: Action): GameState {
     throw new GameError(`${action.type}${where} is not allowed now (phase: ${state.phase.kind})`);
   }
   const s = copyState(state);
+  const logBefore = s.log.length;
 
   switch (action.type) {
     case 'ROLL':
@@ -289,6 +303,8 @@ export function applyAction(state: GameState, action: Action): GameState {
       anVa(s);
       break;
   }
+  // Secret missions finished by this move (before the log is trimmed, so nothing new is missed).
+  if (s.rules.viet?.missions && s.phase.kind !== 'gameOver') checkMissions(s, s.log.slice(logBefore));
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
   return s;
 }
@@ -701,7 +717,12 @@ function copyState(state: GameState): GameState {
   for (const [index, own] of Object.entries(state.ownership)) ownership[Number(index)] = { ...own };
   return {
     ...state,
-    players: state.players.map((p) => ({ ...p, jailCards: [...p.jailCards] })),
+    // Missions too: finishing one marks its slot done, and that mustn't reach back into the old state.
+    players: state.players.map((p) => ({
+      ...p,
+      jailCards: [...p.jailCards],
+      ...(p.missions ? { missions: p.missions.map((m) => ({ ...m })) } : {}),
+    })),
     stats: state.stats.map((st) => ({ ...st })),
     worth: state.worth.slice(), // the rows themselves are never changed
     ownership,
