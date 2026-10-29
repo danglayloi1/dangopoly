@@ -101,7 +101,12 @@ export function soundFor(entry: LogEntry): SoundName | null {
     case 'leftJail':
       return 'unlock';
     case 'tradeAccepted':
+    case 'tetLiXi':
       return 'trade';
+    case 'haggled':
+      return entry.won ? 'buy' : 'pay';
+    case 'anVa':
+      return 'thud';
     case 'bankrupt':
       return 'bankrupt';
     case 'won':
@@ -122,12 +127,15 @@ export type Effect =
   | { kind: 'jail'; space: number } // bars come down
   | { kind: 'bankrupt'; space: number; player: number } // the token tears like paper
   | { kind: 'festival'; festival: Festival } // a lantern banner across the screen
-  | { kind: 'coinRain' }; // lucky money for everyone
+  | { kind: 'coinRain' } // lucky money for everyone
+  // Chế độ Việt
+  | { kind: 'tet'; from: number; to: number; amount: number } // a Tết banner with blossoms
+  | { kind: 'haggle'; space: number; won: boolean } // a sticker: "Bớt 20%!" or "Lên giá!"
+  | { kind: 'anVa'; space: number; player: number }; // a tantrum on the board
 
 /** At most this many coin flights per move, so a big card ("pay everyone") stays readable. */
 const MAX_MONEY = 4;
 
-/** The effects for what just happened. `game` is the state after it, for where players stand. */
 /** About one roll in this many, the dice roll off the table first. */
 export const FUMBLE_ODDS = 40;
 
@@ -140,6 +148,7 @@ export function diceFumbled(game: GameState): boolean {
   return (h ^ (h >>> 15)) % FUMBLE_ODDS === 0;
 }
 
+/** The effects for what just happened. `game` is the state after it, for where players stand. */
 export function effectsFor(entries: readonly LogEntry[], game: GameState): Effect[] {
   const at = (player: number): number => game.players[player].position;
   const others = (player: number) => game.players.filter((p) => p.id !== player && !p.bankrupt).map((p) => p.id);
@@ -188,6 +197,16 @@ export function effectsFor(entries: readonly LogEntry[], game: GameState): Effec
       case 'festivalGift':
         effects.push({ kind: 'coinRain' });
         break;
+      case 'tetLiXi':
+        effects.push({ kind: 'tet', from: e.from, to: e.to, amount: e.amount });
+        money(at(e.from), at(e.to), e.amount);
+        break;
+      case 'haggled':
+        effects.push({ kind: 'haggle', space: e.space, won: e.won });
+        break;
+      case 'anVa':
+        effects.push({ kind: 'anVa', space: at(e.player), player: e.player });
+        break;
       default:
         break;
     }
@@ -204,4 +223,7 @@ export const EFFECT_MS: Record<Effect['kind'], number> = {
   bankrupt: 1600,
   festival: 3200,
   coinRain: 2000,
+  tet: 3400,
+  haggle: 1600,
+  anVa: 2200,
 };

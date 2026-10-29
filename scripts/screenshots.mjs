@@ -843,6 +843,77 @@ const scenes = {
     check(errors === 0, `no errors on the page (${errors})`);
   },
 
+  /** Chế độ Việt: ticking the rules, then haggling, a tantrum, Tết and a funny card on screen. */
+  async viet({ page, shot, click, setup, act }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', () => errors++);
+    await openFromMenu(page, /Chơi trên một máy/);
+    const inputs = page.locator('.player-row input');
+    await inputs.nth(0).fill('Đăng');
+    await inputs.nth(1).fill('Lan');
+    const viet = page.locator('.viet-rules');
+    for (const name of [/Tết lì xì/, /Ăn vạ/, /Mặc cả/, /Thẻ vui/]) await viet.getByRole('checkbox', { name }).check();
+    await viet.scrollIntoViewIfNeeded();
+    await shot('rules');
+    await startInListedOrder(page);
+    await page.waitForSelector('.board');
+    const rules = await page.evaluate(() => window.__dangopoly.getGame().rules.viet);
+    check(rules && Object.values(rules).every(Boolean), 'the four Chế độ Việt rules are on in the game');
+
+    // Mặc cả: Đăng is offered Đường Quang Trung and haggles.
+    await setup((game) => {
+      game.phase = { kind: 'awaitBuy', space: 39 };
+    });
+    await click(/Mặc cả/);
+    await page.locator('.fx-sticker').waitFor({ timeout: 3_000 });
+    const price = await page.locator('.offer-price').textContent();
+    check(/4tr/.test(price) && /(3tr2|4tr4)/.test(price), `haggling changes the price, the old one struck through (${price})`);
+    check((await page.getByRole('button', { name: /Mặc cả/ }).count()) === 0, 'and only once');
+    await shot('haggle');
+
+    // Ăn vạ: Đăng owes more than he has.
+    await setup((game) => {
+      game.players[0].cash = 1_700_000;
+      game.phase = { kind: 'inDebt', debtor: 0, creditor: 1, amount: 2_000_000, reason: { kind: 'rent', space: 39 } };
+    });
+    await click(/Ăn vạ/);
+    await page.locator('.fx-anva').waitFor({ timeout: 3_000 });
+    check(await page.getByRole('button', { name: /Trả 1tr6/ }).isVisible(), 'a tantrum takes 20% off the debt, so it can be paid');
+    await shot('an-va');
+
+    // Tết: round 4 ends, round 5 begins.
+    await setup((game) => {
+      game.players[0].cash = 25_000_000;
+      game.players[1].cash = 5_000_000;
+      game.round = 4;
+      game.current = 1;
+      game.phase = { kind: 'awaitEndTurn' };
+    });
+    await act({ type: 'END_TURN' }, { wait: false });
+    await page.locator('.fx-tet').waitFor({ timeout: 5_000 });
+    const tet = await page.locator('.fx-tet').textContent();
+    check(/Tết đến rồi!/.test(tet) && /Đăng lì xì Lan 2tr/.test(tet), `Tết: the richest gives the poorest lì xì (${tet.trim()})`);
+    await shot('tet');
+    await page.waitForTimeout(3_600);
+
+    // A funny card: Đăng lands on Cơ hội with "Mẹ gọi về ăn cơm" on top.
+    await setup((game) => {
+      const cards = window.__dangopoly.cards.chance;
+      const index = cards.findIndex((c) => c.funny && c.text.vi.startsWith('Mẹ gọi về'));
+      game.decks.chance = [index, ...game.decks.chance.filter((c) => c !== index)];
+      game.current = 0;
+      game.players[0].position = 0;
+      game.phase = { kind: 'awaitRoll' };
+      game.lastCard = null;
+    });
+    await act({ type: 'ROLL', dice: [3, 4] });
+    const card = await page.locator('.drawn-card').textContent();
+    check(/Mẹ gọi về ăn cơm/.test(card), 'a funny card is drawn');
+    await shot('funny-card');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /**
    * The effects after a move, each caught mid-way: the page's clock is under the script's control
    * (page.clock), so a move plays out exactly as far as needed and then everything is frozen.

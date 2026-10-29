@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BOARD, BOARD_SIZE, GROUP_SPACES } from '../src/data/board';
+import { CARDS, CLASSIC_CARD_COUNT } from '../src/data/cards';
 import { HOTEL, propertyActions } from '../src/engine/buildings';
 import { applyAction, createGame, legalActions, LOG_LIMIT } from '../src/engine/game';
 import { ownsWholeGroup } from '../src/engine/rent';
@@ -49,7 +50,8 @@ function invariantError(s: GameState): string | null {
   for (const deck of ['chance', 'community'] as const) {
     const held = s.players.flatMap((p) => p.jailCards).filter((d) => d === deck).length;
     if (new Set(s.decks[deck]).size !== s.decks[deck].length) return `duplicate cards in ${deck}`;
-    if (s.decks[deck].length + held !== 16) return `${deck} has ${s.decks[deck].length} cards + ${held} held`;
+    const size = s.rules.viet?.funnyCards ? CARDS[deck].length : CLASSIC_CARD_COUNT[deck]; // funny cards only with Chế độ Việt
+    if (s.decks[deck].length + held !== size) return `${deck} has ${s.decks[deck].length} cards + ${held} held`;
   }
   if (s.log.length > LOG_LIMIT) return 'log grew past its limit';
   return null;
@@ -92,7 +94,8 @@ describe('random games', () => {
         players: PLAYERS.slice(0, 2 + (seed % 3)).map((p) => ({ ...p })),
         seed,
         startingCash: 3_000_000, // low cash so bankruptcies actually happen
-        rules: { mode, festivals: seed % 2 === 0 },
+        // Chế độ Việt (every rule) in every fourth game, so haggling, tantrums, Tết and the funny cards get played too.
+        rules: { mode, festivals: seed % 2 === 0, ...(seed % 4 === 0 ? { viet: { tet: true, anVa: true, macCa: true, funnyCards: true } } : {}) },
       });
       let choice = seed * 7919;
 

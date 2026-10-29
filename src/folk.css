@@ -3483,3 +3483,141 @@ body {
     opacity: 1;
   }
 }
+
+/* ===== Chế độ Việt ===== */
+/* The options: a group of the same dashed toggles as the festival one. */
+.viet-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background-image: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in srgb, var(--accent) 6%, transparent) 14px 16px);
+}
+
+.viet-rules legend {
+  display: flex;
+  flex-direction: column;
+  padding: 0 6px;
+}
+
+.viet-rules legend strong {
+  font-family: 'Water Brush', 'Playfair Display', serif;
+  font-size: 1.7rem;
+  font-weight: 400;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* After haggling: the old price struck through beside the new one. */
+.offer-old-price {
+  margin-right: 6px;
+  opacity: 0.6;
+  font-weight: 600;
+}
+
+/* Haggling and tantrums: a sticker slapped on the board over the space. */
+.fx-sticker {
+  position: relative;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* Centred on the space; on the board's left or right edge, pinned to that edge (see stickerEdge). */
+.fx-sticker span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+}
+
+.fx-sticker.edge-start span {
+  left: 2px;
+  translate: 0 -50%;
+}
+
+.fx-sticker.edge-end span {
+  left: auto;
+  right: 2px;
+  translate: 0 -50%;
+}
+
+.fx-sticker span {
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fffaf0;
+  box-shadow:
+    0 0 0 3px #fffaf0,
+    3px 4px 0 3px var(--ink);
+  font-weight: 900;
+  font-size: clamp(10px, 1.8cqw, 15px);
+  white-space: nowrap;
+  transform: rotate(-6deg);
+  animation: sticker-slap calc(1.6s / var(--fx, 1)) ease-out forwards;
+}
+
+.fx-sticker.good span {
+  color: #2f7a3a;
+}
+
+.fx-sticker.bad span,
+.fx-anva span {
+  color: var(--accent);
+}
+
+/* The tantrum: the sticker shakes like someone stamping their feet. */
+.fx-anva span {
+  animation:
+    sticker-slap calc(2.2s / var(--fx, 1)) ease-out forwards,
+    tantrum 0.18s ease-in-out 6 alternate;
+}
+
+@keyframes sticker-slap {
+  0% {
+    opacity: 0;
+    transform: rotate(-6deg) scale(2);
+  }
+  12% {
+    opacity: 1;
+    transform: rotate(-6deg) scale(0.95);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: rotate(-6deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-6deg) translateY(-14px);
+  }
+}
+
+@keyframes tantrum {
+  from {
+    rotate: -7deg;
+  }
+  to {
+    rotate: 7deg;
+  }
+}
+
+/* Tết: the festival banner in red and gold, with hoa mai instead of lanterns. */
+.fx-tet .fx-festival-scroll {
+  background-color: #c8161d;
+  border-color: #f2c94c;
+}
+
+.fx-tet .fx-lantern .icon {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-sticker span,
+  .fx-anva span {
+    animation: none;
+  }
+}

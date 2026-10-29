@@ -1,13 +1,16 @@
-import type { RulesChoice } from '../engine/game';
+import { NO_VIET, type RulesChoice } from '../engine/game';
+import type { VietRules } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
-import { Icon } from './icons';
+import { Icon, type IconName } from './icons';
+
+const VIET_ICONS: Record<keyof VietRules, IconName> = { tet: 'blossom', anVa: 'person', macCa: 'handshake', funnyCards: 'chance' };
 
 export const ROUND_CHOICES = [10, 15, 20, 30];
 export const MINUTE_CHOICES = [20, 30, 45, 60];
 
 type ModeKind = RulesChoice['mode']['kind'];
 
-/** How the game ends (classic, a round limit or a time limit) and whether festivals happen. */
+/** How the game ends (classic, a round limit or a time limit), whether festivals happen, and Chế độ Việt. */
 export function RulesPicker({ rules, onChange }: { rules: RulesChoice; onChange: (rules: RulesChoice) => void }) {
   const { t } = useLang();
   const { mode } = rules;
@@ -79,6 +82,28 @@ export function RulesPicker({ rules, onChange }: { rules: RulesChoice; onChange:
           <span className="muted">{t.festivalsHint}</span>
         </span>
       </label>
+
+      <fieldset className="viet-rules">
+        <legend>
+          <strong>{t.vietTitle}</strong>
+          <span className="muted">{t.vietHint}</span>
+        </legend>
+        {(Object.keys(NO_VIET) as (keyof VietRules)[]).map((key) => (
+          <label key={key} className="festival-toggle">
+            <input
+              type="checkbox"
+              checked={rules.viet?.[key] ?? false}
+              onChange={(e) => onChange({ ...rules, viet: { ...NO_VIET, ...rules.viet, [key]: e.target.checked } })}
+            />
+            <span>
+              <strong>
+                <Icon name={VIET_ICONS[key]} /> {t.vietRules[key].name}
+              </strong>
+              <span className="muted">{t.vietRules[key].hint}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
     </div>
   );
 }

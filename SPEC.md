@@ -467,3 +467,20 @@ None of these change the rules; they're there to make people laugh.
   bàn rồi! Gieo lại nờ…") and are rolled again. Only for show: the result is the same. It's decided
   by the game's own state, so every phone in an online game shows the same mishap.
 - **Throwing things** online, and three **silly badges**: see sections 11 and 16.
+
+## 18. Chế độ Việt
+
+Four optional rules with a Vietnamese twist, ticked one by one when setting up a game (on one device or
+in an online lobby). With none ticked, a game is exactly the classic one: same rules, same card shuffle.
+
+| Rule | What happens |
+|---|---|
+| **Tết lì xì** | Every 5th round it's Tết: the richest player (by wealth) gives the poorest lì xì of a tenth of the gap between them, rounded to 100k, at most 3tr and no more than the cash they hold. A red banner with hoa mai, and the money flies across. A catch-up rule dressed as a custom. |
+| **Ăn vạ** | Once a game, a player who can't pay a debt can throw a tantrum: whoever is owed lets 20% go (rounded to 10k). Only offered when the cash really isn't there. A "Không trả! Không trả!" sticker shakes on the board. |
+| **Mặc cả** | Before buying, a player may haggle once: half the time the price drops 20% ("Bớt 20%!"), half the time the seller sulks and adds 10% ("Lên giá 10%!"). The old price shows struck through. The outcome comes from the game's own random numbers, so it is the same on every phone. |
+| **Thẻ vui** | 11 extra Cơ hội / Khí vận cards with silly stories: "Mẹ gọi về ăn cơm" (home to Xuất phát, no salary), "Bị chó nhà hàng xóm đuổi" (3 spaces on), "Trúng số… vé năm ngoái" (nothing happens), "Ăn cháo lươn quên mang ví" (pay the player before you 200k), and more. They come after the classic cards in each deck, so without them a deck shuffles exactly as before. |
+
+Computer players use them too: they haggle over a place they want when they could still pay if the
+seller sulks (easy bots now and then). Khó bots keep their tantrum for when they would otherwise go
+bankrupt; the others throw it the first time they're short. The room server accepts the options and the two
+new moves (`HAGGLE`, `AN_VA`) and nothing else; a haggled price always comes from the game, never from a phone.

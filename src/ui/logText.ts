@@ -96,6 +96,12 @@ export function describeLog(entry: LogEntry, state: GameState, ui: UiLang): stri
       return t.festivalShare(name(entry.to), formatMoney(entry.total));
     case 'limitReached':
       return t.limitReached(entry.reason);
+    case 'tetLiXi':
+      return t.tetLiXi(name(entry.from), name(entry.to), formatMoney(entry.amount));
+    case 'haggled':
+      return t.haggled(name(entry.player), space(entry.space), formatMoney(entry.price), entry.won);
+    case 'anVa':
+      return t.anVa(name(entry.player), formatMoney(entry.forgiven));
   }
 }
 

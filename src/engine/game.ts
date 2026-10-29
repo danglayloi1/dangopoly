@@ -10,13 +10,13 @@ import {
   STARTING_CASH,
   UTILITY_CARD_MULTIPLIER,
 } from '../data/board';
-import { CARDS, type CardDeck } from '../data/cards';
+import { CARDS, CLASSIC_CARD_COUNT, type CardDeck } from '../data/cards';
 import { defaultPlayerColor, type PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
 import { houseRefund, isPropertyActionAllowed, mortgageValue } from './buildings';
 import { jailFreeCardIndex, shuffledDeck } from './deck';
 import { rentFor } from './rent';
-import { rollDie } from './rng';
+import { nextUint32, rollDie } from './rng';
 import {
   buildCost,
   cardPrize,
@@ -42,6 +42,7 @@ import type {
   PropertyAction,
   Rules,
   TradeOffer,
+  VietRules,
   TurnActionType,
 } from './types';
 
@@ -54,11 +55,20 @@ export interface NewPlayer {
   bot?: BotLevel; // played by the computer
 }
 
-/** How the game ends and whether festivals happen; the default is the classic game. */
+/** How the game ends, whether festivals happen and which Chế độ Việt rules are on; the default is the classic game. */
 export interface RulesChoice {
   mode: { kind: 'classic' } | { kind: 'rounds'; rounds: number } | { kind: 'time'; minutes: number };
   festivals: boolean;
+  viet?: VietRules;
 }
+
+/** Chế độ Việt with every rule off. */
+export const NO_VIET: VietRules = { tet: false, anVa: false, macCa: false, funnyCards: false };
+
+/** Ăn vạ forgives this share of the debt; Mặc cả takes this much off, or adds the other. */
+export const AN_VA_SHARE = 0.2;
+export const HAGGLE_DISCOUNT = 0.2;
+export const HAGGLE_MARKUP = 0.1;
 
 export const CLASSIC_RULES: RulesChoice = { mode: { kind: 'classic' }, festivals: false };
 export const MAX_ROUNDS = 100;
@@ -107,11 +117,15 @@ export function createGame({ players, seed, startingCash = STARTING_CASH, rules 
   const gameRules: Rules = {
     mode: mode.kind === 'time' ? { ...mode, endsAt: (now ?? Date.now()) + mode.minutes * 60_000 } : { ...mode },
     festivals: rules.festivals,
+    // Only kept when something is on, so a classic game looks just as before.
+    ...(rules.viet && Object.values(rules.viet).some(Boolean) ? { viet: { ...rules.viet } } : {}),
   };
 
   let rngState = (seed ?? Date.now()) >>> 0;
-  const [chance, afterChance] = shuffledDeck(CARDS.chance.length, rngState);
-  const [community, afterCommunity] = shuffledDeck(CARDS.community.length, afterChance);
+  // The funny cards come after the classic ones, so without them a deck shuffles exactly as before.
+  const deckSize = (deck: CardDeck) => (rules.viet?.funnyCards ? CARDS[deck].length : CLASSIC_CARD_COUNT[deck]);
+  const [chance, afterChance] = shuffledDeck(deckSize('chance'), rngState);
+  const [community, afterCommunity] = shuffledDeck(deckSize('community'), afterChance);
   rngState = afterCommunity;
 
   return {
@@ -163,16 +177,19 @@ export function legalActions(state: GameState): TurnActionType[] {
       return actions;
     }
     case 'awaitBuy': {
-      const space = BOARD[phase.space];
-      const canAfford = isOwnable(space) && state.players[state.current].cash >= space.price;
-      return canAfford ? ['BUY', 'DECLINE'] : ['DECLINE'];
+      const canAfford = state.players[state.current].cash >= buyPrice(state);
+      const actions: TurnActionType[] = canAfford ? ['BUY', 'DECLINE'] : ['DECLINE'];
+      if (state.rules.viet?.macCa && !phase.haggled) actions.splice(actions.length - 1, 0, 'HAGGLE');
+      return actions;
     }
     case 'awaitEndTurn':
       return ['END_TURN'];
-    case 'inDebt':
-      return state.players[phase.debtor].cash >= phase.amount
-        ? ['PAY_DEBT', 'DECLARE_BANKRUPTCY']
-        : ['DECLARE_BANKRUPTCY'];
+    case 'inDebt': {
+      const debtor = state.players[phase.debtor];
+      if (debtor.cash >= phase.amount) return ['PAY_DEBT', 'DECLARE_BANKRUPTCY'];
+      // Ăn vạ: once a game, only when the money really isn't there.
+      return state.rules.viet?.anVa && !debtor.anVaUsed ? ['AN_VA', 'DECLARE_BANKRUPTCY'] : ['DECLARE_BANKRUPTCY'];
+    }
     case 'tradeOffer':
       return ['ACCEPT_TRADE', 'REJECT_TRADE'];
     case 'gameOver':
@@ -265,6 +282,12 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'TIME_UP':
       endByWorth(s, 'time');
       break;
+    case 'HAGGLE':
+      haggle(s);
+      break;
+    case 'AN_VA':
+      anVa(s);
+      break;
   }
   if (s.log.length > LOG_LIMIT) s.log.splice(0, s.log.length - LOG_LIMIT);
   return s;
@@ -355,11 +378,43 @@ function buy(s: GameState): void {
   if (!isOwnable(space)) return;
 
   const player = s.players[s.current];
-  player.cash -= space.price;
+  const price = buyPrice(s);
+  player.cash -= price;
   s.ownership[index] = { owner: player.id, houses: 0, mortgaged: false };
   s.stats[player.id].bought++;
-  s.log.push({ type: 'bought', player: player.id, space: index, price: space.price });
+  s.log.push({ type: 'bought', player: player.id, space: index, price });
   finishLanding(s);
+}
+
+/** What the space on offer costs now: its price, or what haggling made of it. */
+export function buyPrice(state: GameState): number {
+  if (state.phase.kind !== 'awaitBuy') return 0;
+  const space = BOARD[state.phase.space];
+  return state.phase.price ?? (isOwnable(space) ? space.price : 0);
+}
+
+/** Mặc cả: once per landing, half the time 20% off, half the time the seller sulks and adds 10%. */
+function haggle(s: GameState): void {
+  if (s.phase.kind !== 'awaitBuy') return;
+  const space = BOARD[s.phase.space];
+  if (!isOwnable(space)) return;
+  const [r, next] = nextUint32(s.rngState);
+  s.rngState = next;
+  const won = r % 2 === 0;
+  const factor = won ? 1 - HAGGLE_DISCOUNT : 1 + HAGGLE_MARKUP;
+  const price = Math.round((space.price * factor) / 10_000) * 10_000;
+  s.phase = { kind: 'awaitBuy', space: s.phase.space, price, haggled: true };
+  s.log.push({ type: 'haggled', player: s.current, space: s.phase.space, price, won });
+}
+
+/** Ăn vạ: the debtor's once-a-game tantrum; whoever is owed lets 20% of the debt go. */
+function anVa(s: GameState): void {
+  if (s.phase.kind !== 'inDebt') return;
+  const player = s.players[s.phase.debtor];
+  const forgiven = Math.round((s.phase.amount * AN_VA_SHARE) / 10_000) * 10_000;
+  player.anVaUsed = true;
+  s.phase = { ...s.phase, amount: s.phase.amount - forgiven };
+  s.log.push({ type: 'anVa', player: player.id, forgiven });
 }
 
 function decline(s: GameState): void {
@@ -601,6 +656,25 @@ function drawCard(s: GameState, player: Player, deck: CardDeck): void {
       return;
     case 'jailFree':
       player.jailCards.push(deck);
+      break;
+    case 'moveForward':
+      moveBy(s, player, effect.steps);
+      resolveLanding(s, player);
+      return;
+    case 'goHome':
+      // Mum calls: straight home, without passing Xuất phát (so no salary).
+      player.position = 0;
+      s.log.push({ type: 'moved', player: player.id, to: 0 });
+      break;
+    case 'payNeighbour': {
+      // The player before you in the playing order (skipping anyone bankrupt).
+      let n = player.id;
+      do n = (n - 1 + s.players.length) % s.players.length;
+      while (s.players[n].bankrupt && n !== player.id);
+      if (n !== player.id && !charge(s, player.id, n, effect.amount, { kind: 'card' })) return;
+      break;
+    }
+    case 'nothing':
       break;
     case 'repairs': {
       let amount = 0;

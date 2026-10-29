@@ -27,6 +27,10 @@ pops up on every phone, or to throw a dép, a bánh chưng or a flower at someon
 also pop up on screen during the game); after a game
 the host can start **a new game in the same room**.
 
+**Chế độ Việt:** optional rules ticked when setting up: Tết lì xì (every 5 rounds the richest helps the
+poorest), Ăn vạ (a once-a-game tantrum knocks 20% off a debt), Mặc cả (haggle before buying) and 11 funny
+Cơ hội / Khí vận cards.
+
 **Game types:** classic (until one player is left), a round limit, or a time limit; with a limit the
 richest player wins. Turn on **🏮 Lễ hội xứ Nghệ** and every 3rd round a festival changes one rule for
 that round. At the end, a summary shows the ranking, a chart of everyone's wealth, titles and stats.
@@ -45,7 +49,7 @@ plays it in the Spotify app instead.
 
 With `npm run dev` running, this plays a scripted scene in Microsoft Edge and saves pictures to
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
-`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (dice under the table, a bot talking), `records` (badges, the
+`modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (dice under the table, a bot talking), `viet` (each Chế độ Việt rule on screen), `records` (badges, the
 summary picture and the records screen), `layout` (cards fitting small boards, the phone
 player strip, screen transitions; add `--mobile`), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).

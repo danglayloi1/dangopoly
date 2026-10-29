@@ -3,7 +3,7 @@
 
 import { BOARD, GROUP_SPACES, isOwnable, JAIL_FINE } from '../data/board';
 import { canBuildHouse, canMortgage, canSellHouse, canUnmortgage, HOTEL, houseRefund, mortgageValue } from './buildings';
-import { legalActions, whoseMove } from './game';
+import { buyPrice, HAGGLE_MARKUP, legalActions, whoseMove } from './game';
 import { buildCost, unmortgagePrice } from './rounds';
 import { canTradeSpace, tradeProblem } from './trading';
 import type { Action, BotLevel, GameState, TradeOffer } from './types';
@@ -49,11 +49,19 @@ export function botAction(state: GameState): Action | null {
       return { type: acceptsTrade(state, phase.offer, style) ? 'ACCEPT_TRADE' : 'REJECT_TRADE' };
 
     case 'inDebt':
-      return payDebt(state, player, phase.amount);
+      return payDebt(state, player, phase.amount, level);
 
     case 'awaitBuy': {
-      const buys = legalActions(state).includes('BUY') && wantsToBuy(state, player, phase.space, style, level);
-      return { type: buys ? 'BUY' : 'DECLINE' };
+      const allowed = legalActions(state);
+      const price = buyPrice(state);
+      const wants = allowed.includes('BUY') && wantsToBuy(state, player, phase.space, price, style, level);
+      // Mặc cả: worth a try when it wants the place and could still pay if the seller sulks
+      // (on average it saves money). Easy bots just haggle now and then.
+      const sulkPrice = Math.round(price * (1 + HAGGLE_MARKUP));
+      if (allowed.includes('HAGGLE') && (wants || level === 'easy') && state.players[player].cash >= sulkPrice) {
+        if (level !== 'easy' || mood(state, 2000 + phase.space) < 0.5) return { type: 'HAGGLE' };
+      }
+      return { type: wants ? 'BUY' : 'DECLINE' };
     }
 
     case 'awaitRoll': {
@@ -120,10 +128,10 @@ function blocksSet(state: GameState, player: number, space: number): boolean {
   return others[0] >= 0 && others[0] !== player && others.every((o) => o === others[0]);
 }
 
-function wantsToBuy(state: GameState, player: number, space: number, style: Style, level: BotLevel): boolean {
+function wantsToBuy(state: GameState, player: number, space: number, price: number, style: Style, level: BotLevel): boolean {
   const s = BOARD[space];
   if (!isOwnable(s)) return false;
-  const left = state.players[player].cash - s.price;
+  const left = state.players[player].cash - price;
   if (left < 0) return false;
   // Easy bots don't think about sets; the others stretch their budget for them.
   if (level !== 'easy' && (completesSet(state, player, space) || blocksSet(state, player, space))) return left >= 0.3 * TR;
@@ -171,9 +179,10 @@ function leaveJail(state: GameState, player: number, level: BotLevel): Action | 
  * Settling a debt: pay if it can; otherwise raise money (mortgage loose places first, then sell
  * houses, then mortgage the rest); give up only when even all of that wouldn't cover it.
  */
-function payDebt(state: GameState, player: number, amount: number): Action {
+function payDebt(state: GameState, player: number, amount: number, level: BotLevel): Action {
   const cash = state.players[player].cash;
   if (cash >= amount) return { type: 'PAY_DEBT' };
+  const canTantrum = legalActions(state).includes('AN_VA');
 
   const mine = Object.keys(state.ownership)
     .map(Number)
@@ -185,6 +194,9 @@ function payDebt(state: GameState, player: number, amount: number): Action {
       const houses = own.houses * houseRefund(i);
       return sum + houses + (own.mortgaged ? 0 : mortgageValue(i));
     }, 0);
+  // Ăn vạ (Chế độ Việt), once a game: Khó saves it for when it would otherwise go bankrupt; the
+  // others throw it the first time they're short.
+  if (canTantrum && (raisable < amount || level !== 'hard')) return { type: 'AN_VA' };
   if (raisable < amount) return { type: 'DECLARE_BANKRUPTCY' };
 
   const inFullSet = (i: number) => {
