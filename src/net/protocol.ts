@@ -4,7 +4,7 @@
 import type { PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
 import type { RulesChoice } from '../engine/game';
-import type { Action, Dice, GameState } from '../engine/types';
+import type { Action, BotLevel, Dice, GameState } from '../engine/types';
 
 /** What a player chooses in the lobby. */
 export interface Profile {
@@ -23,6 +23,9 @@ export type ClientMessage =
   | { t: 'rejoin'; key: string } // take back a seat after reconnecting
   | { t: 'profile'; profile: Profile } // change name, token or color in the lobby
   | { t: 'leave' } // give up the seat (lobby only)
+  | { t: 'addBot'; level: BotLevel } // host, lobby: a computer player takes a free seat
+  | { t: 'removeBot'; seat: number } // host, lobby
+  | { t: 'botLevel'; seat: number; level: BotLevel } // host, lobby
   | { t: 'start'; startingCash: number; firstTurn: FirstTurn; rules: RulesChoice } // host only
   | { t: 'act'; action: Action }
   | { t: 'react'; reaction: ReactionId } // a quick reaction, shown on every phone
@@ -35,7 +38,8 @@ export type ClientMessage =
 export type FirstTurnRound = { seat: number; dice: Dice }[];
 
 export interface SeatView extends Profile {
-  online: boolean;
+  online: boolean; // a computer player is always here
+  bot?: BotLevel; // played by the room server
 }
 
 /** A chat message; the name and color are kept as they were when it was sent. */

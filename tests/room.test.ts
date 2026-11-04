@@ -3,6 +3,8 @@ import type { Profile } from '../src/net/protocol';
 import { isReactionId, isRoomCode, newRoomCode, normalizeRoomCode } from '../src/net/protocol';
 import {
   act,
+  addBot,
+  botWaitMs,
   changeProfile,
   chat,
   cleanChat,
@@ -10,11 +12,14 @@ import {
   cleanProfile,
   join,
   leave,
+  playBot,
   rematch,
+  removeBot,
   newRoom,
   type Randomness,
   type RoomState,
   seatOfKey,
+  setBotLevel,
   start,
   view,
 } from '../server/room';
@@ -93,6 +98,97 @@ describe('lobby', () => {
     expect(cleanProfile({ name: 'Lan', token: 'rocket', color: 'teal' })).toBeNull();
     expect(cleanProfile({ name: 'Lan', token: 'conTrau', color: 'gold' })).toBeNull();
     expect(cleanProfile('Lan')).toBeNull();
+  });
+});
+
+describe('computer players in the room', () => {
+  /** Đăng hosts, with computer players of these levels. */
+  function withBots(...levels: ('easy' | 'normal' | 'hard')[]): RoomState {
+    return levels.reduce((room, level) => must(addBot(room, 0, level, fakeRandom())), lobby(DANG));
+  }
+
+  it('the host adds them; each takes a free name, token and color', () => {
+    const room = withBots('easy', 'hard');
+    expect(room.seats.map((s) => s.bot)).toEqual([undefined, 'easy', 'hard']);
+    expect(new Set(room.seats.map((s) => s.name)).size).toBe(3);
+    expect(new Set(room.seats.map((s) => s.token)).size).toBe(3);
+    expect(new Set(room.seats.map((s) => s.color)).size).toBe(3);
+  });
+
+  it('only the host, only before the game, only while a seat is free, only known levels', () => {
+    const two = lobby(DANG, LAN);
+    expect(addBot(two, 1, 'easy', fakeRandom())).toEqual({ ok: false, error: 'notHost' });
+    expect(addBot(two, 0, 'genius', fakeRandom())).toEqual({ ok: false, error: 'badMessage' });
+    expect(addBot(withBots('easy', 'easy', 'easy'), 0, 'easy', fakeRandom())).toEqual({ ok: false, error: 'full' });
+    const started = must(start(withBots('easy'), 0, 15_000_000, 'inOrder', fakeRandom()));
+    expect(addBot(started, 0, 'easy', fakeRandom())).toEqual({ ok: false, error: 'started' });
+    expect(removeBot(started, 0, 1)).toEqual({ ok: false, error: 'started' });
+    expect(setBotLevel(started, 0, 1, 'hard')).toEqual({ ok: false, error: 'started' });
+  });
+
+  it('the host can change a level or take one out, but never a person that way', () => {
+    const room = must(addBot(lobby(DANG, LAN), 0, 'easy', fakeRandom()));
+    expect(must(setBotLevel(room, 0, 2, 'hard')).seats[2].bot).toBe('hard');
+    expect(setBotLevel(room, 0, 1, 'hard')).toEqual({ ok: false, error: 'badMessage' });
+    expect(setBotLevel(room, 1, 2, 'hard')).toEqual({ ok: false, error: 'notHost' });
+    expect(must(removeBot(room, 0, 2)).seats.map((s) => s.name)).toEqual(['Đăng', 'Lan']);
+    expect(removeBot(room, 0, 1)).toEqual({ ok: false, error: 'badMessage' });
+    expect(removeBot(room, 1, 2)).toEqual({ ok: false, error: 'notHost' });
+  });
+
+  it('count towards starting, and are always shown as here', () => {
+    const room = withBots('hard');
+    const started = must(start(room, 0, 15_000_000, 'inOrder', fakeRandom()));
+    expect(started.game!.players.map((p) => p.bot)).toEqual([undefined, 'hard']);
+    const seen = view(started, 0, new Set([0]));
+    expect(seen.seats.map((s) => s.online)).toEqual([true, true]);
+    expect(seen.seats[1].bot).toBe('hard');
+    expect(JSON.stringify(seen)).not.toContain('key-');
+  });
+
+  it("don't keep a room or become host: the next person does, or the room closes", () => {
+    expect(must(leave(withBots('easy'), 0))).toBeNull();
+    const room = must(join(withBots('easy'), HOA, fakeRandom())).room; // Đăng, a bot, Hoa
+    const after = must(leave(room, 0))!;
+    expect(after.seats[after.host].name).toBe('Hoa');
+  });
+
+  it('the room plays them, up to the next person, and no phone can move for them', () => {
+    let room = must(start(withBots('normal', 'normal'), 0, 15_000_000, 'inOrder', fakeRandom()));
+    expect(playBot(room)).toBeNull(); // Đăng's move
+    expect(botWaitMs(room, null)).toBeNull();
+    room = must(act(room, 0, { type: 'ROLL' }));
+    for (let i = 0; i < 10 && room.game!.current === 0; i++) {
+      const moves = room.game!.phase.kind === 'awaitBuy' ? { type: 'DECLINE' } : { type: 'END_TURN' };
+      room = must(act(room, 0, moves));
+    }
+    expect(room.game!.current).toBe(1);
+    expect(act(room, 0, { type: 'ROLL' })).toEqual({ ok: false, error: 'notYourMove' });
+    for (let i = 0; i < 200 && room.game!.current !== 0; i++) room = playBot(room)!;
+    expect(room.game!.current).toBe(0);
+    expect(playBot(room)).toBeNull();
+  });
+
+  it('waits for the last move to play out on the phones, then a little more', () => {
+    const fresh = must(start(must(addBot(lobby(DANG), 0, 'normal', fakeRandom())), 0, 15_000_000, 'inOrder', fakeRandom()));
+    const botFirst = { ...fresh, game: { ...fresh.game!, current: 1 } };
+    expect(botWaitMs(botFirst, null)).toBeGreaterThan(0); // the board has just appeared
+    const longer = botWaitMs({ ...botFirst, firstTurn: [] }, null)!;
+    expect(longer).toBeGreaterThan(botWaitMs(botFirst, null)!); // people are reading the dice
+
+    const pause = botWaitMs(botFirst, botFirst.game)!; // nothing to play out: just the pause
+    const rolled = playBot(botFirst)!;
+    const wait = botWaitMs(rolled, botFirst.game);
+    expect(wait).toBeGreaterThan(pause); // the dice and the hops come first
+  });
+
+  it('a timed game ends after their move once time is up', () => {
+    const rules = { mode: { kind: 'time', minutes: 1 }, festivals: false };
+    const started = must(start(withBots('easy'), 0, 15_000_000, 'inOrder', fakeRandom(), rules, 0));
+    let room: RoomState = { ...started, game: { ...started.game!, current: 1 } };
+    const late = 10 * 60_000;
+    for (let i = 0; i < 100 && room.game!.phase.kind !== 'gameOver'; i++) room = playBot(room, late) ?? must(act(room, 0, { type: 'TIME_UP' }, late));
+    expect(room.game!.phase.kind).toBe('gameOver');
   });
 });
 

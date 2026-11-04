@@ -34,6 +34,8 @@ const REACTION_GAP_MS = 1_200;
 const CHAT_GAP_MS = 1_000;
 const THROW_GAP_MS = 3_000;
 const RELIST_MS = 30 * 60 * 1000; // a quiet room still refreshes its listing this often, so it doesn't go stale
+const BOT_RESUME_MS = 1_500; // computer players carry on this soon after someone comes back
+const BOT_ALARM_SOON_MS = 60_000; // an alarm sooner than this is a computer player's move, not the room's expiry
 
 const directory = (env: Env) => env.DIRECTORY.get(env.DIRECTORY.idFromName('directory'));
 
@@ -150,11 +152,12 @@ export class GameRoom extends DurableObject<Env> {
         if (!profile) return this.error(ws, 'badProfile');
         const created = Room.newRoom(conn.code, profile, RANDOM);
         await this.save(created.room);
-        return this.seated(ws, conn, created.key);
+        return await this.seated(ws, conn, created.key);
       }
       case 'look':
         if (!room) return this.error(ws, 'noRoom');
         ws.serializeAttachment({ ...conn, watching: true });
+        await this.resumeBots();
         return this.broadcast(); // everyone sees one more watcher
       case 'join': {
         if (!room) return this.error(ws, 'noRoom');
@@ -164,12 +167,12 @@ export class GameRoom extends DurableObject<Env> {
         const joined = Room.join(room, profile, RANDOM);
         if (!joined.ok) return this.error(ws, joined.error);
         await this.save(joined.value.room);
-        return this.seated(ws, conn, joined.value.key);
+        return await this.seated(ws, conn, joined.value.key);
       }
       case 'rejoin': {
         if (!room) return this.error(ws, 'noRoom');
         if (typeof msg.key !== 'string' || Room.seatOfKey(room, msg.key) === null) return this.error(ws, 'badSeatKey');
-        return this.seated(ws, conn, msg.key);
+        return await this.seated(ws, conn, msg.key);
       }
       case 'profile': {
         const profile = Room.cleanProfile(msg.profile);
@@ -185,6 +188,15 @@ export class GameRoom extends DurableObject<Env> {
         if (!left.value) await this.report(conn.code); // the room is gone: off the list
         return this.broadcast();
       }
+      case 'addBot':
+        if (!room || seat === null) return this.error(ws, 'badMessage');
+        return this.apply(ws, Room.addBot(room, seat, msg.level, RANDOM));
+      case 'removeBot':
+        if (!room || seat === null) return this.error(ws, 'badMessage');
+        return this.apply(ws, Room.removeBot(room, seat, msg.seat));
+      case 'botLevel':
+        if (!room || seat === null) return this.error(ws, 'badMessage');
+        return this.apply(ws, Room.setBotLevel(room, seat, msg.seat, msg.level));
       case 'start':
         if (!room || seat === null) return this.error(ws, 'badMessage');
         return this.apply(
@@ -249,9 +261,21 @@ export class GameRoom extends DurableObject<Env> {
     await this.webSocketClose(ws);
   }
 
-  /** Rooms nobody has touched for a week are deleted. */
+  /**
+   * The room's one alarm: a computer player's move when it's due (only while someone is there to
+   * see it; otherwise bots wait for them to come back), else the room's expiry: rooms nobody has
+   * touched for a week are deleted.
+   */
   async alarm(): Promise<void> {
-    const code = (await this.load())?.code;
+    const room = await this.load();
+    const played = room && this.watched() ? Room.playBot(room) : null;
+    if (played) {
+      await this.save(played);
+      return this.broadcast();
+    }
+    const expires = await this.ctx.storage.get<number>('expires');
+    if (room && expires && Date.now() < expires) return this.ctx.storage.setAlarm(expires);
+    const code = room?.code;
     for (const ws of this.ctx.getWebSockets()) ws.close(1000, 'Room closed');
     await this.save(null);
     await this.report(code);
@@ -265,13 +289,25 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   private async save(room: RoomState | null): Promise<void> {
+    const before = this.room?.game ?? null;
     this.room = room;
     if (room) {
-      await this.ctx.storage.put('room', room);
-      await this.ctx.storage.setAlarm(Date.now() + WEEK_MS);
+      const expires = Date.now() + WEEK_MS;
+      await this.ctx.storage.put({ room, expires });
+      const wait = Room.botWaitMs(room, before);
+      if (wait === null) await this.ctx.storage.setAlarm(expires);
+      else if (room.game !== before) await this.ctx.storage.setAlarm(Date.now() + wait);
+      // (a chat message during a bot's pause leaves its alarm as it is)
     } else {
       await this.ctx.storage.deleteAll();
     }
+  }
+
+  /** Someone arrived: if a computer player was waiting for that, it carries on. */
+  private async resumeBots(): Promise<void> {
+    if (!this.room || Room.botWaitMs(this.room, this.room.game) === null) return;
+    const at = await this.ctx.storage.getAlarm();
+    if (at === null || at - Date.now() > BOT_ALARM_SOON_MS) await this.ctx.storage.setAlarm(Date.now() + BOT_RESUME_MS);
   }
 
   private async apply(ws: WebSocket, result: Room.Result<RoomState>): Promise<void> {
@@ -281,11 +317,17 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   /** This phone now has the seat with `key`: tell it, then show everyone the room. */
-  private seated(ws: WebSocket, conn: Connection, key: string): void {
+  private async seated(ws: WebSocket, conn: Connection, key: string): Promise<void> {
     ws.serializeAttachment({ ...conn, key, watching: true });
     const seat = Room.seatOfKey(this.room!, key)!;
     this.send(ws, { t: 'welcome', seat, key });
+    await this.resumeBots();
     this.broadcast();
+  }
+
+  /** Whether any phone is following this room right now. */
+  private watched(): boolean {
+    return this.ctx.getWebSockets().some((ws) => (ws.deserializeAttachment() as Connection).watching);
   }
 
   /** Seats with a phone connected right now. */

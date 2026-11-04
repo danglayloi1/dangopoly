@@ -409,7 +409,17 @@ Bots are part of the engine (`engine/bot.ts`): given the game, the next action f
 it is. Its choices depend only on the game, so the same game always plays out the same way. On screen,
 a bot moves after a short pause once the last move has played out (following the animation speed), and
 nobody gets buttons while it plays. Bots are saved with the game. In a test of 150 three-bot games,
-every game finished and Khó won about half. Online rooms are for people only.
+every game finished and Khó won about half.
+
+**Online**, the host adds computer players in the lobby (**Thêm máy chơi cùng**), picks each one's level
+and can take one out again; a bot takes a free seat, nickname, token and color. Other phones see the bot
+and its level. The room server plays them, not a phone, so it doesn't matter who is connected:
+- The room's alarm fires when a bot's move is due: the time the last move takes to play out on a phone
+  at normal speed (`showMs` in `ui/motion.ts`), plus the same short pause as on one device. Phones set to
+  faster animations just finish sooner. The same alarm still deletes a room after a week without changes.
+- With nobody connected, bots wait, and carry on when someone comes back. A person's move still waits
+  for that person, as in any online game.
+- Bots don't keep a room or become its host: when the last person leaves the lobby, the room closes.
 
 ## 16. Records, badges and the summary picture
 

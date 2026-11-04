@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { STARTING_CASH } from '../data/board';
 import { PLAYER_COLORS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
+import { BOT_LEVELS } from '../engine/bot';
 import { CLASSIC_RULES, MAX_PLAYERS, MIN_PLAYERS, type RulesChoice } from '../engine/game';
 import { useLang } from '../i18n/LangContext';
 import { roomLink } from '../net/config';
@@ -119,9 +120,42 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
                 {i === room.host && <span className="badge">{t.hostBadge}</span>}
                 {i === me && <span className="badge badge-you">{t.youBadge}</span>}
                 {!s.online && <span className="badge badge-away">{t.offline}</span>}
+                {s.bot && (
+                  <span className="badge badge-bot" title={t.botBadge}>
+                    <Icon name="bot" /> {!isHost && t.botLevels[s.bot]}
+                  </span>
+                )}
+                {s.bot && isHost && (
+                  <>
+                    <div className="bot-level lobby-bot-level">
+                      <div className="segmented" role="radiogroup" aria-label={`${t.botLevel}: ${s.name}`}>
+                        {BOT_LEVELS.map((level) => (
+                          <button
+                            key={level}
+                            type="button"
+                            role="radio"
+                            aria-checked={s.bot === level}
+                            className={s.bot === level ? 'selected' : ''}
+                            onClick={() => send({ t: 'botLevel', seat: i, level })}
+                          >
+                            {t.botLevels[level]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <button type="button" className="icon-button" aria-label={`${t.removePlayer}: ${s.name}`} title={t.removePlayer} onClick={() => send({ t: 'removeBot', seat: i })}>
+                      ✕
+                    </button>
+                  </>
+                )}
               </li>
             ))}
           </ul>
+          {isHost && room.seats.length < MAX_PLAYERS && (
+            <button type="button" className="secondary add-bot" disabled={status !== 'open'} onClick={() => send({ t: 'addBot', level: 'normal' })}>
+              <Icon name="bot" /> {t.addBot}
+            </button>
+          )}
         </section>
       )}
 

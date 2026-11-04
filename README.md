@@ -22,6 +22,9 @@ npm run build    # builds the final website into dist/
 **Open rooms:** the Online screen lists the rooms open right now: join one that's waiting for
 players, or watch any game being played (hosts can keep their room off the list).
 
+**Computer players online:** the host can fill free seats with computer players in the lobby, at any
+level; the room server plays them.
+
 **Online extras:** tap 😊 to send a quick reaction (15 emoji, 8 Nghệ phrases like *Răng rứa?*) that
 pops up on every phone, or to throw a dép, a bánh chưng or a flower at someone's token; tap 💬 to chat with the room, in the lobby and during the game (new messages
 also pop up on screen during the game); after a game
@@ -53,7 +56,7 @@ With `npm run dev` running, this plays a scripted scene in Microsoft Edge and sa
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
 `modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (the dice going off the table, all three ways; a bot talking), `viet` (each Chế độ Việt rule on screen), `missions` (secret missions on one device and online), `roads` (a rush-hour jam and a wandering buffalo), `records` (badges, the
 summary picture and the records screen), `layout` (cards fitting small boards, the phone
-player strip, screen transitions; add `--mobile`), `online` (three phones in one room; needs
+player strip, screen transitions; add `--mobile`), `onlinebots` (a host, a friend and a computer player; needs `npm run server` too), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).
 
 ```bash

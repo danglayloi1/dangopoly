@@ -2,7 +2,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react';
 import { STARTING_CASH } from '../data/board';
 import { defaultPlayerColor, PLAYER_COLORS, type PlayerColorId } from '../data/colors';
 import { TOKENS, type TokenId } from '../data/tokens';
-import { BOT_LEVELS } from '../engine/bot';
+import { BOT_LEVELS, BOT_NAMES, freeBotName } from '../engine/bot';
 import { CLASSIC_RULES, MAX_PLAYERS, MIN_PLAYERS, type NewPlayer, type RulesChoice } from '../engine/game';
 import type { BotLevel } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
@@ -22,13 +22,6 @@ interface Props {
   onBack: () => void;
   saved: SaveFile | null; // a new game replaces it, so ask first
   vsBots?: boolean; // "play against the computer": starts with you and two computer players
-}
-
-/** Names for computer players: things Nghệ Tĩnh is known for. */
-const BOT_NAMES = ['Cu Đơ', 'Nhút', 'Hến', 'Bưởi'];
-
-function freeBotName(used: string[]): string {
-  return BOT_NAMES.find((n) => !used.includes(n)) ?? BOT_NAMES[0];
 }
 
 function firstFreeToken(used: TokenId[]): TokenId {

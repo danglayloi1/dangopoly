@@ -64,6 +64,7 @@ export function ngheStrings(vi: Strings): Strings {
     leaveRoom: 'Ra khỏi phòng',
     startOnline: 'Bắt đầu nhởi',
     needTwo: 'Phải có ít nhất 2 đứa mới nhởi được.',
+    addBot: 'Thêm máy nhởi cùng',
     waitingForHost: (name) => `Chờ ${name} bắt đầu nờ…`,
     connecting: 'Đang kết nối…',
     reconnecting: 'Mất mạng rồi, đang thử lại…',
