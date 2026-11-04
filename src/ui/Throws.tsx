@@ -8,7 +8,8 @@ import { playSound } from './sound';
 
 const FLIGHT_MS = 700;
 const HIT_MS = 650;
-const ITEM_ICONS: Record<ThrowItem, IconName> = { dep: 'slipper', banhChung: 'banhChung', hoa: 'blossom' };
+const HIT_MARGIN = 90; // the word that pops up stays this far from the screen's sides
+export const THROW_ICONS: Record<ThrowItem, IconName> = { dep: 'slipper', trung: 'rottenEgg', nuocMam: 'fishSauce', ga: 'chicken', non: 'conicalHat', banhChung: 'banhChung', hoa: 'blossom' };
 
 /** The board token of a player (see Board.tsx's data-player). */
 const tokenOf = (player: number) => document.querySelector<HTMLElement>(`.cell-token[data-player="${player}"]`);
@@ -51,11 +52,12 @@ function Flight({ th }: { th: ShownThrow }) {
   }, []);
 
   if (!path) return null;
-  const style = { left: path.x, top: path.y, '--dx': `${path.dx}px`, '--dy': `${path.dy}px` } as CSSProperties;
+  const landingX = Math.min(window.innerWidth - HIT_MARGIN, Math.max(HIT_MARGIN, path.x + path.dx));
+  const style = { left: path.x, top: path.y, '--dx': `${path.dx}px`, '--dy': `${path.dy}px`, '--hit-x': `${landingX - path.x}px` } as CSSProperties;
   return (
     <div className={`fx-throw item-${th.item}${landed ? ' landed' : ''}`} style={style} aria-hidden="true">
       <span className="fx-throw-item">
-        <Icon name={ITEM_ICONS[th.item]} size={40} />
+        <Icon name={THROW_ICONS[th.item]} size={40} />
       </span>
       {landed && <span className="fx-throw-hit">{t.throwHits[th.item]}</span>}
     </div>

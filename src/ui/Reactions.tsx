@@ -1,7 +1,9 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useLang } from '../i18n/LangContext';
-import { REACTIONS, THROW_ITEMS, type ChatMessage, type ReactionId, type RoomView, type ThrowItem } from '../net/protocol';
-import { Icon, type IconName } from './icons';
+import { isStickerId, REACTIONS, STICKERS, THROW_ITEMS, type ChatMessage, type ReactionId, type RoomView, type StickerId, type ThrowItem } from '../net/protocol';
+import { Icon } from './icons';
+import { Sticker } from './Sticker';
+import { THROW_ICONS } from './Throws';
 import type { ShownReaction } from '../net/useRoom';
 import { colorHex } from './look';
 import { TokenIcon } from './TokenIcon';
@@ -17,7 +19,6 @@ interface Props {
   onThrow: ((target: number, item: ThrowItem) => void) | null; // in a game: throw something at someone
 }
 
-const ITEM_ICONS: Record<ThrowItem, IconName> = { dep: 'slipper', banhChung: 'banhChung', hoa: 'blossom' };
 
 /**
  * Online: a 😊 button in the corner opens quick reactions (emoji and Nghệ phrases); whatever anyone
@@ -44,10 +45,17 @@ export function Reactions({ room, reactions, onSend, open, onOpenChange, chatPop
           const seat = room.seats[r.seat];
           if (!seat) return null;
           return (
-            <div key={r.id} className="reaction-bubble" style={{ '--player': colorHex(seat.color) } as CSSProperties}>
+            <div key={r.id} className={`reaction-bubble${isStickerId(r.reaction) ? ' sticker-bubble' : ''}`} style={{ '--player': colorHex(seat.color) } as CSSProperties}>
               <TokenIcon token={seat.token} color={colorHex(seat.color)} size={26} />
               <span className="reaction-name">{seat.name}</span>
-              <span className="reaction-text">{REACTIONS[r.reaction]}</span>
+              {isStickerId(r.reaction) ? (
+                <span className="reaction-sticker">
+                  <Sticker id={r.reaction} size={68} />
+                  <span>{STICKERS[r.reaction]}</span>
+                </span>
+              ) : (
+                <span className="reaction-text">{REACTIONS[r.reaction]}</span>
+              )}
             </div>
           );
         })}
@@ -102,12 +110,30 @@ export function Reactions({ room, reactions, onSend, open, onOpenChange, chatPop
                   <span>{t.throwLabel}:</span>
                   {THROW_ITEMS.map((item) => (
                     <button key={item} type="button" className="throw-choice" title={t.throwItems[item]} aria-label={`${t.throwLabel} ${t.throwItems[item]}`} onClick={() => setAiming(item)}>
-                      <Icon name={ITEM_ICONS[item]} size={26} />
+                      <Icon name={THROW_ICONS[item]} size={26} />
                     </button>
                   ))}
                 </div>
               )}
-              {!aiming && (Object.keys(REACTIONS) as ReactionId[]).map((id) => (
+              {!aiming && (
+                <div className="sticker-row">
+                  {(Object.keys(STICKERS) as StickerId[]).map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className="sticker-choice"
+                      title={STICKERS[id]}
+                      onClick={() => {
+                        onSend(id);
+                        setOpen(false);
+                      }}
+                    >
+                      <Sticker id={id} size="100%" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!aiming && (Object.keys(REACTIONS) as (keyof typeof REACTIONS)[]).map((id) => (
                 <button
                   key={id}
                   type="button"

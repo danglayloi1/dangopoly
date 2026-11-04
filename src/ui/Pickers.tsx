@@ -3,7 +3,7 @@ import { TOKENS, type TokenId } from '../data/tokens';
 import { useLang } from '../i18n/LangContext';
 import { TokenIcon } from './TokenIcon';
 
-/** The six tokens to choose from, drawn in the player's color; ones taken by others are greyed out. */
+/** The tokens to choose from, drawn in the player's color; ones taken by others are greyed out. */
 export function TokenPicker({
   value,
   color,

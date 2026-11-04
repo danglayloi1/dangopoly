@@ -131,12 +131,26 @@ export const REACTIONS = {
   ngonLanh: 'Ngon lành!',
 } as const;
 
-export type ReactionId = keyof typeof REACTIONS;
+/** Hand-drawn reactions (see ui/Sticker.tsx), with their words: in Nghệ, like the phrases above. */
+export const STICKERS = {
+  trauKhoc: 'Hu hu…',
+  gaVenh: 'Tau đỉnh chưa!',
+  heoRong: 'Hết tiền rồi!',
+  keoGayRang: 'Gãy răng!',
+  uongChe: 'Uống chè đã',
+  trauHuc: 'Húc chừ!',
+  depBay: 'Đỡ dép nờ!',
+  meMang: 'Mệ mắng cho!',
+} as const;
 
-export const isReactionId = (v: unknown): v is ReactionId => typeof v === 'string' && Object.hasOwn(REACTIONS, v);
+export type StickerId = keyof typeof STICKERS;
+export type ReactionId = keyof typeof REACTIONS | StickerId;
 
-/** Things to throw at another player's token: a slipper (dép), a bánh chưng, or a flower. Just for fun. */
-export const THROW_ITEMS = ['dep', 'banhChung', 'hoa'] as const;
+export const isStickerId = (v: unknown): v is StickerId => typeof v === 'string' && Object.hasOwn(STICKERS, v);
+export const isReactionId = (v: unknown): v is ReactionId => isStickerId(v) || (typeof v === 'string' && Object.hasOwn(REACTIONS, v));
+
+/** Things to throw at another player's token: a slipper (dép), a rotten egg, fish sauce, a live chicken... Just for fun. */
+export const THROW_ITEMS = ['dep', 'trung', 'nuocMam', 'ga', 'non', 'banhChung', 'hoa'] as const;
 export type ThrowItem = (typeof THROW_ITEMS)[number];
 export const isThrowItem = (v: unknown): v is ThrowItem => (THROW_ITEMS as readonly unknown[]).includes(v);
 
