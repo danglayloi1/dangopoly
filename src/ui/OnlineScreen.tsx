@@ -4,6 +4,7 @@ import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import type { RoomView } from '../net/protocol';
 import { useRoom, type RoomState } from '../net/useRoom';
+import { BotTalk } from './BotTalk';
 import { ChatBox } from './ChatBox';
 import { FirstTurnResult } from './FirstTurnResult';
 import { GameTable } from './GameTable';
@@ -120,6 +121,7 @@ function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: Game
     <ViewerProvider value={{ online: true, seat, connected: room.seats.map((s) => s.online) }}>
       <GameTable game={game} dispatch={dispatch} presentation={presentation} onLeave={onLeave} headerExtra={status} next={next} newBadges={newBadges}>
         <Throws throws={state.throws} />
+        <BotTalk game={game} busy={presentation.busy} />
         {seat === null && (
           <p className="spectator-note" role="status">
             <Icon name="eye" /> {t.spectating}

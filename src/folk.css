@@ -1357,6 +1357,23 @@ a.secondary {
   opacity: 0.6;
 }
 
+/* A computer player's row: on a narrow phone its level goes on a line of its own. */
+.lobby-seat:has(.lobby-bot-level) {
+  flex-wrap: wrap;
+}
+
+.lobby-bot-level {
+  order: 1;
+  flex-basis: 100%;
+}
+
+.add-bot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
 .lobby-name {
   font-weight: 700;
   margin-right: auto;

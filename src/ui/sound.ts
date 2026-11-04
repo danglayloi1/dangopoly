@@ -1,22 +1,6 @@
+import type { SoundName } from './motion';
 // Sound effects made on the fly with the Web Audio API: no audio files to download or license.
 // Every function is safe to call anywhere: if audio isn't available, nothing happens.
-
-export type SoundName =
-  | 'dice'
-  | 'hop'
-  | 'coins'
-  | 'pay'
-  | 'buy'
-  | 'build'
-  | 'card'
-  | 'jail'
-  | 'unlock'
-  | 'trade'
-  | 'bankrupt'
-  | 'win'
-  | 'enter'
-  | 'whoosh'
-  | 'thud';
 
 const MUTE_KEY = 'dangopoly.muted';
 const VOLUME_KEY = 'dangopoly.volume';

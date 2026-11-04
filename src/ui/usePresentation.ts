@@ -1,12 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, LogEntry } from '../engine/types';
 import { speedFactor } from './animation';
-import { EFFECT_MS, effectsFor, hasMotion, newLogEntries, planMoves, soundFor, type Effect } from './motion';
+import { diceMs, EFFECT_MS, effectsFor, hasMotion, newLogEntries, planMoves, soundFor, stepMs, type Effect } from './motion';
 import { playSound } from './sound';
-
-const DICE_MS = 650;
-const STEP_MS = 120;
-const MAX_TRIP_MS = 1800; // long card trips hop faster
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -92,19 +88,19 @@ export function usePresentation(game: GameState): Presentation {
       if (rest.some((e) => e.type === 'rolled')) {
         setRolling(true);
         playSound('dice');
-        await sleep(DICE_MS * factor);
+        await sleep(diceMs * factor);
         if (cancelled) return;
         setRolling(false);
       }
       for (const move of planMoves(rest, shownRef.current)) {
-        const stepMs = (move.jump ? 300 : Math.min(STEP_MS, MAX_TRIP_MS / move.path.length)) * factor;
+        const hopMs = stepMs(move) * factor;
         for (const pos of move.path) {
           if (cancelled) return;
           const next = [...shownRef.current];
           next[move.player] = pos;
           show(next);
           playSound(pos === 0 && !move.jump ? 'coins' : 'hop'); // coins when passing Start
-          await sleep(stepMs);
+          await sleep(hopMs);
         }
       }
       if (cancelled) return;

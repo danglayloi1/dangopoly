@@ -3,8 +3,24 @@
 import { BOARD_SIZE, JAIL_SPACE } from '../data/board';
 import { CARDS } from '../data/cards';
 import type { MissionId } from '../engine/missions';
-import type { Festival, FumbleKind, GameState, LogEntry } from '../engine/types';
-import type { SoundName } from './sound';
+import type { Action, Festival, FumbleKind, GameState, LogEntry } from '../engine/types';
+
+export type SoundName =
+  | 'dice'
+  | 'hop'
+  | 'coins'
+  | 'pay'
+  | 'buy'
+  | 'build'
+  | 'card'
+  | 'jail'
+  | 'unlock'
+  | 'trade'
+  | 'bankrupt'
+  | 'win'
+  | 'enter'
+  | 'whoosh'
+  | 'thud';
 
 /** How many old entries must match, and how far back from the end of the new log to look for them. */
 const MATCH_ENTRIES = 6;
@@ -74,6 +90,35 @@ export function planMoves(entries: readonly LogEntry[], shownPositions: readonly
 /** True if these entries need the dice or a token to animate. */
 export function hasMotion(entries: readonly LogEntry[]): boolean {
   return entries.some((e) => e.type === 'rolled' || e.type === 'moved' || e.type === 'wentToJail' || e.type === 'diceFumbled');
+}
+
+const DICE_MS = 650;
+const STEP_MS = 120;
+const JUMP_MS = 300;
+const MAX_TRIP_MS = 1800; // long card trips hop faster
+const THINK_MS = 900; // a bot before a decision: rolling, buying, answering a trade
+const QUICK_MS = 450; // a bot's next house or mortgage
+
+/** How long the dice tumble, at normal speed. */
+export const diceMs = DICE_MS;
+
+/** How long each hop of a trip takes, at normal speed. */
+export function stepMs(move: Move): number {
+  return move.jump ? JUMP_MS : Math.min(STEP_MS, MAX_TRIP_MS / move.path.length);
+}
+
+/** How long a computer player pauses before this move, at normal speed, so people can follow it. */
+export function botPauseMs(action: Action): number {
+  const quick = action.type === 'BUILD_HOUSE' || action.type === 'MORTGAGE' || action.type === 'SELL_HOUSE' || action.type === 'UNMORTGAGE';
+  return quick ? QUICK_MS : THINK_MS;
+}
+
+/** How long these entries hold the screen at normal speed: a fumble's scene, the dice, the hops. */
+export function showMs(entries: readonly LogEntry[], shownPositions: readonly number[]): number {
+  let ms = entries.some((e) => e.type === 'diceFumbled') ? EFFECT_MS.fumble : 0;
+  if (entries.some((e) => e.type === 'rolled')) ms += DICE_MS;
+  for (const move of planMoves(entries, shownPositions)) ms += stepMs(move) * move.path.length;
+  return ms;
 }
 
 /** The sound for an event, if any. Moving and passing Start are played during the hops instead. */

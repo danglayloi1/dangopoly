@@ -11,6 +11,13 @@ import type { Action, BotLevel, GameState, TradeOffer } from './types';
 
 export const BOT_LEVELS: readonly BotLevel[] = ['easy', 'normal', 'hard'];
 
+/** Names for computer players: things Nghệ Tĩnh is known for. */
+export const BOT_NAMES = ['Cu Đơ', 'Nhút', 'Hến', 'Bưởi'];
+
+export function freeBotName(used: readonly string[]): string {
+  return BOT_NAMES.find((n) => !used.includes(n)) ?? BOT_NAMES[0];
+}
+
 const TR = 1_000_000;
 
 /** How each level plays. */

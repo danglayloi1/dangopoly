@@ -1,7 +1,7 @@
 // One online room: the seats, the lobby and the game. Plain TypeScript with no Cloudflare parts,
 // so it can be tested like the engine; server/worker.ts stores it and connects it to the phones.
 
-import { PLAYER_COLOR_IDS } from '../src/data/colors';
+import { PLAYER_COLOR_IDS, type PlayerColorId } from '../src/data/colors';
 import { TOKENS } from '../src/data/tokens';
 import {
   actorFor,
@@ -16,7 +16,8 @@ import {
   NO_VIET,
   type RulesChoice,
 } from '../src/engine/game';
-import type { Action, Dice, GameState, VietRules } from '../src/engine/types';
+import { botAction, BOT_LEVELS, freeBotName } from '../src/engine/bot';
+import type { Action, BotLevel, Dice, GameState, VietRules } from '../src/engine/types';
 import {
   CHAT_KEEP,
   CHAT_MAX_LENGTH,
@@ -30,9 +31,11 @@ import {
 } from '../src/net/protocol';
 import { dealMissions } from '../src/engine/missions';
 import { orderFrom } from '../src/ui/firstTurn';
+import { botPauseMs, newLogEntries, showMs } from '../src/ui/motion';
 
 export interface Seat extends Profile {
-  key: string; // secret: lets this seat's phone reconnect
+  key: string; // secret: lets this seat's phone reconnect (a computer player's is never given out)
+  bot?: BotLevel; // played by the room itself, not by a phone
 }
 
 /** Everything about a room that is stored between messages. */
@@ -61,6 +64,8 @@ export const MIN_STARTING_CASH = 1_000_000;
 export const MAX_STARTING_CASH = 100_000_000;
 const MAX_NAME_LENGTH = 16;
 const TOKEN_IDS: readonly string[] = TOKENS.map((t) => t.id);
+const FIRST_BOT_MOVE_MS = 2_000; // a computer player going first: the board has just appeared
+const FIRST_BOT_MOVE_AFTER_DICE_MS = 6_000; // ...and when people are reading who rolled what
 
 export function newRoom(code: string, host: Profile, random: Randomness): { room: RoomState; key: string } {
   const key = random.key();
@@ -107,15 +112,46 @@ export function changeProfile(room: RoomState, seat: number, profile: Profile): 
   return ok({ ...room, seats: room.seats.map((s, i) => (i === seat ? { ...profile, key: s.key } : s)) });
 }
 
+const cleanLevel = (raw: unknown): BotLevel | null => (BOT_LEVELS.includes(raw as BotLevel) ? (raw as BotLevel) : null);
+
+/** The host seats a computer player: it takes a free name, token and color. */
+export function addBot(room: RoomState, seat: number, rawLevel: unknown, random: Randomness): Result<RoomState> {
+  if (seat !== room.host) return fail('notHost');
+  if (room.game) return fail('started');
+  if (room.seats.length >= MAX_PLAYERS) return fail('full');
+  const bot = cleanLevel(rawLevel);
+  if (!bot) return fail('badMessage');
+  const token = TOKENS.find((t) => !room.seats.some((s) => s.token === t.id))!.id;
+  const color = PLAYER_COLOR_IDS.find((c) => !room.seats.some((s) => s.color === c)) as PlayerColorId;
+  const name = freeBotName(room.seats.map((s) => s.name));
+  return ok({ ...room, seats: [...room.seats, { name, token, color, key: random.key(), bot }] });
+}
+
+/** The host takes a computer player out; the seats after it move up by one. */
+export function removeBot(room: RoomState, seat: number, target: unknown): Result<RoomState> {
+  if (seat !== room.host) return fail('notHost');
+  if (room.game) return fail('started');
+  if (typeof target !== 'number' || !room.seats[target]?.bot) return fail('badMessage');
+  return ok({ ...room, seats: room.seats.filter((_, i) => i !== target), host: room.host > target ? room.host - 1 : room.host });
+}
+
+export function setBotLevel(room: RoomState, seat: number, target: unknown, rawLevel: unknown): Result<RoomState> {
+  if (seat !== room.host) return fail('notHost');
+  if (room.game) return fail('started');
+  const bot = cleanLevel(rawLevel);
+  if (!bot || typeof target !== 'number' || !room.seats[target]?.bot) return fail('badMessage');
+  return ok({ ...room, seats: room.seats.map((s, i) => (i === target ? { ...s, bot } : s)) });
+}
+
 /**
  * Leaving the lobby frees the seat; the seats after it move up by one. If the host leaves, the
- * next player becomes host. Returns null when the room is now empty.
+ * next person becomes host. Returns null when no people are left (computer players don't keep a room).
  */
 export function leave(room: RoomState, seat: number): Result<RoomState | null> {
   if (room.game) return fail('started');
   const seats = room.seats.filter((_, i) => i !== seat);
-  if (seats.length === 0) return ok(null);
-  const host = room.host === seat ? 0 : room.host > seat ? room.host - 1 : room.host;
+  if (seats.every((s) => s.bot)) return ok(null);
+  const host = room.host === seat ? seats.findIndex((s) => !s.bot) : room.host > seat ? room.host - 1 : room.host;
   return ok({ ...room, seats, host });
 }
 
@@ -161,7 +197,7 @@ export function start(
   const host = (room.host - first + n) % n;
 
   const game = createGame({
-    players: seats.map(({ name, token, color }) => ({ name, token, color })),
+    players: seats.map(({ name, token, color, bot }) => ({ name, token, color, ...(bot ? { bot } : {}) })),
     seed: random.seed(),
     startingCash: startingCash as number,
     rules,
@@ -227,6 +263,37 @@ export function act(room: RoomState, seat: number, raw: unknown, now: number = D
   }
 }
 
+/**
+ * The move of the computer player whose move it is, or null when it's a person's move. The time
+ * limit works as it does for a move from a phone (see act).
+ */
+export function playBot(room: RoomState, now: number = Date.now()): RoomState | null {
+  const action = room.game && botAction(room.game);
+  if (!room.game || !action) return null;
+  const { mode } = room.game.rules;
+  try {
+    let game = applyAction(room.game, action);
+    if (mode.kind === 'time' && now >= mode.endsAt && game.phase.kind === 'awaitRoll') game = applyAction(game, { type: 'TIME_UP' });
+    return { ...room, game };
+  } catch (e) {
+    if (e instanceof GameError) return null;
+    throw e;
+  }
+}
+
+/**
+ * How long the room waits before its computer player moves, or null when it's not a bot's move: the
+ * last move has to play out on the phones first (`before` is the game before it), then a short pause,
+ * just as on one device. Phones set to faster animations simply finish sooner.
+ */
+export function botWaitMs(room: RoomState, before: GameState | null): number | null {
+  const action = room.game && botAction(room.game);
+  if (!room.game || !action) return null;
+  if (!before) return room.firstTurn ? FIRST_BOT_MOVE_AFTER_DICE_MS : FIRST_BOT_MOVE_MS;
+  const entries = newLogEntries(before.log, room.game.log);
+  return showMs(entries, before.players.map((p) => p.position)) + botPauseMs(action);
+}
+
 /** The host shows the room in the public room list, or hides it (then only its link opens it). */
 export function setListed(room: RoomState, seat: number, listed: unknown): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
@@ -244,7 +311,7 @@ export function listing(room: RoomState, online: ReadonlySet<number>, watchers: 
     code: room.code,
     stage: !room.game ? 'lobby' : room.game.phase.kind === 'gameOver' ? 'over' : 'playing',
     host: room.seats[room.host]?.name ?? '',
-    players: room.seats.map(({ name, token, color }, i) => ({ name, token, color, online: online.has(i) })),
+    players: room.seats.map(({ name, token, color, bot }, i) => ({ name, token, color, online: online.has(i) || bot !== undefined })),
     watchers,
     round: room.game && room.game.phase.kind !== 'gameOver' ? room.game.round : null,
     updatedAt: now,
@@ -270,7 +337,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
     code: room.code,
     stage: room.game ? 'playing' : 'lobby',
     host: room.host,
-    seats: room.seats.map(({ name, token, color }, i) => ({ name, token, color, online: online.has(i) })),
+    seats: room.seats.map(({ name, token, color, bot }, i) => ({ name, token, color, online: online.has(i) || bot !== undefined, ...(bot ? { bot } : {}) })),
     you,
     game: gameFor(room.game, you),
     firstTurn: room.firstTurn,

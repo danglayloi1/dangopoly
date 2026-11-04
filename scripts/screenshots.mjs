@@ -1255,6 +1255,129 @@ const scenes = {
    * that pops up on the other player's phone, and a phone that drops out and comes back.
    * Needs the room server too (npm run server). Each picture shows the three phones side by side.
    */
+  /** Online with computer players: the host adds them, the room server plays them (needs `npm run server` too). */
+  async onlinebots({ browser }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    const phone = async (name) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => {
+        errors++;
+        console.error(`${name}: ${e.message}`);
+      });
+      reportCrash(page, name);
+      return { name, ctx, page };
+    };
+    const dang = await phone('Đăng');
+    const lan = await phone('Lan');
+    const save = (p, label) => p.page.screenshot({ path: path.join(outDir, `${label}.png`) });
+    const seats = (p) => p.page.locator('.lobby-seat');
+
+    // Đăng hosts, and adds computer players: he picks their levels and can take one out.
+    await openFromMenu(dang.page, /Chơi online/);
+    await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    const addBot = dang.page.getByRole('button', { name: 'Thêm máy chơi cùng' });
+    await addBot.click();
+    await seats(dang).nth(1).waitFor();
+    await addBot.click();
+    await seats(dang).nth(2).waitFor();
+    check((await seats(dang).count()) === 3, 'the host adds two computer players');
+    await seats(dang).nth(1).getByRole('radio', { name: 'Khó' }).click();
+    await seats(dang).nth(1).getByRole('radio', { name: 'Khó', checked: true }).waitFor();
+    check(true, "the host changes a computer player's level");
+    await save(dang, 'lobby-host');
+    await seats(dang).nth(2).getByRole('button', { name: /Bỏ người chơi/ }).click();
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 2);
+    check(true, 'the host takes one out again');
+
+    // Lan joins from the link and sees the computer player, without the host's controls.
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.waitForSelector('.lobby-seat');
+    await lan.page.getByPlaceholder('Tên').fill('Lan');
+    await lan.page.getByRole('button', { name: 'Vào phòng' }).click();
+    await lan.page.waitForSelector('.badge-you');
+    check((await lan.page.locator('.lobby-seat .badge-bot').textContent()).includes('Khó') && (await lan.page.locator('.lobby-bot-level').count()) === 0, 'a friend sees the computer player and its level, but not the controls');
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 3);
+    await save(lan, 'lobby-friend');
+
+    await dang.page.getByRole('radio', { name: /Theo thứ tự/ }).click();
+    await dang.page.getByRole('button', { name: /Bắt đầu ván/ }).click();
+    for (const p of [dang, lan]) await p.page.waitForSelector('.board');
+
+    const panelButtons = (p) => p.page.locator('.action-panel .action-buttons button');
+    const logText = (p) => p.page.locator('.game-log').textContent();
+    const botName = await lan.page.locator('.player-card', { hasText: /Khó/ }).first().textContent().then((text) => ['Cu Đơ', 'Nhút', 'Hến', 'Bưởi'].find((n) => text.includes(n)));
+    const press = async (p, word) => panelButtons(p).filter({ hasText: word }).first().click({ timeout: 15_000 });
+    /** Plays this person's turn until it passes on. */
+    const playTurn = async (p) => {
+      for (let i = 0; i < 12; i++) {
+        await p.page.waitForSelector('.board[data-busy="false"]', { timeout: 30_000 });
+        const labels = await panelButtons(p).allTextContents();
+        if (labels.length === 0) return;
+        const word = ['Gieo', 'Bỏ qua', 'Trả', 'Nộp', 'Kết thúc'].find((w) => labels.some((l) => l.includes(w)));
+        if (!word) throw new Error(`no button to press in: ${labels.join(' | ')}`);
+        await press(p, word);
+        await p.page.waitForTimeout(250);
+        if (word === 'Kết thúc') return;
+      }
+    };
+
+    // Seats stay in the order they were taken: Đăng, the computer player, Lan. The room plays it by itself.
+    await playTurn(dang);
+    await dang.page.locator('.action-panel', { hasText: botName }).waitFor({ timeout: 15_000 });
+    check((await panelButtons(dang).count()) === 0 && (await panelButtons(lan).count()) === 0, `during ${botName}'s turn no phone has buttons`);
+    await save(dang, 'bot-thinking');
+    await dang.page.waitForFunction((name) => document.querySelector('.game-log')?.textContent.includes(`${name} gieo`) || document.querySelector('.game-log')?.textContent.includes(`của ${name}`), botName, { timeout: 30_000 });
+    check(true, `the room rolls for ${botName}, with nobody pressing anything`);
+    await panelButtons(lan).first().waitFor({ timeout: 60_000 });
+    await lan.page.waitForSelector('.board[data-busy="false"]', { timeout: 30_000 });
+    check((await logText(dang)) === (await logText(lan)), `${botName} finishes its turn, it passes to Lan, and both phones show the same game`);
+    await save(lan, 'after-bot-turn');
+
+    // Next round: Lan and Đăng play, and everyone leaves right as the computer player's turn starts.
+    await playTurn(lan);
+    await panelButtons(dang).first().waitFor({ timeout: 30_000 });
+    await playTurn(dang);
+    await Promise.all([dang.page.close(), lan.page.close()]);
+    await new Promise((resolve) => setTimeout(resolve, 8_000));
+    // A plain connection, to read what the room holds at the very moment someone arrives.
+    const server = BASE_URL.includes('github.io') ? 'wss://dangopoly-server.danglayloi1.workers.dev' : 'ws://localhost:8787';
+    const onReturn = await new Promise((resolve, reject) => {
+      const ws = new WebSocket(`${server}/room/${code}`);
+      ws.onopen = () => ws.send(JSON.stringify({ t: 'look' }));
+      ws.onerror = () => reject(new Error('could not reach the room'));
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.t !== 'room') return;
+        ws.close();
+        resolve(msg.room.game);
+      };
+    });
+    check(onReturn.current === 1, `with everyone gone ${botName} waits: it is still its turn after 8 seconds (${onReturn.phase.kind})`);
+    dang.page = await dang.ctx.newPage();
+    await dang.page.goto(`${BASE_URL}?room=${code}`);
+    await dang.page.waitForSelector('.board', { timeout: 20_000 });
+
+    // It carries on once someone is back, and the turn reaches Lan, who is away: the game waits for her.
+    await dang.page.waitForFunction((name) => {
+      const panel = document.querySelector('.action-panel')?.textContent ?? '';
+      return panel.includes('Lan') && !panel.includes(name);
+    }, botName, { timeout: 60_000 });
+    check(true, `once someone is back, ${botName} carries on and the turn passes to Lan`);
+    lan.page = await lan.ctx.newPage();
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await panelButtons(lan).first().waitFor({ timeout: 30_000 });
+    check(true, 'Lan comes back to her own seat and can play on');
+
+    check(errors === 0, `no errors on any phone (${errors})`);
+    await dang.ctx.close();
+    await lan.ctx.close();
+  },
+
   async online({ browser }) {
     let failed = 0;
     const check = (ok, what) => {
