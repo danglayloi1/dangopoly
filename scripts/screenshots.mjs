@@ -1255,12 +1255,45 @@ const scenes = {
    * that pops up on the other player's phone, and a phone that drops out and comes back.
    * Needs the room server too (npm run server). Each picture shows the three phones side by side.
    */
+  /** Every drawn icon in every theme, side by side, to spot lines that vanish into a fill (dev server only). */
+  async iconsheet({ page }) {
+    const source = await readFile(new URL('../src/ui/icons.tsx', import.meta.url), 'utf8');
+    const union = source.match(/export type IconName =([\s\S]*?);/)[1];
+    const names = [...union.matchAll(/'(\w+)'/g)].map((m) => m[1]);
+    await page.goto(BASE_URL);
+    for (const theme of ['light', 'dark', 'tet', 'cham', 'contrast']) {
+      await page.evaluate(
+        async ({ names, theme }) => {
+          // The dev server's own modules: the same drawings the game uses.
+          const { Icon } = await import('/dangopoly/src/ui/icons.tsx');
+          const { createElement } = (await import('/dangopoly/node_modules/.vite/deps/react.js')).default; // these two are CommonJS packages
+          const { createRoot } = (await import('/dangopoly/node_modules/.vite/deps/react-dom_client.js')).default;
+          document.documentElement.dataset.theme = theme;
+          document.body.innerHTML = '<div id="sheet" style="display:grid;grid-template-columns:repeat(9,1fr);gap:8px;padding:12px;background:var(--bg);color:var(--text)"></div>';
+          const cell = (name) =>
+            createElement(
+              'div',
+              { key: name, style: { display: 'grid', placeItems: 'center', gap: 2, padding: 6, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11 } },
+              createElement(Icon, { name, size: 56 }),
+              name,
+            );
+          createRoot(document.getElementById('sheet')).render(names.map(cell));
+        },
+        { names, theme },
+      );
+      await page.waitForTimeout(300);
+      await page.locator('#sheet').screenshot({ path: path.join(outDir, `icons-${theme}.png`) });
+      console.log(`saved icons-${theme}.png (${names.length} icons)`);
+      await page.reload();
+    }
+  },
+
   /** The tokens, the reaction stickers and the things to throw (needs `npm run server` too). */
   async icons({ browser }) {
     const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
     let errors = 0;
     const phone = async (name) => {
-      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: dark ? 'dark' : 'light' });
       const page = await ctx.newPage();
       page.on('pageerror', (e) => {
         errors++;

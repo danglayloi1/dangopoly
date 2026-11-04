@@ -90,6 +90,14 @@ button.secondary:disabled {
   vertical-align: middle;
 }
 
+/* On a background that stays pale in every theme, an icon needs dark outlines in every theme too. */
+.throw-choice .icon,
+.fumble-stage .icon,
+.jam-mark .icon,
+.buffalo-mark .icon {
+  color: #2b2420;
+}
+
 /* ===== Language switch and other small controls ===== */
 .lang-switch {
   border: 2px solid var(--ink);

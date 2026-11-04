@@ -1,5 +1,6 @@
 // Small hand-drawn icons in the woodblock style: flat pigment fills with ink outlines.
-// The outline uses currentColor, which the stylesheet sets to the theme's ink.
+// The outline uses currentColor, which the stylesheet sets to the theme's text color (pale in the
+// dark theme). Lines drawn on top of a pale fill use LINE instead, or they'd vanish into it there.
 
 import type { ReactNode } from 'react';
 import { BOARD } from '../data/board';
@@ -12,6 +13,7 @@ const GREEN = '#4f7a3a';
 const BROWN = '#7a4a2c';
 const CREAM = '#f6ecd4';
 const PINK = '#d98a9a';
+const LINE = '#2b2420';
 
 export type IconName =
   | 'bus'
@@ -78,7 +80,7 @@ function medal(color: string, rank: string): ReactNode {
       <path d="M10 3 L14 13 M22 3 L18 13" fill="none" strokeWidth={3.2} stroke={RED} />
       <path d="M10 3 L14 13 M22 3 L18 13" fill="none" strokeWidth={1} />
       <circle cx="16" cy="20" r="8.5" fill={color} />
-      <text x="16" y="24" textAnchor="middle" fontSize="10" fontWeight="900" fill="currentColor" stroke="none">
+      <text x="16" y="24" textAnchor="middle" fontSize="10" fontWeight="900" fill={LINE} stroke="none">
         {rank}
       </text>
     </>
@@ -136,7 +138,7 @@ const DRAWINGS: Record<IconName, ReactNode> = {
   tax: (
     <>
       <path d="M8 5 H23 V24 Q23 27 20 27 H9 Q6 27 6 24 V7 Q6 5 8 5 Z" fill={CREAM} />
-      <path d="M10 10 H19 M10 14 H19 M10 18 H15" fill="none" />
+      <path d="M10 10 H19 M10 14 H19 M10 18 H15" fill="none" stroke={LINE} />
       <circle cx="21.5" cy="21.5" r="5" fill={YELLOW} />
       <rect x="20" y="20" width="3" height="3" fill={CREAM} />
     </>
@@ -170,7 +172,7 @@ const DRAWINGS: Record<IconName, ReactNode> = {
     <>
       <rect x="6" y="5" width="20" height="22" rx="2" fill={BROWN} />
       <rect x="9" y="8" width="14" height="16" fill={CREAM} />
-      <path d="M12 8 V24 M16 8 V24 M20 8 V24" fill="none" strokeWidth={2.4} />
+      <path d="M12 8 V24 M16 8 V24 M20 8 V24" fill="none" stroke={LINE} strokeWidth={2.4} />
     </>
   ),
   // Cầu Bến Thủy: a steel truss bridge over the Lam River
@@ -210,8 +212,8 @@ const DRAWINGS: Record<IconName, ReactNode> = {
     <>
       <rect x="5" y="5" width="22" height="22" rx="5" fill={CREAM} />
       <circle cx="11" cy="11" r="2.3" fill={RED} stroke="none" />
-      <circle cx="16" cy="16" r="2.3" fill="currentColor" stroke="none" />
-      <circle cx="21" cy="21" r="2.3" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="16" r="2.3" fill={LINE} stroke="none" />
+      <circle cx="21" cy="21" r="2.3" fill={LINE} stroke="none" />
     </>
   ),
   house: (
@@ -224,7 +226,7 @@ const DRAWINGS: Record<IconName, ReactNode> = {
   handshake: (
     <>
       <path d="M2.5 13 L8 10 L13 12 L19 9.5 L24 10 L29.5 13 V18.5 L23 21 L17 25.5 Q15.5 26.5 14 25.5 L8 21 L2.5 18.5 Z" fill={YELLOW} />
-      <path d="M13 12 L10 16 Q11.5 17.5 13.5 15.5 L16 13.5 L22.5 19 M17 25.5 L12.5 21.5 M20 23.3 L15.5 19.3" fill="none" />
+      <path d="M13 12 L10 16 Q11.5 17.5 13.5 15.5 L16 13.5 L22.5 19 M17 25.5 L12.5 21.5 M20 23.3 L15.5 19.3" fill="none" stroke={LINE} />
     </>
   ),
   // The tutorial: an unrolled scroll
@@ -233,7 +235,7 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <rect x="8" y="6" width="17" height="20" fill={CREAM} />
       <rect x="5" y="4" width="22" height="4" rx="2" fill={RED} />
       <rect x="5" y="24" width="22" height="4" rx="2" fill={RED} />
-      <path d="M11.5 12 H21.5 M11.5 16 H21.5 M11.5 20 H18" fill="none" />
+      <path d="M11.5 12 H21.5 M11.5 16 H21.5 M11.5 20 H18" fill="none" stroke={LINE} />
     </>
   ),
   gear: (
@@ -297,8 +299,8 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <path d="M6 18 Q5 12 9 12 L19 12 Q23 12 23 16 L23 19 Q22 21 19 21 L9 21 Q6 21 6 18 Z" fill={YELLOW} />
       <path d="M20 13 Q20 7 25 7 Q29 7 29 11 L30 13 Q29 15 26 15 Q22 15 20 13 Z" fill={YELLOW} />
       <path d="M22 8 L20.5 3.5 L25 7 Z" fill={BROWN} />
-      <circle cx="25.5" cy="10" r="1" fill="currentColor" stroke="none" />
-      <circle cx="29.6" cy="12.4" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="25.5" cy="10" r="1" fill={LINE} stroke="none" />
+      <circle cx="29.6" cy="12.4" r="0.9" fill={LINE} stroke="none" />
     </>
   ),
   // A hen from the yard: red comb, yellow beak, a dark green tail
@@ -319,7 +321,7 @@ const DRAWINGS: Record<IconName, ReactNode> = {
   rottenEgg: (
     <>
       <path d="M16 8 C21.5 8 25 15.5 25 20.5 C25 26 21 29 16 29 C11 29 7 26 7 20.5 C7 15.5 10.5 8 16 8 Z" fill="#d9d59a" />
-      <path d="M16 8 L14 13 L18 16 L15 20" fill="none" strokeWidth={1.2} />
+      <path d="M16 8 L14 13 L18 16 L15 20" fill="none" stroke={LINE} strokeWidth={1.2} />
       <circle cx="11.5" cy="23" r="1.6" fill={GREEN} stroke="none" />
       <circle cx="20.5" cy="20" r="1.2" fill={GREEN} stroke="none" />
       <path d="M8 8 Q6 5.5 8 3 M24 8 Q26 5.5 24 3 M16 5 Q14.5 3.5 16 2" fill="none" stroke={GREEN} strokeWidth={1.6} />
@@ -338,15 +340,15 @@ const DRAWINGS: Record<IconName, ReactNode> = {
   conicalHat: (
     <>
       <path d="M16 5 L29 21 Q16 26 3 21 Z" fill="#e8c872" />
-      <path d="M16 5 L11.5 23.5 M16 5 L20.5 23.5" fill="none" strokeWidth={0.9} />
+      <path d="M16 5 L11.5 23.5 M16 5 L20.5 23.5" fill="none" stroke={LINE} strokeWidth={0.9} />
       <path d="M8 23 Q16 29.5 24 23" fill="none" stroke={RED} strokeWidth={1.5} />
     </>
   ),
   // A xe ôm: a motorbike taxi through the traffic
   xeOm: (
     <>
-      <circle cx="8" cy="23" r="4.5" fill={CREAM} />
-      <circle cx="25" cy="23" r="4.5" fill={CREAM} />
+      <circle cx="8" cy="23" r="4.5" fill="none" />
+      <circle cx="25" cy="23" r="4.5" fill="none" />
       <path d="M8 23 L13 15 H21 L25 23 M13 15 L11 11 H15 M21 15 L23 11" fill="none" />
       <path d="M14 15 Q17 12 21 15 Z" fill={RED} />
     </>
@@ -423,9 +425,9 @@ const DRAWINGS: Record<IconName, ReactNode> = {
   chat: (
     <>
       <path d="M5 6 H27 V21 H14 L8 27 V21 H5 Z" fill={CREAM} />
-      <circle cx="11" cy="13.5" r="1.8" fill="currentColor" stroke="none" />
-      <circle cx="16" cy="13.5" r="1.8" fill="currentColor" stroke="none" />
-      <circle cx="21" cy="13.5" r="1.8" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="13.5" r="1.8" fill={LINE} stroke="none" />
+      <circle cx="16" cy="13.5" r="1.8" fill={LINE} stroke="none" />
+      <circle cx="21" cy="13.5" r="1.8" fill={LINE} stroke="none" />
     </>
   ),
   eye: (
@@ -438,7 +440,7 @@ const DRAWINGS: Record<IconName, ReactNode> = {
   clock: (
     <>
       <circle cx="16" cy="17" r="11" fill={CREAM} />
-      <path d="M16 10 V17 L21 20" fill="none" strokeWidth={2.2} />
+      <path d="M16 10 V17 L21 20" fill="none" stroke={LINE} strokeWidth={2.2} />
       <path d="M13 3.5 H19" fill="none" strokeWidth={2.4} />
     </>
   ),
@@ -483,8 +485,8 @@ const DRAWINGS: Record<IconName, ReactNode> = {
         d="M4 9 H28 V13 A3 3 0 0 0 28 19 V23 H4 V19 A3 3 0 0 0 4 13 Z"
         fill={YELLOW}
       />
-      <path d="M11 9 V23" fill="none" strokeDasharray="2 2" />
-      <path d="M15 14 H24 M15 18 H21" fill="none" />
+      <path d="M11 9 V23" fill="none" stroke={LINE} strokeDasharray="2 2" />
+      <path d="M15 14 H24 M15 18 H21" fill="none" stroke={LINE} />
     </>
   ),
 };
