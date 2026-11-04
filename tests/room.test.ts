@@ -334,6 +334,7 @@ describe('after the game', () => {
 
   it('accepts only the listed reactions', () => {
     expect(isReactionId('rangRua')).toBe(true);
+    expect(isReactionId('trauKhoc')).toBe(true); // a drawn sticker
     expect(isReactionId('toString')).toBe(false);
     expect(isReactionId('<script>')).toBe(false);
   });

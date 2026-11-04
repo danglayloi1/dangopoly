@@ -63,7 +63,10 @@ export type IconName =
   | 'wave'
   | 'contrast'
   | 'dog'
-  | 'chicken';
+  | 'chicken'
+  | 'rottenEgg'
+  | 'fishSauce'
+  | 'conicalHat';
 
 const SILVER = '#c0c7cf';
 const BRONZE = '#c27a3a';
@@ -312,6 +315,33 @@ const DRAWINGS: Record<IconName, ReactNode> = {
       <circle cx="23.2" cy="9.4" r="0.9" fill="currentColor" stroke="none" />
     </>
   ),
+  // A rotten egg: cracked, greenish, and you can tell from here
+  rottenEgg: (
+    <>
+      <path d="M16 8 C21.5 8 25 15.5 25 20.5 C25 26 21 29 16 29 C11 29 7 26 7 20.5 C7 15.5 10.5 8 16 8 Z" fill="#d9d59a" />
+      <path d="M16 8 L14 13 L18 16 L15 20" fill="none" strokeWidth={1.2} />
+      <circle cx="11.5" cy="23" r="1.6" fill={GREEN} stroke="none" />
+      <circle cx="20.5" cy="20" r="1.2" fill={GREEN} stroke="none" />
+      <path d="M8 8 Q6 5.5 8 3 M24 8 Q26 5.5 24 3 M16 5 Q14.5 3.5 16 2" fill="none" stroke={GREEN} strokeWidth={1.6} />
+    </>
+  ),
+  // A bottle of nước mắm, with a fish on the label
+  fishSauce: (
+    <>
+      <path d="M13 3 H19 V7 H13 Z" fill={RED} />
+      <path d="M13.5 7 H18.5 V11 Q23 13 23 17 V27 Q23 29 21 29 H11 Q9 29 9 27 V17 Q9 13 13.5 11 Z" fill="#a8622a" />
+      <rect x="9" y="17" width="14" height="8" fill={CREAM} />
+      <path d="M12 21 Q15.5 18 18.5 21 Q15.5 24 12 21 Z M18.5 21 L21 19 V23 Z" fill={SKY} strokeWidth={0.9} />
+    </>
+  ),
+  // A nón lá, sailing through the air like a frisbee
+  conicalHat: (
+    <>
+      <path d="M16 5 L29 21 Q16 26 3 21 Z" fill="#e8c872" />
+      <path d="M16 5 L11.5 23.5 M16 5 L20.5 23.5" fill="none" strokeWidth={0.9} />
+      <path d="M8 23 Q16 29.5 24 23" fill="none" stroke={RED} strokeWidth={1.5} />
+    </>
+  ),
   // A xe ôm: a motorbike taxi through the traffic
   xeOm: (
     <>
@@ -324,9 +354,9 @@ const DRAWINGS: Record<IconName, ReactNode> = {
   // Dép lào: the sole and its strap (thrown, lovingly, online)
   slipper: (
     <>
-      <path d="M16 3 C9 3 7 9 8 16 C9 24 11 29 16 29 C21 29 23 24 24 16 C25 9 23 3 16 3 Z" fill={SKY} />
-      <path d="M9 13 L16 17.5 L23 13" fill="none" stroke={RED} strokeWidth={3} />
-      <circle cx="16" cy="17.5" r="1.6" fill={RED} />
+      <path d="M16 3 C9.5 3 7.5 7 8 12 C8.5 19 11 29 16 29 C21 29 23.5 19 24 12 C24.5 7 22.5 3 16 3 Z" fill={SKY} />
+      <path d="M8.8 18 L16 9.5 L23.2 18" fill="none" stroke={RED} strokeWidth={3} />
+      <circle cx="16" cy="9.5" r="1.6" fill={RED} />
     </>
   ),
   // Bánh chưng: a green square cake tied with bamboo strings

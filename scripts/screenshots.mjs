@@ -1255,6 +1255,86 @@ const scenes = {
    * that pops up on the other player's phone, and a phone that drops out and comes back.
    * Needs the room server too (npm run server). Each picture shows the three phones side by side.
    */
+  /** The tokens, the reaction stickers and the things to throw (needs `npm run server` too). */
+  async icons({ browser }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    const phone = async (name) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => {
+        errors++;
+        console.error(`${name}: ${e.message}`);
+      });
+      reportCrash(page, name);
+      return { name, ctx, page };
+    };
+    const dang = await phone('Đăng');
+    const lan = await phone('Lan');
+    const save = (p, label) => p.page.screenshot({ path: path.join(outDir, `${label}.png`) });
+
+    // All the tokens in the lobby's picker; Đăng takes a new one, so it's on the board later.
+    await openFromMenu(dang.page, /Chơi online/);
+    await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    const picker = dang.page.locator('.token-picker');
+    check((await picker.locator('.token-choice').count()) === 12, 'twelve tokens to choose from');
+    await picker.scrollIntoViewIfNeeded();
+    await picker.screenshot({ path: path.join(outDir, 'tokens.png') });
+    await picker.getByRole('radio', { name: /cháo lươn/ }).click();
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.waitForSelector('.lobby-seat');
+    await lan.page.getByPlaceholder('Tên').fill('Lan');
+    await lan.page.locator('.token-picker').getByRole('radio', { name: /Heo đất/ }).click();
+    await lan.page.getByRole('button', { name: 'Vào phòng' }).click();
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 2);
+    await save(lan, 'lobby');
+    await dang.page.getByRole('radio', { name: /Theo thứ tự/ }).click();
+    await dang.page.getByRole('button', { name: /Bắt đầu ván/ }).click();
+    for (const p of [dang, lan]) await p.page.waitForSelector('.board');
+    await lan.page.waitForTimeout(600);
+    await save(lan, 'tokens-on-the-board');
+
+    // The sticker palette; a sticker reaches the other phone.
+    const open = () => lan.page.getByRole('button', { name: 'Thả cảm xúc' }).click();
+    await open();
+    check((await lan.page.locator('.sticker-choice').count()) === 8, 'eight stickers in the palette');
+    await save(lan, 'palette');
+    const words = await lan.page.locator('.sticker-choice').evaluateAll((list) => list.map((b) => b.title));
+    for (const word of words) {
+      if (word !== words[0]) await open();
+      const shown = dang.page.locator('.sticker-bubble', { hasText: word }).waitFor({ timeout: 6_000 });
+      await lan.page.locator(`.sticker-choice[title="${word}"]`).click();
+      await shown;
+      await lan.page.waitForTimeout(1300); // at most one reaction every 1.2 s
+    }
+    check(true, `every sticker pops up on the other phone (${words.join(', ')})`);
+    await save(dang, 'sticker-on-another-phone');
+
+    // Each new thing, thrown at Đăng; the server allows one every 3 seconds.
+    for (const [item, hit] of [['Trứng thối', 'Thối quá'], ['Chai nước mắm', 'Mặn chát'], ['Con gà', 'Cục ta'], ['Nón lá', 'Vèo']]) {
+      await lan.page.waitForTimeout(3100);
+      await open();
+      await lan.page.getByRole('button', { name: `Ném ${item}` }).click();
+      const landed = dang.page.locator('.fx-throw-hit', { hasText: hit }).waitFor({ timeout: 8_000 });
+      await lan.page.locator('.throw-target', { hasText: 'Đăng' }).click();
+      await landed;
+      const word = dang.page.locator('.fx-throw-hit');
+      const seen = [await word.boundingBox()];
+      await dang.page.waitForTimeout(300);
+      seen.push(await word.boundingBox());
+      await save(dang, `thrown-${item}`);
+      const onScreen = seen.every((box) => box && box.x >= 0 && box.x + box.width <= 390);
+      check(onScreen, `${item} flies across and lands: "${hit}", with the word on screen (${seen.map((box) => box && Math.round(box.x)).join(', ')})`);
+    }
+
+    check(errors === 0, `no errors on any phone (${errors})`);
+    await dang.ctx.close();
+    await lan.ctx.close();
+  },
+
   /** Online with computer players: the host adds them, the room server plays them (needs `npm run server` too). */
   async onlinebots({ browser }) {
     const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
