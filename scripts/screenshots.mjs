@@ -30,12 +30,13 @@ function reportCrash(page, who) {
   );
 }
 
-/** From the entry screen, through the menu, to one of its screens (e.g. /Chơi trên một máy/). */
+/** From the entry screen, through the hub and Dangopoly's menu, to one of its screens (e.g. /Chơi trên một máy/). */
 async function openFromMenu(p, choice) {
   // Loading the same address again keeps the remembered screen, so start from a blank page.
   await p.goto('about:blank');
   await p.goto(BASE_URL);
   await p.getByRole('button', { name: /Vào chơi/ }).click();
+  await p.locator('.hub-game', { hasText: 'Dangopoly' }).click();
   await p.getByRole('button', { name: choice }).click();
 }
 
@@ -59,7 +60,7 @@ const scenes = {
 
     const response = await page.goto(BASE_URL);
     check(response?.ok(), `page loads (${response?.status()})`);
-    check((await page.title()) === 'Dangopoly: Nghệ Tĩnh Edition', 'page title');
+    check((await page.title()) === 'Sân nhởi Nghệ Tĩnh · Dangopoly', 'page title');
     const footer = await page.locator('footer').innerText();
     // The site should show the version in package.json, so a new release needs no change here.
     const { version } = JSON.parse(await readFile('package.json', 'utf8'));
@@ -72,8 +73,11 @@ const scenes = {
     check(ogImage === 'https://danglayloi1.github.io/dangopoly/og-image.png', 'link preview picture is set');
     await shot('entry-screen');
 
-    // A short real game with the real buttons.
+    // A short real game with the real buttons, through the hub.
     await click(/Vào chơi/);
+    check((await page.locator('.hub-game').count()) >= 1, 'the hub lists the games');
+    await shot('hub');
+    await page.locator('.hub-game', { hasText: 'Dangopoly' }).click();
     await shot('menu');
     await click(/Chơi trên một máy/);
     const inputs = page.locator('.player-row input');
@@ -172,6 +176,8 @@ const scenes = {
     await page.goto(BASE_URL);
     await shot('entry');
     await click(/Vào chơi/);
+    await shot('hub');
+    await page.locator('.hub-game', { hasText: 'Dangopoly' }).click();
     await shot('menu');
     await click(/Chơi trên một máy/);
     await shot('setup');
@@ -598,7 +604,9 @@ const scenes = {
     check((await page.locator('.screen-transition.back').count()) === 1, 'and from the other side going back');
     await shot('menu');
     await page.locator('.menu-top .back-button').click();
-    check(await page.getByRole('button', { name: /Vào chơi/ }).isVisible(), 'the menu goes back to the entry screen');
+    check(await page.locator('.hub-game').first().isVisible(), "Dangopoly's menu goes back to the hub");
+    await page.locator('.menu-top .back-button').click();
+    check(await page.getByRole('button', { name: /Vào chơi/ }).isVisible(), 'and the hub to the entry screen');
 
     await startGame(['Đăng', 'Lan', 'Minh', 'Hoa']);
     // Land on Cơ hội with the longest chance card showing and a space for sale.
@@ -736,6 +744,8 @@ const scenes = {
     await page.goto('about:blank');
     await page.goto(BASE_URL);
     await click(/Vào chơi/);
+    check(await page.locator('.hub-saved').isVisible(), "the hub's Dangopoly card says a game is in progress");
+    await page.locator('.hub-game', { hasText: 'Dangopoly' }).click();
     await click(/Chơi tiếp/);
     await page.waitForSelector('.board');
     check((await page.locator('.badge-bot').count()) === 2, 'a saved game keeps its computer players');

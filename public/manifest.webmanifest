@@ -1,7 +1,7 @@
 {
-  "name": "Dangopoly: Nghệ Tĩnh Edition",
-  "short_name": "Dangopoly",
-  "description": "Cờ tỷ phú Nghệ Tĩnh: từ quê nhà Hà Tĩnh, qua cầu Bến Thủy, đến thành Vinh.",
+  "name": "Sân nhởi Nghệ Tĩnh · Dangopoly",
+  "short_name": "Sân nhởi",
+  "description": "Trò chơi xứ Nghệ: Dangopoly, cờ tỷ phú từ Hà Tĩnh đến thành Vinh, và thêm trò mới.",
   "lang": "vi",
   "start_url": "/dangopoly/",
   "scope": "/dangopoly/",

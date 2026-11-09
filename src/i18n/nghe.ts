@@ -10,6 +10,14 @@ export function ngheStrings(vi: Strings): Strings {
     ...vi,
     tagline: 'Từ quê nhà Hà Tĩnh, qua cầu Bến Thủy, ra thành Vinh nhởi.',
     footer: 'Trò nhởi của Đăng',
+    hubEdition: 'Trò nhởi xứ Nghệ',
+    hubTagline: 'Mấy trò nhởi quê mình, nhởi chung một máy hay online với bạn bè.',
+    hubPick: 'Nhởi trò chi?',
+    hubSaved: 'Có ván nhởi dở',
+    dangopolyBlurb: 'Cờ tỷ phú Nghệ Tĩnh: mua đất từ quê nhà Hà Tĩnh ra tận thành Vinh.',
+    moreGames: 'Trò mới',
+    moreGamesHint: 'Trò mới đang làm, chờ chút nghe!',
+    comingSoon: 'Sắp có',
 
     // Setup
     players: 'Người nhởi',

@@ -17,6 +17,16 @@ const vi = {
   tagline: 'Từ quê nhà Hà Tĩnh, qua cầu Bến Thủy, đến thành Vinh.',
   heroAlt: 'Tranh làng quê xứ Nghệ: vườn bưởi, trẻ em thả diều, con trâu, dòng sông và làng ven biển',
   footer: 'Một trò chơi của Đăng',
+  // The hub (the name is used in every language)
+  hubName: 'Sân nhởi',
+  hubEdition: 'Trò chơi xứ Nghệ',
+  hubTagline: 'Những trò chơi quê mình, chơi chung một máy hoặc online với bạn bè.',
+  hubPick: 'Chọn trò chơi',
+  hubSaved: 'Có ván đang dở',
+  dangopolyBlurb: 'Cờ tỷ phú Nghệ Tĩnh: mua đất từ quê nhà Hà Tĩnh ra tận thành Vinh.',
+  moreGames: 'Trò mới',
+  moreGamesHint: 'Đang làm thêm trò chơi mới, chờ nhé!',
+  comingSoon: 'Sắp có',
 
   // Setup
   players: 'Người chơi',
@@ -545,6 +555,15 @@ const en: Strings = {
   tagline: 'From hometown Hà Tĩnh, across Bến Thủy bridge, to Vinh city.',
   heroAlt: 'Folk print of village life: pomelo trees, children flying a kite, a water buffalo, the river and a seaside village',
   footer: 'A game by Đăng',
+  hubName: 'Sân nhởi',
+  hubEdition: 'Games from Nghệ Tĩnh',
+  hubTagline: 'Hometown games to play on one phone, or online with friends.',
+  hubPick: 'Pick a game',
+  hubSaved: 'Game in progress',
+  dangopolyBlurb: 'Nghệ Tĩnh property trading: buy land from Hà Tĩnh all the way to Vinh.',
+  moreGames: 'More games',
+  moreGamesHint: 'New games are on the way. Stay tuned!',
+  comingSoon: 'Coming soon',
 
   players: 'Players',
   playerN: (n) => `Player ${n}`,

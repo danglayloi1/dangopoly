@@ -516,10 +516,17 @@ footer {
   }
 }
 
-/* Narrow phones: the back button matters more than the logo (the board says what this is). */
+/* Narrow phones: the back button matters more than the logo (the board says what this is). On the
+   hub and a game's menu the name stays: there it says where you are, and there's room for it. */
 @media (max-width: 400px) {
   .logo-word {
     display: none;
+  }
+
+  .menu-top .logo-word {
+    display: inline;
+    font-size: 1.1rem;
+    white-space: nowrap;
   }
 }
 

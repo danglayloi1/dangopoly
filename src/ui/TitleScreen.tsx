@@ -4,7 +4,7 @@ import { LangSwitch, ThemeButton } from './Header';
 import { playSound } from './sound';
 
 /**
- * The first screen: the picture, the name, and one button. The tap also lets the browser play
+ * The first screen: the picture, the hub's name, and one button. The tap also lets the browser play
  * sound from then on (browsers only allow it after the player has touched the page).
  */
 export function TitleScreen({ onEnter }: { onEnter: () => void }) {
@@ -17,9 +17,9 @@ export function TitleScreen({ onEnter }: { onEnter: () => void }) {
       </div>
       <img className="title-art" src={bannerArt} alt={t.heroAlt} width={1600} height={900} />
       <div className="title-text">
-        <h1>Dangopoly</h1>
-        <p className="edition">{t.edition}</p>
-        <p className="tagline">{t.tagline}</p>
+        <h1>{t.hubName}</h1>
+        <p className="edition">{t.hubEdition}</p>
+        <p className="tagline">{t.hubTagline}</p>
         <button
           className="primary big enter-button"
           onClick={() => {
