@@ -1,7 +1,7 @@
 import { PLAYER_COLOR_IDS } from '../data/colors';
 import { TOKENS } from '../data/tokens';
 import { ROOM_SERVER_HTTP } from './config';
-import { isRoomCode, type RoomListing } from './protocol';
+import { isGameKind, isRoomCode, type RoomListing } from './protocol';
 
 const TOKEN_IDS: readonly string[] = TOKENS.map((t) => t.id);
 const STAGES = ['lobby', 'playing', 'over'];
@@ -13,6 +13,7 @@ function isListing(v: unknown): v is RoomListing {
   return (
     typeof r.code === 'string' &&
     isRoomCode(r.code) &&
+    (r.kind === undefined || isGameKind(r.kind)) &&
     STAGES.includes(r.stage as string) &&
     typeof r.host === 'string' &&
     Array.isArray(r.players) &&

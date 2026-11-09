@@ -253,6 +253,32 @@ button.pcard:focus-visible {
   min-width: 108px;
 }
 
+/* Online: the room's chip (and a note for watchers) under the title. */
+.tl-room-line {
+  margin: -4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.spectator-note-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tl-seat.away {
+  opacity: 0.6;
+}
+
+.tl-waiting {
+  margin: 0 0 10px;
+  text-align: center;
+}
+
 /* After a game. */
 .tl-over {
   position: fixed;

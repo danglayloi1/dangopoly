@@ -6,7 +6,12 @@ import type { InstantWin } from './game';
 
 const vi = {
   name: 'Tiến lên',
-  blurb: 'Tiến lên miền Nam: ai đánh hết bài trước thì thắng. Chơi với máy.',
+  blurb: 'Tiến lên miền Nam: ai đánh hết bài trước thì thắng. Chơi với máy, hoặc online với bạn bè.',
+  vsBots: 'Chơi với máy',
+  vsBotsHint: 'Một mình cũng chơi được: đấu với 1–3 người máy.',
+  online: 'Chơi online',
+  onlineHint: 'Mỗi người cầm điện thoại của mình; chỉ thấy bài của mình. Thiếu người thì thêm máy.',
+  waitingDeal: (name: string) => `Chờ ${name} chia ván mới…`,
   you: 'Bạn',
   yourName: 'Tên bạn',
   opponents: 'Đối thủ',
@@ -55,15 +60,21 @@ const vi = {
   gameOver: 'Hết ván',
   points: 'Điểm',
   nextGame: 'Ván mới',
-  toHub: 'Về Sân nhởi',
+  toMenu: 'Về menu Tiến lên',
   table: 'Bàn',
+  inRoom: (code: string) => `Tiến lên · Phòng ${code}`,
 };
 
 export type TienLenText = typeof vi;
 
 const en: TienLenText = {
   name: 'Tiến lên',
-  blurb: "Vietnam's favorite card game: first to empty their hand wins. Play against the computer.",
+  blurb: "Vietnam's favorite card game: first to empty their hand wins. Play against the computer, or online with friends.",
+  vsBots: 'Play against the computer',
+  vsBotsHint: 'On your own: take on 1–3 computer players.',
+  online: 'Play online',
+  onlineHint: 'Everyone on their own phone, seeing only their own cards. Short of players? Add computer ones.',
+  waitingDeal: (name) => `Waiting for ${name} to deal again…`,
   you: 'You',
   yourName: 'Your name',
   opponents: 'Opponents',
@@ -112,13 +123,19 @@ const en: TienLenText = {
   gameOver: 'Game over',
   points: 'Points',
   nextGame: 'New game',
-  toHub: 'Back to Sân nhởi',
+  toMenu: 'Back to the Tiến lên menu',
   table: 'Table',
+  inRoom: (code) => `Tiến lên · Room ${code}`,
 };
 
 const nghe: TienLenText = {
   ...vi,
-  blurb: 'Tiến lên miền Nam: đứa mô đánh hết bài trước thì thắng. Nhởi với máy.',
+  blurb: 'Tiến lên miền Nam: đứa mô đánh hết bài trước thì thắng. Nhởi với máy, hay online với bạn bè.',
+  vsBots: 'Nhởi với máy',
+  vsBotsHint: 'Một mình cũng nhởi được: đấu với 1–3 cấy máy.',
+  online: 'Nhởi online',
+  onlineHint: 'Mỗi đứa cầm điện thoại của mình, chỉ chộ bài của mình. Thiếu người thì thêm máy.',
+  waitingDeal: (name) => `Chờ ${name} chia ván mới…`,
   yourName: 'Tên mi',
   yourTurn: 'Tới lượt mi',
   thinking: (name) => `${name} đang tính răng đây…`,
@@ -128,7 +145,6 @@ const nghe: TienLenText = {
   tooLow: 'Bộ ni nỏ chặn được bài trên bàn.',
   youAreOut: (place) => `Mi về ${place}! Chờ mấy đứa nớ đánh nốt…`,
   passedLog: (name) => `${name} bỏ lượt, nỏ đánh`,
-  toHub: 'Về Sân nhởi',
 };
 
 export const TIENLEN_TEXT: Record<UiLang, TienLenText> = { vi, en, nghe };

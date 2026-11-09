@@ -3,6 +3,7 @@ import { MAX_PLAYERS } from '../engine/game';
 import { useLang } from '../i18n/LangContext';
 import type { RoomListing } from '../net/protocol';
 import { fetchRoomList } from '../net/roomList';
+import { TIENLEN_TEXT } from '../games/tienlen/text';
 import { Icon } from './icons';
 import { colorHex } from './look';
 import { TokenIcon } from './TokenIcon';
@@ -14,7 +15,8 @@ const REFRESH_MS = 5_000;
  * players, or watch any of them. Refreshed every few seconds while the screen is visible.
  */
 export function RoomList({ onOpen }: { onOpen: (code: string) => void }) {
-  const { t } = useLang();
+  const { t, uiLang } = useLang();
+  const tl = TIENLEN_TEXT[uiLang];
   const [rooms, setRooms] = useState<RoomListing[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [asked, setAsked] = useState(0); // the refresh button asks again
@@ -69,11 +71,13 @@ export function RoomList({ onOpen }: { onOpen: (code: string) => void }) {
                   ))}
                 </div>
                 <div className="room-info">
-                  <strong>{t.roomOf(r.host)}</strong>
+                  <strong>
+                    {t.roomOf(r.host)} <span className="badge room-game">{r.kind === 'tienlen' ? tl.name : 'Dangopoly'}</span>
+                  </strong>
                   <span className="room-meta">
                     <span className={`room-stage ${r.stage}`}>{t.roomStages[r.stage]}</span>
                     {t.roomPlayers(r.players.length, MAX_PLAYERS)}
-                    {r.round !== null && ` · ${t.roundOf(r.round, null)}`}
+                    {r.round !== null && ` · ${r.kind === 'tienlen' ? tl.game(r.round) : t.roundOf(r.round, null)}`}
                     {r.watchers > 0 && (
                       <>
                         {' · '}

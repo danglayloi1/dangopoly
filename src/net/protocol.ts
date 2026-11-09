@@ -5,6 +5,12 @@ import type { PlayerColorId } from '../data/colors';
 import type { TokenId } from '../data/tokens';
 import type { RulesChoice } from '../engine/game';
 import type { Action, BotLevel, Dice, GameState } from '../engine/types';
+import type { TienLenAction, TienLenState } from '../games/tienlen/game';
+
+/** Which game a room plays. Rooms from before Tiến lên have none: they play Dangopoly. */
+export type GameKind = 'dangopoly' | 'tienlen';
+export const GAME_KINDS: readonly GameKind[] = ['dangopoly', 'tienlen'];
+export const isGameKind = (v: unknown): v is GameKind => GAME_KINDS.includes(v as GameKind);
 
 /** What a player chooses in the lobby. */
 export interface Profile {
@@ -17,7 +23,7 @@ export type FirstTurn = 'roll' | 'inOrder';
 
 /** Phone → server */
 export type ClientMessage =
-  | { t: 'create'; profile: Profile } // a new room, with this phone as the host
+  | { t: 'create'; profile: Profile; kind?: GameKind } // a new room, with this phone as the host
   | { t: 'look' } // see the room before joining (who's in, which tokens are free)
   | { t: 'join'; profile: Profile }
   | { t: 'rejoin'; key: string } // take back a seat after reconnecting
@@ -26,8 +32,8 @@ export type ClientMessage =
   | { t: 'addBot'; level: BotLevel } // host, lobby: a computer player takes a free seat
   | { t: 'removeBot'; seat: number } // host, lobby
   | { t: 'botLevel'; seat: number; level: BotLevel } // host, lobby
-  | { t: 'start'; startingCash: number; firstTurn: FirstTurn; rules: RulesChoice } // host only
-  | { t: 'act'; action: Action }
+  | { t: 'start'; startingCash?: number; firstTurn?: FirstTurn; rules?: RulesChoice } // host only (the options are Dangopoly's)
+  | { t: 'act'; action: Action | TienLenAction }
   | { t: 'react'; reaction: ReactionId } // a quick reaction, shown on every phone
   | { t: 'throw'; target: number; item: ThrowItem } // throw something at another player's token, just for fun
   | { t: 'chat'; text: string } // a chat message (kept: the last CHAT_KEEP of them)
@@ -58,11 +64,13 @@ export const CHAT_KEEP = 30;
 /** The room as one phone sees it. */
 export interface RoomView {
   code: string;
+  kind: GameKind;
   stage: 'lobby' | 'playing';
   host: number; // seat of the host
   seats: SeatView[]; // in playing order once the game starts (seat = player id)
   you: number | null; // this phone's seat, or null when only watching
-  game: GameState | null;
+  game: GameState | null; // Dangopoly
+  tienlen: TienLenState | null; // Tiến lên, with the others' cards hidden (see HIDDEN_CARD)
   firstTurn: FirstTurnRound[] | null; // the dice that decided the order, if they were rolled
   chat: ChatMessage[]; // the most recent messages, oldest first
   listed: boolean; // shown in the public room list (anyone can find it), not just by its link
@@ -72,11 +80,12 @@ export interface RoomView {
 /** A room as the public room list shows it (GET /rooms on the room server). */
 export interface RoomListing {
   code: string;
+  kind?: GameKind; // missing from rooms listed before Tiến lên: Dangopoly
   stage: 'lobby' | 'playing' | 'over';
   host: string; // the host's name
   players: { name: string; token: TokenId; color: PlayerColorId; online: boolean }[];
   watchers: number;
-  round: number | null; // during a game
+  round: number | null; // during a game: Dangopoly's round, or which game of Tiến lên
   updatedAt: number; // ms since 1970
 }
 
@@ -155,6 +164,9 @@ export type ThrowItem = (typeof THROW_ITEMS)[number];
 export const isThrowItem = (v: unknown): v is ThrowItem => (THROW_ITEMS as readonly unknown[]).includes(v);
 
 export const MAX_MESSAGE_BYTES = 8 * 1024;
+
+/** In Tiến lên, what a phone gets instead of each card in someone else's hand: it can count them, not see them. */
+export const HIDDEN_CARD = -1;
 
 // Room codes: 6 letters and digits without look-alikes (no I, L, O, 0, 1).
 export const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';

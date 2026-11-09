@@ -6,7 +6,8 @@ import { BOT_LEVELS } from '../engine/bot';
 import { CLASSIC_RULES, MAX_PLAYERS, MIN_PLAYERS, type RulesChoice } from '../engine/game';
 import { useLang } from '../i18n/LangContext';
 import { roomLink } from '../net/config';
-import type { FirstTurn, Profile } from '../net/protocol';
+import type { FirstTurn, GameKind, Profile } from '../net/protocol';
+import { TIENLEN_TEXT } from '../games/tienlen/text';
 import { forgetSeat } from '../net/seats';
 import type { RoomState } from '../net/useRoom';
 import { LangSwitch, ThemeButton } from './Header';
@@ -23,13 +24,15 @@ import { Icon } from './icons';
 interface Props {
   code: string;
   creating: boolean; // this phone opened the room: it doesn't exist until the form is sent
+  kind: GameKind; // what the room plays (for a new room: what it will play)
   state: RoomState;
   onLeave: () => void;
 }
 
 /** Before an online game: invite friends, everyone picks a name, token and color, the host starts. */
-export function Lobby({ code, creating, state, onLeave }: Props) {
-  const { t, lang } = useLang();
+export function Lobby({ code, creating, kind, state, onLeave }: Props) {
+  const { t, lang, uiLang } = useLang();
+  const dangopoly = kind === 'dangopoly';
   const { room, send, error, status } = state;
   const me = room?.you ?? null;
   const mine = me !== null ? room!.seats[me] : null;
@@ -69,7 +72,7 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
       return;
     }
     if (me !== null) send({ t: 'profile', profile });
-    else send(room ? { t: 'join', profile } : { t: 'create', profile });
+    else send(room ? { t: 'join', profile } : { t: 'create', profile, kind });
   };
 
   const leave = () => {
@@ -93,7 +96,7 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
         <LangSwitch />
       </div>
 
-      <h1 className="lobby-title">{t.roomTitle(code)}</h1>
+      <h1 className="lobby-title">{dangopoly ? t.roomTitle(code) : TIENLEN_TEXT[uiLang].inRoom(code)}</h1>
       {status !== 'open' && (
         <p className="connection-note" role="status">
           {status === 'connecting' ? t.connecting : t.reconnecting}
@@ -201,35 +204,40 @@ export function Lobby({ code, creating, state, onLeave }: Props) {
             <input type="checkbox" checked={room.listed} onChange={(e) => send({ t: 'listed', listed: e.target.checked })} />
             <span>{t.listedLabel}</span>
           </label>
-          <StartingCashPicker text={cashText} onText={setCashText} />
-          <RulesPicker rules={rules} onChange={setRules} />
-          <div className="first-turn-choice">
-            <h2 id="online-first-label">{t.whoFirst}</h2>
-            <div className="segmented" role="radiogroup" aria-labelledby="online-first-label">
-              {(['roll', 'inOrder'] as const).map((choice) => (
-                <button
-                  key={choice}
-                  type="button"
-                  role="radio"
-                  aria-checked={firstTurn === choice}
-                  className={firstTurn === choice ? 'selected' : ''}
-                  onClick={() => setFirstTurn(choice)}
-                >
-                  {choice === 'roll' ? (
-                    <>
-                      <Icon name="dice" /> {t.firstByRoll}
-                    </>
-                  ) : (
-                    t.firstInOrder
-                  )}
-                </button>
-              ))}
+          {dangopoly && <StartingCashPicker text={cashText} onText={setCashText} />}
+          {dangopoly && <RulesPicker rules={rules} onChange={setRules} />}
+          {dangopoly && (
+            <div className="first-turn-choice">
+              <h2 id="online-first-label">{t.whoFirst}</h2>
+              <div className="segmented" role="radiogroup" aria-labelledby="online-first-label">
+                {(['roll', 'inOrder'] as const).map((choice) => (
+                  <button
+                    key={choice}
+                    type="button"
+                    role="radio"
+                    aria-checked={firstTurn === choice}
+                    className={firstTurn === choice ? 'selected' : ''}
+                    onClick={() => setFirstTurn(choice)}
+                  >
+                    {choice === 'roll' ? (
+                      <>
+                        <Icon name="dice" /> {t.firstByRoll}
+                      </>
+                    ) : (
+                      t.firstInOrder
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <button
             className="primary big"
-            disabled={room.seats.length < MIN_PLAYERS || status !== 'open' || startingCash === null}
-            onClick={() => startingCash !== null && send({ t: 'start', startingCash, firstTurn, rules })}
+            disabled={room.seats.length < MIN_PLAYERS || status !== 'open' || (dangopoly && startingCash === null)}
+            onClick={() => {
+              if (!dangopoly) send({ t: 'start' });
+              else if (startingCash !== null) send({ t: 'start', startingCash, firstTurn, rules });
+            }}
           >
             {t.startOnline} →
           </button>

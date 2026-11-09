@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Profile } from '../src/net/protocol';
-import { isReactionId, isRoomCode, newRoomCode, normalizeRoomCode } from '../src/net/protocol';
+import { HIDDEN_CARD, isReactionId, isRoomCode, newRoomCode, normalizeRoomCode } from '../src/net/protocol';
 import {
   act,
   addBot,
@@ -10,7 +10,10 @@ import {
   cleanChat,
   cleanAction,
   cleanProfile,
+  cleanTienLenAction,
   join,
+  kindOf,
+  listing,
   leave,
   playBot,
   rematch,
@@ -189,6 +192,103 @@ describe('computer players in the room', () => {
     const late = 10 * 60_000;
     for (let i = 0; i < 100 && room.game!.phase.kind !== 'gameOver'; i++) room = playBot(room, late) ?? must(act(room, 0, { type: 'TIME_UP' }, late));
     expect(room.game!.phase.kind).toBe('gameOver');
+  });
+});
+
+describe('Tiến lên rooms', () => {
+  /** A Tiến lên room with these people in it, Đăng hosting. */
+  function tienLenLobby(...profiles: Profile[]): RoomState {
+    const random = fakeRandom();
+    let { room } = newRoom('TLN234', profiles[0], random, 'tienlen');
+    for (const p of profiles.slice(1)) room = must(join(room, p, random)).room;
+    return room;
+  }
+  const dealt = (...profiles: Profile[]) => must(start(tienLenLobby(...profiles), 0, undefined, 'inOrder', fakeRandom()));
+
+  it('start with no options: 13 cards for each seat, the lowest card leading', () => {
+    const room = dealt(DANG, LAN, MINH);
+    expect(kindOf(room)).toBe('tienlen');
+    expect(room.game).toBeNull();
+    expect(room.tienlen!.players.map((p) => p.hand.length)).toEqual([13, 13, 13]);
+    expect(start(room, 0, undefined, 'inOrder', fakeRandom())).toEqual({ ok: false, error: 'started' });
+    expect(join(room, HOA, fakeRandom())).toEqual({ ok: false, error: 'started' });
+  });
+
+  it("each phone gets its own cards and only a count of everyone else's, and never the shuffle", () => {
+    const room = dealt(DANG, LAN, MINH);
+    const lan = view(room, 1, new Set([0, 1, 2])).tienlen!;
+    expect(lan.players[1].hand).toEqual(room.tienlen!.players[1].hand);
+    for (const i of [0, 2]) {
+      expect(lan.players[i].hand).toHaveLength(13);
+      expect(lan.players[i].hand.every((c) => c === HIDDEN_CARD)).toBe(true);
+    }
+    expect(lan.rngState).toBe(0);
+    const watcher = view(room, null, new Set([0])).tienlen!;
+    expect(watcher.players.every((p) => p.hand.every((c) => c === HIDDEN_CARD))).toBe(true);
+    expect(JSON.stringify(room.tienlen!.players[0].hand)).not.toBe(JSON.stringify(watcher.players[0].hand));
+  });
+
+  it('only the player whose turn it is may play or pass', () => {
+    const room = dealt(DANG, LAN);
+    const turn = room.tienlen!.current;
+    const other = 1 - turn;
+    const lowest = room.tienlen!.mustInclude!;
+    expect(act(room, other, { type: 'PLAY', cards: [room.tienlen!.players[other].hand[0]] })).toEqual({ ok: false, error: 'notYourMove' });
+    const played = must(act(room, turn, { type: 'PLAY', cards: [lowest] }));
+    expect(played.tienlen!.current).toBe(other);
+    expect(act(played, turn, { type: 'PASS' })).toEqual({ ok: false, error: 'notYourMove' });
+    expect(act(played, other, { type: 'PLAY', cards: [99] })).toEqual({ ok: false, error: 'badMessage' });
+  });
+
+  it('after a game only the host deals the next, or takes the room back to the lobby', () => {
+    const room = dealt(DANG, LAN);
+    const over = { ...room, tienlen: { ...room.tienlen!, phase: 'over' as const, players: room.tienlen!.players.map((p, i) => ({ ...p, place: i + 1 })) } };
+    expect(act(over, 1, { type: 'NEXT_GAME' })).toEqual({ ok: false, error: 'notHost' });
+    expect(must(act(over, 0, { type: 'NEXT_GAME' })).tienlen!.game).toBe(2);
+    const back = must(rematch(over, 0));
+    expect(back.tienlen).toBeNull();
+    expect(view(back, 0, new Set([0])).stage).toBe('lobby');
+  });
+
+  it('refuses moves that are not a play, a pass or a new deal', () => {
+    expect(cleanTienLenAction({ type: 'PLAY', cards: [3, 3] })).toBeNull();
+    expect(cleanTienLenAction({ type: 'PLAY', cards: [] })).toBeNull();
+    expect(cleanTienLenAction({ type: 'PLAY', cards: [52] })).toBeNull();
+    expect(cleanTienLenAction({ type: 'ROLL' })).toBeNull();
+    expect(cleanTienLenAction({ type: 'PLAY', cards: [5, 9], extra: true })).toEqual({ type: 'PLAY', cards: [5, 9] });
+  });
+
+  it('plays its computer players, after a pause', () => {
+    let room = tienLenLobby(DANG);
+    room = must(addBot(room, 0, 'normal', fakeRandom()));
+    room = must(addBot(room, 0, 'hard', fakeRandom()));
+    room = must(start(room, 0, undefined, 'inOrder', fakeRandom()));
+    // Whoever holds the lowest card leads: if that's a bot, the room waits a moment, then plays it.
+    const first = botWaitMs(room, null);
+    if (room.tienlen!.current === 0) expect(first).toBeNull();
+    else expect(first).toBeGreaterThan(0);
+    // Let the bots play until it's Đăng's turn: the game never waits on them.
+    for (let i = 0; i < 50 && room.tienlen!.current !== 0 && room.tienlen!.phase === 'playing'; i++) {
+      expect(botWaitMs(room, room.tienlen!)).toBeGreaterThan(0);
+      room = playBot(room)!;
+    }
+    expect(room.tienlen!.current === 0 || room.tienlen!.phase === 'over').toBe(true);
+    if (room.tienlen!.phase === 'playing') {
+      expect(playBot(room)).toBeNull();
+      expect(botWaitMs(room, room.tienlen!)).toBeNull();
+    }
+  });
+
+  it('show in the room list as Tiến lên, with the game number', () => {
+    const room = dealt(DANG, LAN);
+    expect(listing(room, new Set([0]), 0)).toMatchObject({ kind: 'tienlen', stage: 'playing', round: 1 });
+    expect(listing(tienLenLobby(DANG), new Set([0]), 0)).toMatchObject({ kind: 'tienlen', stage: 'lobby' });
+  });
+
+  it('rooms saved before Tiến lên still play Dangopoly', () => {
+    const { kind: _, ...old } = lobby(DANG, LAN);
+    expect(kindOf(old)).toBe('dangopoly');
+    expect(must(start(old, 0, 15_000_000, 'inOrder', fakeRandom())).game).not.toBeNull();
   });
 });
 
