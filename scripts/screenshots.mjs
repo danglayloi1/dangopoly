@@ -1265,6 +1265,71 @@ const scenes = {
    * that pops up on the other player's phone, and a phone that drops out and comes back.
    * Needs the room server too (npm run server). Each picture shows the three phones side by side.
    */
+  /** Tiến lên against three computer players, with the real buttons: from the hub to the end of a game, then the next. */
+  async tienlen({ page, shot }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', (e) => {
+      errors++;
+      console.error(e.message);
+    });
+    await page.goto('about:blank');
+    await page.goto(BASE_URL);
+    await page.getByRole('button', { name: /Vào chơi/ }).click();
+    const card = page.locator('.hub-game', { hasText: 'Tiến lên' });
+    check(await card.isVisible(), 'the hub has a card for Tiến lên');
+    await shot('hub');
+    await card.click();
+    await page.getByPlaceholder('Tên bạn').fill('Đăng');
+    await shot('setup');
+    await page.getByRole('button', { name: /Chia bài/ }).click();
+    await page.waitForSelector('.tl-hand .pcard');
+    check((await page.locator('.tl-hand .pcard').count()) === 13, 'you are dealt 13 cards');
+    check((await page.locator('.tl-seat').count()) === 3, 'three computer players around the table');
+    await shot('table');
+
+    // Play the game out: on your turn take the first hint (or pass when there's none); the bots play themselves.
+    const play = page.getByRole('button', { name: /^Đánh/ });
+    const pass = page.getByRole('button', { name: 'Bỏ lượt' });
+    const hint = page.getByRole('button', { name: /Gợi ý/ });
+    let mine = 0;
+    let botMoves = false;
+    let midShot = false;
+    for (let step = 0; step < 300 && !(await page.locator('.tl-over').count()); step++) {
+      if (await hint.isEnabled().catch(() => false)) {
+        await hint.click();
+        if (await play.isEnabled()) await play.click();
+        else await pass.click();
+        mine++;
+        if (mine === 3 && !midShot) {
+          midShot = true;
+          await shot('mid-game');
+        }
+      } else if (await pass.isEnabled().catch(() => false)) {
+        await pass.click();
+        mine++;
+      } else {
+        const before = await page.locator('.tl-log li').first().textContent().catch(() => '');
+        await page.waitForTimeout(400);
+        const after = await page.locator('.tl-log li').first().textContent().catch(() => '');
+        if (before !== after) botMoves = true;
+      }
+    }
+    check(mine > 0, `you played or passed ${mine} times with the buttons`);
+    check(botMoves, 'the computer players move by themselves');
+    await page.locator('.tl-over').waitFor({ timeout: 60_000 });
+    const ranking = await page.locator('.tl-ranking li').allTextContents();
+    check(ranking.length === 4 && /Nhất/.test(ranking[0]), `the game ends with everyone's place (${ranking.map((r) => r.replace(/\s+/g, ' ').trim()).join(' | ')})`);
+    await shot('game-over');
+
+    await page.getByRole('button', { name: /Ván mới/ }).click();
+    await page.waitForSelector('.tl-hand .pcard');
+    check((await page.locator('.screen-title').textContent()).includes('Ván 2'), 'a new game is dealt (Ván 2)');
+    await page.getByRole('button', { name: /Quay lại|←/ }).first().click();
+    check(await page.locator('.hub-game', { hasText: 'Tiến lên' }).isVisible(), 'leaving goes back to the hub');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /** Every drawn icon in every theme, side by side, to spot lines that vanish into a fill (dev server only). */
   async iconsheet({ page }) {
     const source = await readFile(new URL('../src/ui/icons.tsx', import.meta.url), 'utf8');

@@ -1,13 +1,22 @@
+import type { CSSProperties } from 'react';
 import bannerArt from '../assets/art/banner.webp';
 import type { SaveFile } from '../engine/save';
 import { useLang } from '../i18n/LangContext';
 import { LangSwitch, ThemeButton } from './Header';
+import { TIENLEN_TEXT } from '../games/tienlen/text';
+import { parseCard } from '../games/tienlen/cards';
 import { Icon } from './icons';
 import { MenuChoice } from './MenuScreen';
+import { PlayingCard } from './tienlen/PlayingCard';
+import './tienlen/tienlen.css';
+
+// The fan of cards on the Tiến lên card.
+const FAN = ['A♠', '2♥', 'K♦'].map(parseCard);
 
 interface Props {
   saved: SaveFile | null; // an unfinished Dangopoly game, so its card can say so
   onDangopoly: () => void;
+  onTienLen: () => void;
   onSettings: () => void;
   onBack: () => void; // to the entry screen
 }
@@ -16,8 +25,9 @@ interface Props {
  * Sân nhởi, the hub: pick a game. Each game has its own menu behind its card; the settings
  * (sound, animations, language, colors) are shared by all of them.
  */
-export function HubScreen({ saved, onDangopoly, onSettings, onBack }: Props) {
-  const { t } = useLang();
+export function HubScreen({ saved, onDangopoly, onTienLen, onSettings, onBack }: Props) {
+  const { t, uiLang } = useLang();
+  const tl = TIENLEN_TEXT[uiLang];
   return (
     <main className="setup menu hub">
       <header className="menu-top">
@@ -38,6 +48,17 @@ export function HubScreen({ saved, onDangopoly, onSettings, onBack }: Props) {
             <strong>Dangopoly</strong>
             <span>{t.dangopolyBlurb}</span>
             {saved && <span className="badge hub-saved">{t.hubSaved}</span>}
+          </span>
+        </button>
+        <button className="hub-game" onClick={onTienLen}>
+          <span className="hub-game-art tl-hub-art" aria-hidden="true">
+            {FAN.map((c, k) => (
+              <PlayingCard key={c} card={c} style={{ '--k': k } as CSSProperties} />
+            ))}
+          </span>
+          <span className="hub-game-text">
+            <strong>{tl.name}</strong>
+            <span>{tl.blurb}</span>
           </span>
         </button>
         <div className="hub-game soon" aria-disabled="true">
