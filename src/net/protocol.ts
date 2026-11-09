@@ -6,10 +6,11 @@ import type { TokenId } from '../data/tokens';
 import type { RulesChoice } from '../engine/game';
 import type { Action, BotLevel, Dice, GameState } from '../engine/types';
 import type { TienLenAction, TienLenState } from '../games/tienlen/game';
+import type { EightsAction, EightsState } from '../games/eights/game';
 
 /** Which game a room plays. Rooms from before Tiến lên have none: they play Dangopoly. */
-export type GameKind = 'dangopoly' | 'tienlen';
-export const GAME_KINDS: readonly GameKind[] = ['dangopoly', 'tienlen'];
+export type GameKind = 'dangopoly' | 'tienlen' | 'eights';
+export const GAME_KINDS: readonly GameKind[] = ['dangopoly', 'tienlen', 'eights'];
 export const isGameKind = (v: unknown): v is GameKind => GAME_KINDS.includes(v as GameKind);
 
 /** What a player chooses in the lobby. */
@@ -33,7 +34,7 @@ export type ClientMessage =
   | { t: 'removeBot'; seat: number } // host, lobby
   | { t: 'botLevel'; seat: number; level: BotLevel } // host, lobby
   | { t: 'start'; startingCash?: number; firstTurn?: FirstTurn; rules?: RulesChoice } // host only (the options are Dangopoly's)
-  | { t: 'act'; action: Action | TienLenAction }
+  | { t: 'act'; action: Action | TienLenAction | EightsAction }
   | { t: 'react'; reaction: ReactionId } // a quick reaction, shown on every phone
   | { t: 'throw'; target: number; item: ThrowItem } // throw something at another player's token, just for fun
   | { t: 'chat'; text: string } // a chat message (kept: the last CHAT_KEEP of them)
@@ -71,6 +72,7 @@ export interface RoomView {
   you: number | null; // this phone's seat, or null when only watching
   game: GameState | null; // Dangopoly
   tienlen: TienLenState | null; // Tiến lên, with the others' cards hidden (see HIDDEN_CARD)
+  eights: EightsState | null; // Crazy Eights, with the others' cards and the deck hidden
   firstTurn: FirstTurnRound[] | null; // the dice that decided the order, if they were rolled
   chat: ChatMessage[]; // the most recent messages, oldest first
   listed: boolean; // shown in the public room list (anyone can find it), not just by its link

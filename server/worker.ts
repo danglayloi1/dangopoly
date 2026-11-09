@@ -289,14 +289,14 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   private async save(room: RoomState | null): Promise<void> {
-    const before = this.room?.tienlen ?? this.room?.game ?? null;
+    const before = this.room ? Room.currentGame(this.room) : null;
     this.room = room;
     if (room) {
       const expires = Date.now() + WEEK_MS;
       await this.ctx.storage.put({ room, expires });
       const wait = Room.botWaitMs(room, before);
       if (wait === null) await this.ctx.storage.setAlarm(expires);
-      else if ((room.tienlen ?? room.game) !== before) await this.ctx.storage.setAlarm(Date.now() + wait);
+      else if (Room.currentGame(room) !== before) await this.ctx.storage.setAlarm(Date.now() + wait);
       // (a chat message during a bot's pause leaves its alarm as it is)
     } else {
       await this.ctx.storage.deleteAll();
@@ -305,7 +305,7 @@ export class GameRoom extends DurableObject<Env> {
 
   /** Someone arrived: if a computer player was waiting for that, it carries on. */
   private async resumeBots(): Promise<void> {
-    if (!this.room || Room.botWaitMs(this.room, this.room.tienlen ?? this.room.game) === null) return;
+    if (!this.room || Room.botWaitMs(this.room, Room.currentGame(this.room)) === null) return;
     const at = await this.ctx.storage.getAlarm();
     if (at === null || at - Date.now() > BOT_ALARM_SOON_MS) await this.ctx.storage.setAlarm(Date.now() + BOT_RESUME_MS);
   }

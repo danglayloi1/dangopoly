@@ -81,12 +81,29 @@ interface TableProps {
   canDeal: boolean; // may start the next game (online: only the host)
   waitingFor?: string; // online: who deals the next game, when it isn't you
   connected?: readonly boolean[]; // online: whose phone is connected
+  title?: string; // instead of the game's name and number (a lesson)
+  glow?: readonly Card[]; // cards in your hand a lesson points at
+  showGameOver?: boolean; // false in a lesson: it ends with its own words
   top?: ReactNode; // under the title: the room's chip, a note for watchers…
   children?: ReactNode; // reactions, chat
 }
 
 /** The table: the others around the top, the play to beat in the middle, your hand at the bottom. */
-export function TienLenTable({ state, me, onAct, onLeave, leaveLabel, canDeal, waitingFor, connected, top, children }: TableProps) {
+export function TienLenTable({
+  state,
+  me,
+  onAct,
+  onLeave,
+  leaveLabel,
+  canDeal,
+  waitingFor,
+  connected,
+  title,
+  glow = [],
+  showGameOver = true,
+  top,
+  children,
+}: TableProps) {
   const { t, uiLang } = useLang();
   const tl = TIENLEN_TEXT[uiLang];
   const [selected, setSelected] = useState<Card[]>([]);
@@ -156,7 +173,7 @@ export function TienLenTable({ state, me, onAct, onLeave, leaveLabel, canDeal, w
 
   return (
     <main className="tl-screen">
-      <ScreenTop title={`${tl.name} · ${tl.game(state.game)}`} onBack={onLeave} />
+      <ScreenTop title={title ?? `${tl.name} · ${tl.game(state.game)}`} onBack={onLeave} />
       {top}
 
       <ul className="tl-opponents">
@@ -220,7 +237,7 @@ export function TienLenTable({ state, me, onAct, onLeave, leaveLabel, canDeal, w
           </p>
           <div className="tl-hand" style={{ '--n': Math.max(mine.hand.length, 1) } as CSSProperties}>
             {mine.hand.map((c) => (
-              <PlayingCard key={c} card={c} selected={selected.includes(c)} onClick={() => toggle(c)} />
+              <PlayingCard key={c} card={c} selected={selected.includes(c)} glow={glow.includes(c)} onClick={() => toggle(c)} />
             ))}
           </div>
           {state.phase === 'playing' && mine.place === null && (
@@ -239,7 +256,7 @@ export function TienLenTable({ state, me, onAct, onLeave, leaveLabel, canDeal, w
         </section>
       )}
 
-      {state.phase === 'over' && (
+      {state.phase === 'over' && showGameOver && (
         <GameOver
           state={state}
           tl={tl}

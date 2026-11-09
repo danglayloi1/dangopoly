@@ -4,7 +4,8 @@
 Its first game is **Dangopoly: Nghệ Tĩnh Edition**, a property-trading board game set in Hà Tĩnh and
 Nghệ An: 2–4 players take turns on one device, or play online from their own phones, in Vietnamese,
 Tiếng Nghệ (the Nghệ Tĩnh dialect: *mi, răng, rứa, nỏ, nhởi…*) or English. The second is **Tiến lên**,
-the card game, against one to three computer players or online, each player on their own phone. More games are on the way.
+the card game, against one to three computer players or online, each player on their own phone; the third is
+**Crazy Eights** (Tám Điên), the classic "follow the suit or the number" game, played the same two ways. More games are on the way.
 
 **Play:** https://danglayloi1.github.io/dangopoly/
 
@@ -58,7 +59,7 @@ With `npm run dev` running, this plays a scripted scene in Microsoft Edge and sa
 `screenshots/` (not committed). Scenes: `trade`, `jail`, `save`, `motion`, `tutorial`, `audit`, `theme`,
 `modes` (round and time limits, festivals, the summary), `effects` (each effect frozen mid-way), `bots` (you against two computer players), `fun` (the dice going off the table, all three ways; a bot talking), `viet` (each Chế độ Việt rule on screen), `missions` (secret missions on one device and online), `roads` (a rush-hour jam and a wandering buffalo), `records` (badges, the
 summary picture and the records screen), `layout` (cards fitting small boards, the phone
-player strip, screen transitions; add `--mobile`), `icons` (the tokens, stickers and things to throw; needs `npm run server` too), `iconsheet` (every drawn icon in every theme), `tienlen` (a whole game of Tiến lên against three bots, then the next), `tienlenonline` (two phones and a bot in one room; needs `npm run server` too), `onlinebots` (a host, a friend and a computer player; needs `npm run server` too), `online` (three phones in one room; needs
+player strip, screen transitions; add `--mobile`), `icons` (the tokens, stickers and things to throw; needs `npm run server` too), `iconsheet` (every drawn icon in every theme), `tienlen` (a whole game of Tiến lên against three bots, then the next), `tienlenonline` (two phones and a bot in one room; needs `npm run server` too), `eights` and `eightsonline` (the same for Crazy Eights), `lessons` (both card games' tutorials, step by step), `onlinebots` (a host, a friend and a computer player; needs `npm run server` too), `online` (three phones in one room; needs
 `npm run server` too), `live` (the published site).
 
 ```bash
@@ -103,6 +104,7 @@ The room server deploys to Cloudflare the same way once the Cloudflare secrets a
 |---|---|
 | `src/engine/` | Dangopoly's rules, with no UI code |
 | `src/games/tienlen/` | Tiến lên: its cards, rules, bots and words |
+| `src/games/eights/` | Crazy Eights: its rules, bots and words (the cards are Tiến lên's) |
 | `src/data/` | The board, tokens, and other fixed game data |
 | `src/ui/` | React screens: setup, board, player list, history |
 | `src/i18n/` | Vietnamese, Tiếng Nghệ (`nghe.ts`) and English text |

@@ -4,6 +4,7 @@ import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
 import type { GameKind, RoomView } from '../net/protocol';
 import { OnlineTienLen } from './tienlen/OnlineTienLen';
+import { OnlineEights } from './eights/OnlineEights';
 import { useRoom, type RoomState } from '../net/useRoom';
 import { BotTalk } from './BotTalk';
 import { ChatBox } from './ChatBox';
@@ -58,6 +59,9 @@ export function OnlineScreen({ code, creating, kind: newKind = 'dangopoly', onCr
   }
   if (state.room?.stage === 'playing' && state.room.tienlen) {
     return <OnlineTienLen room={state.room} game={state.room.tienlen} state={state} onLeave={onLeave} />;
+  }
+  if (state.room?.stage === 'playing' && state.room.eights) {
+    return <OnlineEights room={state.room} game={state.room.eights} state={state} onLeave={onLeave} />;
   }
   if (state.room?.stage === 'playing' && state.room.game) {
     return <OnlineGame room={state.room} game={state.room.game} state={state} onLeave={onLeave} />;

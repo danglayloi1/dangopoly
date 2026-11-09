@@ -65,6 +65,83 @@ button.pcard.selected {
     1px 4px 0 rgba(43, 36, 32, 0.35);
 }
 
+/* A card that can't be played now: faded, and it doesn't lift. */
+button.pcard:disabled {
+  cursor: default;
+  filter: grayscale(0.4) brightness(0.86);
+}
+
+/* A card a lesson points at: a slow golden pulse. */
+.pcard.glow {
+  animation: card-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes card-glow {
+  50% {
+    box-shadow:
+      inset 0 0 0 3px #fbf6e8,
+      0 0 0 4px #d9ae4f,
+      0 0 14px 4px rgba(217, 174, 79, 0.7);
+  }
+}
+
+/* The lessons' hint, under the title. */
+.lesson-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+  border-left: 6px solid var(--gold);
+  border-radius: 12px;
+  background: var(--surface);
+  background-image: var(--paper);
+  box-shadow: var(--print-shadow);
+}
+
+.lesson-bubble header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.lesson-exit {
+  margin-left: auto;
+  font-size: 0.85rem;
+}
+
+.lesson-bubble p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.lesson-wrong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.lesson-bubble > .primary {
+  align-self: flex-end;
+}
+
+.lesson-end {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcard.glow {
+    animation: none;
+    box-shadow:
+      inset 0 0 0 3px #fbf6e8,
+      0 0 0 4px #d9ae4f;
+  }
+}
+
 button.pcard:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;

@@ -32,10 +32,10 @@ function savedMe(): Me {
 }
 
 /**
- * Before a game of Tiến lên: your name, token and color, and one to three computer players with
+ * Before a card game (Tiến lên, or Crazy Eights with `title`): your name, token and color, and one to three computer players with
  * their levels. The computer players take the free tokens, colors and nicknames.
  */
-export function TienLenSetup({ onStart, onBack }: { onStart: (players: NewTienLenPlayer[]) => void; onBack: () => void }) {
+export function TienLenSetup({ title, onStart, onBack }: { title?: string; onStart: (players: NewTienLenPlayer[]) => void; onBack: () => void }) {
   const { t, uiLang } = useLang();
   const tl = TIENLEN_TEXT[uiLang];
   const [me, setMe] = useState<Me>(savedMe);
@@ -68,7 +68,7 @@ export function TienLenSetup({ onStart, onBack }: { onStart: (players: NewTienLe
 
   return (
     <main className="setup">
-      <ScreenTop title={tl.name} onBack={onBack} />
+      <ScreenTop title={title ?? tl.name} onBack={onBack} />
       <form className="setup-card" onSubmit={submit} noValidate>
         <h2>{tl.you}</h2>
         <fieldset className="player-row" style={{ '--player': colorHex(me.color) } as CSSProperties}>

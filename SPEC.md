@@ -609,3 +609,47 @@ or online. Its menu has **Chơi với máy** and **Chơi online**.
     The random state is left out too (`rngState: 0`), so the next deal can't be worked out.
   - The room checks each move: only the player whose turn it is plays or passes, and only cards they hold.
   - Computer players are played by the room, as in Dangopoly, about a second after the last play.
+
+---
+
+## 21. Crazy Eights (Tám Điên)
+
+The third game in the hub, for players who want something like UNO: the classic game UNO grew out of, with
+a normal deck and the usual action cards. Against one to three computer players, or online.
+- **Deal:** 7 cards each between two players, 5 each with more. A card is turned up to start the pile (never
+  an 8: one goes back into the deck).
+- **A turn:** play a card of the suit to follow or the same rank as the top card. **8s** are wild and name the
+  next suit. A **2** makes the next player draw two, unless they add a 2 of their own (then the next draws
+  four, and so on). A **queen** skips the next player. An **ace** turns the direction around; with two players
+  an ace or a queen means playing again.
+- **Can't (or won't) play?** Draw one card. If it fits, it may be played at once, or pass; otherwise the turn
+  ends. When the deck runs out, the pile under its top card is shuffled back in.
+- **Scoring:** the first to empty their hand wins the game and scores the cards left in everyone else's: 8s
+  50, 10s and pictures 10, aces 1, the rest their number. Points add up over the match; **Ván mới** deals
+  again, and the winner starts.
+- **Screen:** the same table as Tiến lên: the deck (tap to draw) and the pile on the felt, with the suit to
+  follow, the cards waiting from 2s, and the direction. Cards that can't be played now are faded; tapping
+  one that can plays it (an 8 first asks for the suit).
+- **Bots** keep their 8s while another card fits, stay in the suit they hold most of, play a 2 or a queen on a
+  player about to go out, and get rid of the cards that would score most. The game is mostly luck: in 400 test
+  games every level won about as often.
+- **Online:** like Tiến lên's rooms. Each phone receives its own hand; everyone else's cards and the deck come
+  as `HIDDEN_CARD` counts, and the random state is left out. The card a player has just drawn stays theirs.
+- **Code:** `src/games/eights/` (rules, bots, words), `src/ui/eights/` (screens); the setup and the game menu
+  are shared with Tiến lên (`TienLenSetup`, `CardGameMenu`).
+
+---
+
+## 22. Tutorials for the card games
+
+Each card game's menu has **Hướng dẫn chơi**, like Dangopoly's: a short guided first game on the real table,
+you against Cu Đơ, with a fixed deal (`src/games/tienlen/lesson.ts`, `src/games/eights/lesson.ts`).
+- A hint at the top says what to do, step by step (in all three languages), and the cards to play glow.
+  A step that only explains has **Tiếp**; a step that asks for a move refuses any other ("Chưa phải nước
+  này"), then plays Cu Đơ's scripted replies one by one.
+- **Tiến lên** (7 steps): the order of the cards, leading with the 3♠, beating a card, passing, a 2 (heo), a
+  straight, and a pair to go out; the last step names the rest (triples, fours, pairs in a row, bombs).
+- **Crazy Eights** (10 steps): following the number, then the suit, a queen, a 2, drawing (and playing the
+  card drawn), and an 8 to go out; the last step adds aces and the scoring.
+- The last step offers **Chơi với máy**, straight to a real game. The moves are real moves through each game's
+  rules; a test plays both lessons through, so a rule change that breaks a lesson fails the tests.
