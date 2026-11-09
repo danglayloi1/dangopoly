@@ -572,4 +572,31 @@ Nghệ Tĩnh. The site stays at the same address.
 - **Shared by every game:** language, colors, sound, animation speed and music. Settings are on the hub
   too. Records, saves and online rooms are Dangopoly's for now.
 - **Next steps:** a room server that can host any game (each game brings its rules, its bots, and what
-  each phone may see), then a second game.
+  each phone may see), so the other games can be played online too.
+
+---
+
+## 20. Tiến lên
+
+The second game in the hub: southern Tiến lên, played against one to three computer players on one device.
+- **Cards:** a normal 52-card deck, 13 each (with fewer than four players the rest stay in the box).
+  From lowest to highest: 3 … 10, J, Q, K, A, 2 (*heo*); suits break ties ♠ < ♣ < ♦ < ♥.
+- **Combinations:** a single (*rác*), a pair (*đôi*), three of a kind (*sám*), four of a kind (*tứ quý*), a
+  straight (*sảnh*, 3+ ranks in a row, no 2s), or pairs in a row (*đôi thông*, 3+ pairs, no 2s).
+- **Turns:** in the first game, whoever holds the lowest card dealt leads, and that play must include it; later
+  the last winner leads. Beat the play on the table with the same shape and size, higher, or pass. Passing
+  leaves the round; when everyone else has passed, whoever played last leads anything.
+- **Bombs (*chặt*):** three pairs in a row beat a single 2; four of a kind beats a 2, a pair of 2s, or three pairs
+  in a row; four pairs in a row beat all of those.
+- **Winning on the deal (*tới trắng*):** four 2s, a dragon (3 to A), six pairs, or five pairs in a row.
+- **End:** the game goes on until one player is left (*bét*). Each game gives n − place points (3, 2, 1, 0 with
+  four players), added up over the match; **Ván mới** deals again, and the winner leads.
+- **Screen:** the others around the top with how many cards they hold, the play to beat on green felt, the last
+  few moves, and your hand at the bottom. Tap cards to choose them; **Gợi ý** picks the cheapest legal play
+  (tap again for the next), **Bỏ lượt** passes, **Đánh** plays. The 13 cards overlap more on narrow screens.
+- **Bots** get rid of low cards first, in as few plays as possible, keep 2s and bombs until someone is about to
+  go out, and don't break up pairs and runs. Dễ is careless and rarely wins; Khó doesn't yet play better
+  than Vừa (in 400 test games they won about as often).
+- **Code:** `src/games/tienlen/` holds the rules as a pure state machine like Dangopoly's (`applyTienLen`), the
+  bots, and the words in three languages; the screens are in `src/ui/tienlen/`. Not yet: online play, and
+  keeping a match when you leave it.

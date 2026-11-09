@@ -1,0 +1,367 @@
+/* ===== Tiến lên (TienLenScreen.tsx, PlayingCard.tsx) ===== */
+
+/* A card: cream paper with an ink border and a thin inner frame; red or black whatever the theme. */
+.pcard {
+  --w: 56px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  border: 1.5px solid #2b2420;
+  border-radius: calc(var(--w) * 0.12);
+  background: #fbf6e8;
+  color: #2b2420;
+  box-shadow:
+    inset 0 0 0 3px #fbf6e8,
+    inset 0 0 0 4px rgba(43, 36, 32, 0.18),
+    1px 2px 0 rgba(43, 36, 32, 0.35);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  user-select: none;
+}
+
+.pcard.red {
+  color: #b8322a;
+}
+
+.pcard-corner {
+  position: absolute;
+  left: calc(var(--w) * 0.08);
+  top: calc(var(--w) * 0.06);
+  font-size: calc(var(--w) * 0.27);
+  line-height: 0.95;
+  text-align: center;
+}
+
+.pcard-middle {
+  position: absolute;
+  right: calc(var(--w) * 0.1);
+  bottom: calc(var(--w) * 0.08);
+  font-size: calc(var(--w) * 0.55);
+  line-height: 1;
+}
+
+/* The back: a red and gold lattice, like a lacquered box. */
+.pcard.back {
+  background: repeating-linear-gradient(45deg, #b8322a 0 3px, #9e2a23 3px 6px);
+  box-shadow:
+    inset 0 0 0 2px #d9ae4f,
+    1px 1px 0 rgba(43, 36, 32, 0.35);
+}
+
+button.pcard {
+  cursor: pointer;
+  transition: transform calc(0.12s * var(--fx, 1)) ease-out;
+}
+
+button.pcard.selected {
+  transform: translateY(-14px);
+  box-shadow:
+    inset 0 0 0 3px #fbf6e8,
+    inset 0 0 0 4px rgba(43, 36, 32, 0.18),
+    0 0 0 3px var(--accent),
+    1px 4px 0 rgba(43, 36, 32, 0.35);
+}
+
+button.pcard:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tl-screen {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 12px 16px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The others: a small seat each, side by side. */
+.tl-opponents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+.tl-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 2px solid var(--ink);
+  border-top: 6px solid var(--player);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.tl-seat.current {
+  box-shadow: 0 0 0 3px var(--player);
+}
+
+.tl-seat-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.tl-seat-cards {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tl-mini-fan {
+  position: relative;
+  width: 34px;
+  height: 22px;
+}
+
+.tl-mini-fan .pcard {
+  --w: 15px;
+  position: absolute;
+  top: 0;
+  left: calc(var(--k) * 4.5px);
+}
+
+.tl-place {
+  border-color: var(--gold);
+}
+
+/* The table: green felt with the play to beat in the middle. */
+.tl-table {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: #2f5d46;
+  background-image: var(--paper);
+  color: #fbf6e8;
+  box-shadow: inset 0 0 0 6px rgba(0, 0, 0, 0.18);
+}
+
+.tl-play {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  animation: tl-land calc(0.25s * var(--fx, 1)) ease-out;
+}
+
+.tl-play .pcard {
+  --w: clamp(42px, 12vw, 64px);
+}
+
+.tl-table.chop .tl-play {
+  animation: tl-chop calc(0.5s * var(--fx, 1)) ease-out;
+}
+
+.tl-play-by,
+.tl-empty {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.tl-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 4.6em;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.tl-log li:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Your corner: what to do, your hand, and the buttons, kept in view at the bottom. */
+.tl-me {
+  position: sticky;
+  bottom: 8px;
+  container-type: inline-size;
+  padding: 10px 12px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--surface);
+  background-image: var(--paper);
+  box-shadow: var(--print-shadow);
+}
+
+.tl-me.current {
+  border-color: var(--player);
+  box-shadow:
+    0 0 0 2px var(--player),
+    var(--print-shadow);
+}
+
+.tl-status {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.tl-status.problem {
+  color: var(--accent);
+}
+
+/* Thirteen cards always fit: they overlap more as the space gets narrower. */
+.tl-hand {
+  --card: clamp(42px, 14cqw, 66px);
+  display: flex;
+  justify-content: center;
+  min-height: calc(var(--card) * 1.4);
+  padding-top: 18px;
+}
+
+.tl-hand .pcard {
+  --w: var(--card);
+}
+
+.tl-hand .pcard + .pcard {
+  margin-left: min(4px, calc((100cqw - var(--n) * var(--card)) / max(var(--n) - 1, 1)));
+}
+
+.tl-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tl-actions .primary {
+  min-width: 108px;
+}
+
+/* After a game. */
+.tl-over {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(20, 14, 10, 0.5);
+}
+
+.tl-over-card {
+  width: min(420px, 100%);
+  padding: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--surface);
+  background-image: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink);
+  animation: pop-in calc(0.25s * var(--fx, 1)) ease-out;
+}
+
+.tl-over-card h2 {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tl-ranking {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tl-ranking li {
+  display: grid;
+  grid-template-columns: 3.4em auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--border);
+  border-left: 6px solid var(--player);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.tl-rank-place {
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.tl-rank-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.tl-over-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* The hub's card for Tiến lên: a fan of cards on the felt (two classes, to win over .hub-game-art). */
+.hub-game-art.tl-hub-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f5d46;
+  background-image: var(--paper);
+}
+
+.hub-game-art.tl-hub-art .pcard {
+  --w: clamp(56px, 16%, 84px);
+  margin: 0 -10px;
+  transform: rotate(calc((var(--k) - 1) * 12deg)) translateY(calc(var(--k) * (var(--k) - 2) * -4px));
+}
+
+@keyframes tl-land {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.06);
+  }
+}
+
+@keyframes tl-chop {
+  0% {
+    opacity: 0;
+    transform: scale(1.4) rotate(-4deg);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(0.95) rotate(3deg);
+  }
+  70% {
+    transform: scale(1.03) rotate(-2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-play,
+  .tl-table.chop .tl-play,
+  .tl-over-card {
+    animation: none;
+  }
+}

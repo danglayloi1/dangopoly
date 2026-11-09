@@ -7,6 +7,9 @@ import { LangProvider, useLang } from './i18n/LangContext';
 import { createTutorialGame } from './tutorial/script';
 import { GameScreen } from './ui/GameScreen';
 import { HubScreen } from './ui/HubScreen';
+import { createTienLen, type NewTienLenPlayer, type TienLenState } from './games/tienlen/game';
+import { TienLenScreen } from './ui/tienlen/TienLenScreen';
+import { TienLenSetup } from './ui/tienlen/TienLenSetup';
 import { MenuScreen } from './ui/MenuScreen';
 import { MusicPanel } from './ui/MusicPanel';
 import { OnlineCard } from './ui/OnlineCard';
@@ -32,7 +35,7 @@ export default function App() {
  * The entry screen, the hub (pick a game), and Dangopoly's menu with the screens reached from it
  * (a game or a room is shown on top of them).
  */
-type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings';
+type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -69,6 +72,7 @@ function Screens() {
   const [game, setGame] = useState<GameState | null>(null);
   const [gameNumber, setGameNumber] = useState(0);
   const [tutorial, setTutorial] = useState(false);
+  const [tienLen, setTienLen] = useState<TienLenState | null>(null);
   // An unfinished game from an earlier visit, offered on the menu.
   const [saved, setSaved] = useState<SaveFile | null>(loadSavedGame);
   const [online, setOnline] = useState<OnlineRoom | null>(() => {
@@ -125,6 +129,14 @@ function Screens() {
   const start = (players: NewPlayer[], startingCash: number, rules: RulesChoice) =>
     play(createGame({ players, startingCash, rules }));
 
+  /** A Tiến lên match, from its setup screen: it takes that screen's place in the history, like a game of Dangopoly. */
+  const startTienLen = (players: NewTienLenPlayer[]) => {
+    history.replaceState({ dangopoly: 'game' } satisfies NavState, '');
+    direction.current = 'rise';
+    setTienLen(createTienLen({ players, seed: crypto.getRandomValues(new Uint32Array(1))[0] }));
+    setGameNumber((n) => n + 1);
+  };
+
   // A new room's link only goes in the address once the room exists (see onCreated).
   const openRoom = (code: string, creating: boolean) => {
     direction.current = 'rise';
@@ -143,6 +155,7 @@ function Screens() {
       // The browser's back and forward buttons look the same from here; most presses are "back".
       direction.current = 'back';
       setGame(null);
+      setTienLen(null);
       setSaved(loadSavedGame());
       const code = roomInUrl();
       setOnline(code ? { code, creating: false } : null);
@@ -163,6 +176,14 @@ function Screens() {
       setGame(null);
       setSaved(loadSavedGame());
       toMenu();
+    }
+  };
+
+  const leaveTienLen = () => {
+    if (navState()?.dangopoly === 'game') history.back();
+    else {
+      setTienLen(null);
+      toHub();
     }
   };
 
@@ -195,6 +216,9 @@ function Screens() {
       />,
     );
   }
+  if (tienLen) {
+    return shown(`tienlen-${gameNumber}`, <TienLenScreen initial={tienLen} onLeave={leaveTienLen} />);
+  }
   if (game) {
     return shown(`game-${gameNumber}`, <GameScreen initialGame={game} onLeave={leaveGame} tutorial={tutorial} />);
   }
@@ -206,7 +230,11 @@ function Screens() {
       case 'title':
         return <TitleScreen onEnter={() => go('hub')} />;
       case 'hub':
-        return <HubScreen saved={saved} onDangopoly={() => go('menu')} onSettings={() => go('settings')} onBack={toTitle} />;
+        return (
+          <HubScreen saved={saved} onDangopoly={() => go('menu')} onTienLen={() => go('tienlen')} onSettings={() => go('settings')} onBack={toTitle} />
+        );
+      case 'tienlen':
+        return <TienLenSetup onStart={startTienLen} onBack={back} />;
       case 'local':
         return <SetupScreen onStart={start} onBack={back} saved={saved} />;
       case 'bots':
