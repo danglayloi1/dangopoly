@@ -14,10 +14,10 @@ interface Props {
   onTutorial: () => void;
   onRecords: () => void;
   onSettings: () => void;
-  onBack: () => void; // to the entry screen
+  onBack: () => void; // to the hub
 }
 
-/** The main menu: continue a saved game, or choose how to play. */
+/** Dangopoly's menu (reached from the hub): continue a saved game, or choose how to play. */
 export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onBots, onOnline, onTutorial, onRecords, onSettings, onBack }: Props) {
   const { t } = useLang();
   return (
@@ -51,7 +51,7 @@ export function MenuScreen({ saved, onContinue, onDiscard, onLocal, onBots, onOn
   );
 }
 
-function MenuChoice({ icon, title, hint, onClick }: { icon: IconName; title: string; hint: string; onClick: () => void }) {
+export function MenuChoice({ icon, title, hint, onClick }: { icon: IconName; title: string; hint: string; onClick: () => void }) {
   return (
     <button className="menu-choice" onClick={onClick}>
       <span className="menu-icon" aria-hidden="true">

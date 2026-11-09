@@ -1,8 +1,9 @@
-# Dangopoly: Nghệ Tĩnh Edition
+# Sân nhởi Nghệ Tĩnh · Dangopoly
 
-A property-trading board game set in Hà Tĩnh and Nghệ An, played in the browser.
-2–4 players take turns on one device, or play online from their own phones, in Vietnamese,
-Tiếng Nghệ (the Nghệ Tĩnh dialect: *mi, răng, rứa, nỏ, nhởi…*) or English.
+**Sân nhởi** ("the playground" in Nghệ) is a small hub of games from Nghệ Tĩnh, played in the browser.
+Its first game is **Dangopoly: Nghệ Tĩnh Edition**, a property-trading board game set in Hà Tĩnh and
+Nghệ An: 2–4 players take turns on one device, or play online from their own phones, in Vietnamese,
+Tiếng Nghệ (the Nghệ Tĩnh dialect: *mi, răng, rứa, nỏ, nhởi…*) or English. More games are on the way.
 
 **Play:** https://danglayloi1.github.io/dangopoly/
 

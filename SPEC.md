@@ -2,6 +2,7 @@
 
 > A property-trading board game set in Hà Tĩnh and Nghệ An, played in the browser.
 > Status: **built (v1.0.0)**. This document now describes the finished game. Play at https://danglayloi1.github.io/dangopoly/
+> Since v2.3.0 it is the first game in **Sân nhởi**, a hub of games (see §19).
 
 ---
 
@@ -557,3 +558,18 @@ Two more Chế độ Việt options; with them, there are seven.
 In the engine, both are new phases (`inJam`, `buffalo`) with two actions each (`XE_OM` / `WAIT_IN_JAM`,
 `LEAD_BUFFALO` / `RIDE_BUFFALO`); the room server accepts those and nothing more. Every dice move now goes
 through `moveByDice`, where jams are checked; outside rush hour it moves and lands exactly as before.
+
+---
+
+## 19. Sân nhởi, the hub
+
+Dangopoly is the first game of **Sân nhởi** ("the playground" in Nghệ), a hub for more games from
+Nghệ Tĩnh. The site stays at the same address.
+- **Entry screen** shows the hub's name. **Vào chơi** opens the hub, which has a card per game: Dangopoly
+  (with "Có ván đang dở" when a game is saved) and a dashed **Trò mới · Sắp có** card for what's coming.
+- **Each game keeps its own menu.** Dangopoly's menu is unchanged; its back button returns to the hub,
+  and the hub's back button to the entry screen. Room links (`?room=…`) still open the room directly.
+- **Shared by every game:** language, colors, sound, animation speed and music. Settings are on the hub
+  too. Records, saves and online rooms are Dangopoly's for now.
+- **Next steps:** a room server that can host any game (each game brings its rules, its bots, and what
+  each phone may see), then a second game.

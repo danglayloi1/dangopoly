@@ -6,6 +6,7 @@ import type { GameState } from './engine/types';
 import { LangProvider, useLang } from './i18n/LangContext';
 import { createTutorialGame } from './tutorial/script';
 import { GameScreen } from './ui/GameScreen';
+import { HubScreen } from './ui/HubScreen';
 import { MenuScreen } from './ui/MenuScreen';
 import { MusicPanel } from './ui/MusicPanel';
 import { OnlineCard } from './ui/OnlineCard';
@@ -27,8 +28,11 @@ export default function App() {
   );
 }
 
-/** The screens reached from the menu (a game or a room is shown on top of them). */
-type Screen = 'title' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings';
+/**
+ * The entry screen, the hub (pick a game), and Dangopoly's menu with the screens reached from it
+ * (a game or a room is shown on top of them).
+ */
+type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -86,7 +90,14 @@ function Screens() {
     setScreen('menu');
   };
 
-  /** From the menu to the entry screen, without leaving the site even if the menu was opened first. */
+  /** From Dangopoly's menu to the hub, without leaving the site even if the menu was opened first. */
+  const toHub = () => {
+    direction.current = 'back';
+    history.replaceState({ dangopoly: 'screen', screen: 'hub' } satisfies NavState, '', location.pathname);
+    setScreen('hub');
+  };
+
+  /** From the hub to the entry screen, the same way. */
   const toTitle = () => {
     direction.current = 'back';
     history.replaceState({ dangopoly: 'screen', screen: 'title' } satisfies NavState, '', location.pathname);
@@ -193,7 +204,9 @@ function Screens() {
   function menuScreen(): ReactNode {
     switch (screen) {
       case 'title':
-        return <TitleScreen onEnter={() => go('menu')} />;
+        return <TitleScreen onEnter={() => go('hub')} />;
+      case 'hub':
+        return <HubScreen saved={saved} onDangopoly={() => go('menu')} onSettings={() => go('settings')} onBack={toTitle} />;
       case 'local':
         return <SetupScreen onStart={start} onBack={back} saved={saved} />;
       case 'bots':
@@ -222,7 +235,7 @@ function Screens() {
             onTutorial={() => play(createTutorialGame(lang), true)}
             onRecords={() => go('records')}
             onSettings={() => go('settings')}
-            onBack={toTitle}
+            onBack={toHub}
           />
         );
     }
