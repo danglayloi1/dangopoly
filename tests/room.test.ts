@@ -9,6 +9,7 @@ import {
   chat,
   cleanChat,
   cleanAction,
+  cleanEightsAction,
   cleanProfile,
   cleanTienLenAction,
   join,
@@ -289,6 +290,74 @@ describe('Tiến lên rooms', () => {
     const { kind: _, ...old } = lobby(DANG, LAN);
     expect(kindOf(old)).toBe('dangopoly');
     expect(must(start(old, 0, 15_000_000, 'inOrder', fakeRandom())).game).not.toBeNull();
+  });
+});
+
+describe('Crazy Eights rooms', () => {
+  function eightsLobby(...profiles: Profile[]): RoomState {
+    const random = fakeRandom();
+    let { room } = newRoom('EIG234', profiles[0], random, 'eights');
+    for (const p of profiles.slice(1)) room = must(join(room, p, random)).room;
+    return room;
+  }
+  const dealt = (...profiles: Profile[]) => must(start(eightsLobby(...profiles), 0, undefined, 'inOrder', fakeRandom()));
+
+  it('start with no options: hands dealt, a card turned up', () => {
+    const room = dealt(DANG, LAN, MINH);
+    expect(kindOf(room)).toBe('eights');
+    expect(room.eights!.players.map((p) => p.hand.length)).toEqual([5, 5, 5]);
+    expect(room.eights!.pile).toHaveLength(1);
+    expect(join(room, HOA, fakeRandom())).toEqual({ ok: false, error: 'started' });
+  });
+
+  it('each phone sees its own hand, how many cards the others hold and how many are left to draw: no cards, no shuffle', () => {
+    const room = dealt(DANG, LAN, MINH);
+    const lan = view(room, 1, new Set([0, 1, 2])).eights!;
+    expect(lan.players[1].hand).toEqual(room.eights!.players[1].hand);
+    expect(lan.players[0].hand.every((c) => c === HIDDEN_CARD) && lan.players[0].hand.length === 5).toBe(true);
+    expect(lan.deck).toHaveLength(room.eights!.deck.length);
+    expect(lan.deck.every((c) => c === HIDDEN_CARD)).toBe(true);
+    expect(lan.pile).toEqual(room.eights!.pile);
+    expect(lan.rngState).toBe(0);
+  });
+
+  it("the card someone just drew stays theirs", () => {
+    const room = dealt(DANG, LAN);
+    const s = room.eights!;
+    // Đăng draws a card that fits, so it waits for him to play it or pass.
+    const fits = { ...s, current: 0, deck: [...s.deck.slice(0, -1), s.pile[0] < 4 ? s.pile[0] + 4 : s.pile[0] - 4] };
+    const drawn = must(act({ ...room, eights: fits }, 0, { type: 'DRAW' }));
+    expect(drawn.eights!.drawn).not.toBeNull();
+    expect(view(drawn, 0, new Set([0, 1])).eights!.drawn).toBe(drawn.eights!.drawn);
+    expect(view(drawn, 1, new Set([0, 1])).eights!.drawn).toBe(HIDDEN_CARD);
+  });
+
+  it('only the player whose turn it is moves; only the host deals again', () => {
+    const room = dealt(DANG, LAN);
+    const turn = room.eights!.current;
+    expect(act(room, 1 - turn, { type: 'DRAW' })).toEqual({ ok: false, error: 'notYourMove' });
+    expect(must(act(room, turn, { type: 'DRAW' })).eights!.log.at(-1)?.type).toBe('drew');
+    const over = { ...room, eights: { ...room.eights!, phase: 'over' as const } };
+    expect(act(over, 1, { type: 'NEXT_GAME' })).toEqual({ ok: false, error: 'notHost' });
+    expect(must(act(over, 0, { type: 'NEXT_GAME' })).eights!.game).toBe(2);
+  });
+
+  it('refuses moves that are not a card, a draw, a pass or a new deal', () => {
+    expect(cleanEightsAction({ type: 'PLAY', card: 52 })).toBeNull();
+    expect(cleanEightsAction({ type: 'PLAY', card: 20, suit: 4 })).toBeNull();
+    expect(cleanEightsAction({ type: 'ROLL' })).toBeNull();
+    expect(cleanEightsAction({ type: 'PLAY', card: 20, suit: 2, extra: 1 })).toEqual({ type: 'PLAY', card: 20, suit: 2 });
+  });
+
+  it('plays its computer players and lists itself as Crazy Eights', () => {
+    let room = eightsLobby(DANG);
+    room = must(addBot(room, 0, 'normal', fakeRandom()));
+    room = must(start(room, 0, undefined, 'inOrder', fakeRandom()));
+    room = { ...room, eights: { ...room.eights!, current: 1 } };
+    expect(botWaitMs(room, room.eights!)).toBeGreaterThan(0);
+    const moved = playBot(room)!;
+    expect(moved.eights!.log.length).toBeGreaterThan(room.eights!.log.length);
+    expect(listing(room, new Set([0]), 0)).toMatchObject({ kind: 'eights', stage: 'playing', round: 1 });
   });
 });
 

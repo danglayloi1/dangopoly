@@ -18,7 +18,7 @@ const hasTwo = (c: Combo): boolean => c.cards.some((card) => rankOf(card) === TW
 function mood(state: TienLenState, salt: number): number {
   let h = Math.imul((state.rngState ^ (state.log.length * 0x9e3779b1) ^ salt) >>> 0, 0x85ebca6b) >>> 0;
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
-  return (h ^ (h >>> 16)) / 2 ** 32;
+  return ((h ^ (h >>> 16)) >>> 0) / 2 ** 32; // unsigned: the XOR on its own can come out negative
 }
 
 /** The move for the bot whose turn it is, or null when it's a person's turn (or the game is over). */

@@ -10,7 +10,12 @@ import { HubScreen } from './ui/HubScreen';
 import { createTienLen, type NewTienLenPlayer, type TienLenState } from './games/tienlen/game';
 import { TienLenScreen } from './ui/tienlen/TienLenScreen';
 import { TienLenSetup } from './ui/tienlen/TienLenSetup';
-import { TienLenMenu } from './ui/tienlen/TienLenMenu';
+import { CardGameMenu } from './ui/CardGameMenu';
+import { createEights, type EightsState } from './games/eights/game';
+import { EIGHTS_TEXT } from './games/eights/text';
+import { EightsScreen } from './ui/eights/EightsScreen';
+import { EightsLesson } from './ui/eights/EightsLesson';
+import { TienLenLesson } from './ui/tienlen/TienLenLesson';
 import { TIENLEN_TEXT } from './games/tienlen/text';
 import type { GameKind } from './net/protocol';
 import { MenuScreen } from './ui/MenuScreen';
@@ -38,7 +43,7 @@ export default function App() {
  * The entry screen, the hub (pick a game), and Dangopoly's menu with the screens reached from it
  * (a game or a room is shown on top of them).
  */
-type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen' | 'tienlenBots' | 'tienlenOnline';
+type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen' | 'tienlenBots' | 'tienlenOnline' | 'eights' | 'eightsBots' | 'eightsOnline';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -77,6 +82,8 @@ function Screens() {
   const [gameNumber, setGameNumber] = useState(0);
   const [tutorial, setTutorial] = useState(false);
   const [tienLen, setTienLen] = useState<TienLenState | null>(null);
+  const [eights, setEights] = useState<EightsState | null>(null);
+  const [lesson, setLesson] = useState<'tienlen' | 'eights' | null>(null); // a card game's guided first game
   // An unfinished game from an earlier visit, offered on the menu.
   const [saved, setSaved] = useState<SaveFile | null>(loadSavedGame);
   const [online, setOnline] = useState<OnlineRoom | null>(() => {
@@ -141,6 +148,14 @@ function Screens() {
     setGameNumber((n) => n + 1);
   };
 
+  /** A Crazy Eights match, the same way (its players are set up like Tiến lên's). */
+  const startEights = (players: NewTienLenPlayer[]) => {
+    history.replaceState({ dangopoly: 'game' } satisfies NavState, '');
+    direction.current = 'rise';
+    setEights(createEights({ players, seed: crypto.getRandomValues(new Uint32Array(1))[0] }));
+    setGameNumber((n) => n + 1);
+  };
+
   // A new room's link only goes in the address once the room exists (see onCreated).
   const openRoom = (code: string, creating: boolean, kind: GameKind = 'dangopoly') => {
     direction.current = 'rise';
@@ -160,6 +175,8 @@ function Screens() {
       direction.current = 'back';
       setGame(null);
       setTienLen(null);
+      setEights(null);
+      setLesson(null);
       setSaved(loadSavedGame());
       const code = roomInUrl();
       setOnline(code ? { code, creating: false } : null);
@@ -191,16 +208,46 @@ function Screens() {
     }
   };
 
+  /** A card game's lesson goes on top of its menu, like a game. */
+  const startLesson = (game: 'tienlen' | 'eights') => {
+    history.pushState({ dangopoly: 'game' } satisfies NavState, '');
+    direction.current = 'rise';
+    setLesson(game);
+    setGameNumber((n) => n + 1);
+  };
+
+  const leaveLesson = () => {
+    if (navState()?.dangopoly === 'game') history.back();
+    else setLesson(null);
+  };
+
+  /** After a lesson: straight to a real game against the computer (its setup takes the lesson's place). */
+  const lessonToBots = (game: 'tienlen' | 'eights') => {
+    const next: Screen = game === 'tienlen' ? 'tienlenBots' : 'eightsBots';
+    history.replaceState({ dangopoly: 'screen', screen: next } satisfies NavState, '', location.pathname);
+    direction.current = 'forward';
+    setLesson(null);
+    setScreen(next);
+  };
+
+  const leaveEights = () => {
+    if (navState()?.dangopoly === 'game') history.back();
+    else {
+      setEights(null);
+      toHub();
+    }
+  };
+
   const leaveRoom = (kind: GameKind) => {
     if (navState()?.dangopoly === 'room') history.back();
     else {
       // Opened from a link: there's no menu behind it in the history, so go to the game's own.
       setOnline(null);
       setSaved(loadSavedGame());
-      if (kind === 'tienlen') {
+      if (kind === 'tienlen' || kind === 'eights') {
         direction.current = 'back';
-        history.replaceState({ dangopoly: 'screen', screen: 'tienlen' } satisfies NavState, '', location.pathname);
-        setScreen('tienlen');
+        history.replaceState({ dangopoly: 'screen', screen: kind } satisfies NavState, '', location.pathname);
+        setScreen(kind);
       } else toMenu();
     }
   };
@@ -225,6 +272,15 @@ function Screens() {
       />,
     );
   }
+  if (lesson === 'tienlen') {
+    return shown(`lesson-${gameNumber}`, <TienLenLesson onLeave={leaveLesson} onPlay={() => lessonToBots('tienlen')} />);
+  }
+  if (lesson === 'eights') {
+    return shown(`lesson-${gameNumber}`, <EightsLesson onLeave={leaveLesson} onPlay={() => lessonToBots('eights')} />);
+  }
+  if (eights) {
+    return shown(`eights-${gameNumber}`, <EightsScreen initial={eights} onLeave={leaveEights} />);
+  }
   if (tienLen) {
     return shown(`tienlen-${gameNumber}`, <TienLenScreen initial={tienLen} onLeave={leaveTienLen} />);
   }
@@ -240,10 +296,45 @@ function Screens() {
         return <TitleScreen onEnter={() => go('hub')} />;
       case 'hub':
         return (
-          <HubScreen saved={saved} onDangopoly={() => go('menu')} onTienLen={() => go('tienlen')} onSettings={() => go('settings')} onBack={toTitle} />
+          <HubScreen
+            saved={saved}
+            onDangopoly={() => go('menu')}
+            onTienLen={() => go('tienlen')}
+            onEights={() => go('eights')}
+            onSettings={() => go('settings')}
+            onBack={toTitle}
+          />
         );
       case 'tienlen':
-        return <TienLenMenu onBots={() => go('tienlenBots')} onOnline={() => go('tienlenOnline')} onBack={toHub} />;
+        return (
+          <CardGameMenu
+            text={TIENLEN_TEXT[uiLang]}
+            onBots={() => go('tienlenBots')}
+            onOnline={() => go('tienlenOnline')}
+            onTutorial={() => startLesson('tienlen')}
+            onBack={toHub}
+          />
+        );
+      case 'eights':
+        return (
+          <CardGameMenu
+            text={EIGHTS_TEXT[uiLang]}
+            onBots={() => go('eightsBots')}
+            onOnline={() => go('eightsOnline')}
+            onTutorial={() => startLesson('eights')}
+            onBack={toHub}
+          />
+        );
+      case 'eightsBots':
+        return <TienLenSetup title={EIGHTS_TEXT[uiLang].name} onStart={startEights} onBack={back} />;
+      case 'eightsOnline':
+        return (
+          <main className="setup">
+            <ScreenTop title={`${EIGHTS_TEXT[uiLang].name} · ${EIGHTS_TEXT[uiLang].online}`} onBack={back} />
+            <OnlineCard onCreateRoom={() => openRoom(newRoomCode(), true, 'eights')} onJoinRoom={(code) => openRoom(code, false)} />
+            <RoomList onOpen={(code) => openRoom(code, false)} />
+          </main>
+        );
       case 'tienlenBots':
         return <TienLenSetup onStart={startTienLen} onBack={back} />;
       case 'tienlenOnline':

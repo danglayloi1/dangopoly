@@ -4,6 +4,8 @@ import type { SaveFile } from '../engine/save';
 import { useLang } from '../i18n/LangContext';
 import { LangSwitch, ThemeButton } from './Header';
 import { TIENLEN_TEXT } from '../games/tienlen/text';
+import { EIGHTS_TEXT } from '../games/eights/text';
+import './eights/eights.css';
 import { parseCard } from '../games/tienlen/cards';
 import { Icon } from './icons';
 import { MenuChoice } from './MenuScreen';
@@ -12,11 +14,14 @@ import './tienlen/tienlen.css';
 
 // The fan of cards on the Tiến lên card.
 const FAN = ['A♠', '2♥', 'K♦'].map(parseCard);
+// …and the four 8s on the Crazy Eights card.
+const EIGHTS = ['8♠', '8♥', '8♣', '8♦'].map(parseCard);
 
 interface Props {
   saved: SaveFile | null; // an unfinished Dangopoly game, so its card can say so
   onDangopoly: () => void;
   onTienLen: () => void;
+  onEights: () => void;
   onSettings: () => void;
   onBack: () => void; // to the entry screen
 }
@@ -25,9 +30,10 @@ interface Props {
  * Sân nhởi, the hub: pick a game. Each game has its own menu behind its card; the settings
  * (sound, animations, language, colors) are shared by all of them.
  */
-export function HubScreen({ saved, onDangopoly, onTienLen, onSettings, onBack }: Props) {
+export function HubScreen({ saved, onDangopoly, onTienLen, onEights, onSettings, onBack }: Props) {
   const { t, uiLang } = useLang();
   const tl = TIENLEN_TEXT[uiLang];
+  const e8 = EIGHTS_TEXT[uiLang];
   return (
     <main className="setup menu hub">
       <header className="menu-top">
@@ -59,6 +65,17 @@ export function HubScreen({ saved, onDangopoly, onTienLen, onSettings, onBack }:
           <span className="hub-game-text">
             <strong>{tl.name}</strong>
             <span>{tl.blurb}</span>
+          </span>
+        </button>
+        <button className="hub-game" onClick={onEights}>
+          <span className="hub-game-art e8-hub-art" aria-hidden="true">
+            {EIGHTS.map((c, k) => (
+              <PlayingCard key={c} card={c} style={{ '--k': k } as CSSProperties} />
+            ))}
+          </span>
+          <span className="hub-game-text">
+            <strong>{e8.name}</strong>
+            <span>{e8.blurb}</span>
           </span>
         </button>
         <div className="hub-game soon" aria-disabled="true">

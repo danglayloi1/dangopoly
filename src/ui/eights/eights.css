@@ -1,0 +1,169 @@
+/* ===== Crazy Eights (EightsScreen.tsx); the cards, seats, table and hand come from tienlen.css ===== */
+
+/* The middle of the felt: the deck to draw from, the pile, and what to follow. */
+.e8-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.e8-deck,
+.e8-pile {
+  --w: clamp(52px, 15vw, 72px);
+}
+
+.e8-deck {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.e8-deck .pcard {
+  --w: clamp(52px, 15vw, 72px);
+  box-shadow:
+    inset 0 0 0 2px #d9ae4f,
+    2px 2px 0 #7a1f19,
+    4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.e8-deck:disabled {
+  cursor: default;
+}
+
+.e8-deck:not(:disabled) .pcard {
+  outline: 3px solid #f6ecd4;
+  outline-offset: 3px;
+}
+
+.e8-deck:focus-visible .pcard {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.pcard.e8-empty {
+  background: transparent;
+  border-style: dashed;
+  border-color: rgba(246, 236, 212, 0.6);
+  box-shadow: none;
+}
+
+.e8-count {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  min-width: 26px;
+  padding: 2px 6px;
+  border: 2px solid #2b2420;
+  border-radius: 999px;
+  background: #fbf6e8;
+  color: #2b2420;
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+.e8-pile .pcard {
+  --w: clamp(52px, 15vw, 72px);
+  animation: tl-land calc(0.25s * var(--fx, 1)) ease-out;
+}
+
+.e8-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.e8-suit {
+  background: #fbf6e8;
+  color: #2b2420;
+  border-color: #2b2420;
+  font-size: 0.8rem;
+}
+
+.e8-suit.red {
+  color: #b8322a;
+}
+
+/* After an 8, the suit to follow isn't the top card's: make that stand out. */
+.e8-suit.called {
+  box-shadow: 0 0 0 3px #d9ae4f;
+}
+
+.e8-penalty {
+  background: #b8322a;
+  border-color: #fbf6e8;
+  color: #fbf6e8;
+  font-size: 0.9rem;
+}
+
+.e8-direction {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* An 8 from your hand: choose the suit the next player must follow. */
+.e8-suit-picker {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.e8-suit-picker p {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 800;
+}
+
+.e8-suit-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fbf6e8;
+  color: #2b2420;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.e8-suit-choice span {
+  font-size: 1.5rem;
+}
+
+.e8-suit-choice.red {
+  color: #b8322a;
+}
+
+.e8-winner {
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+/* The hub's card for Crazy Eights: four 8s fanned on the felt. */
+.hub-game-art.e8-hub-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f5d46;
+  background-image: var(--paper);
+}
+
+.hub-game-art.e8-hub-art .pcard {
+  --w: clamp(48px, 14%, 76px);
+  margin: 0 -12px;
+  transform: rotate(calc((var(--k) - 1.5) * 10deg)) translateY(calc((var(--k) - 1.5) * (var(--k) - 1.5) * 3px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e8-pile .pcard {
+    animation: none;
+  }
+}

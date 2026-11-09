@@ -1316,8 +1316,13 @@ const scenes = {
         if (before !== after) botMoves = true;
       }
     }
-    check(mine > 0, `you played or passed ${mine} times with the buttons`);
-    check(botMoves, 'the computer players move by themselves');
+    // A hand can win on the deal (tới trắng): then the game is over before anyone moves.
+    const instant = (await page.locator('.tl-log').textContent()).includes('tới trắng');
+    if (instant) check(true, 'someone won on the deal (tới trắng), so nobody had to move');
+    else {
+      check(mine > 0, `you played or passed ${mine} times with the buttons`);
+      check(botMoves, 'the computer players move by themselves');
+    }
     await page.locator('.tl-over').waitFor({ timeout: 60_000 });
     const ranking = await page.locator('.tl-ranking li').allTextContents();
     check(ranking.length === 4 && /Nhất/.test(ranking[0]), `the game ends with everyone's place (${ranking.map((r) => r.replace(/\s+/g, ' ').trim()).join(' | ')})`);
@@ -1415,7 +1420,12 @@ const scenes = {
       }
       if (!moved) await dang.page.waitForTimeout(300);
     }
-    check(moves.Đăng > 0 && moves.Lan > 0, `both phones played their own turns (Đăng ${moves.Đăng}, Lan ${moves.Lan}); the bot played its own`);
+    // A hand can win on the deal (tới trắng): then the game is over before anyone moves.
+    const instant = (await dang.page.locator('.tl-log').textContent()).includes('tới trắng');
+    check(
+      (moves.Đăng > 0 && moves.Lan > 0) || instant,
+      instant ? 'someone won on the deal (tới trắng), so nobody had to move' : `both phones played their own turns (Đăng ${moves.Đăng}, Lan ${moves.Lan}); the bot played its own`,
+    );
     await dang.page.locator('.tl-over').waitFor({ timeout: 30_000 });
     await lan.page.locator('.tl-over').waitFor({ timeout: 30_000 });
     const ranks = await Promise.all([dang, lan].map((p) => p.page.locator('.tl-ranking li').allTextContents()));
@@ -1432,6 +1442,248 @@ const scenes = {
     check(errors === 0, `no errors on any phone (${errors})`);
     await dang.ctx.close();
     await lan.ctx.close();
+  },
+
+  /** Crazy Eights against three computer players, with the real buttons, from the hub to the next game. */
+  async eights({ page, shot }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', (e) => {
+      errors++;
+      console.error(e.message);
+    });
+    await page.goto('about:blank');
+    await page.goto(BASE_URL);
+    await page.getByRole('button', { name: /Vào chơi/ }).click();
+    const card = page.locator('.hub-game', { hasText: 'Tám Điên' });
+    check(await card.isVisible(), 'the hub has a card for Crazy Eights (Tám Điên)');
+    await shot('hub');
+    await card.click();
+    await page.getByRole('button', { name: /Chơi với máy/ }).click();
+    await page.getByPlaceholder('Tên bạn').fill('Đăng');
+    await page.getByRole('button', { name: /Chia bài/ }).click();
+    await page.waitForSelector('.tl-hand .pcard');
+    check((await page.locator('.tl-hand .pcard').count()) === 5, 'four players: five cards each');
+    check((await page.locator('.e8-pile .pcard').count()) === 1, 'a card is turned up on the pile');
+    await shot('table');
+
+    let mine = 0;
+    let eights = 0;
+    let shotMid = false;
+    for (let step = 0; step < 600 && !(await page.locator('.tl-over').count()); step++) {
+      const playable = page.locator('.tl-hand button.pcard:not(:disabled)');
+      const pass = page.getByRole('button', { name: 'Bỏ lượt' });
+      const draw = page.locator('.tl-actions .primary');
+      if ((await playable.count()) > 0) {
+        await playable.first().click();
+        if (await page.locator('.e8-suit-picker').count()) {
+          if (!eights++) await shot('choose-suit');
+          await page.locator('.e8-suit-choice').first().click();
+        }
+        mine++;
+      } else if (await pass.isEnabled().catch(() => false)) {
+        await pass.click();
+        mine++;
+      } else if (await draw.isEnabled().catch(() => false)) {
+        await draw.click();
+        mine++;
+      } else {
+        await page.waitForTimeout(300);
+      }
+      if (mine === 4 && !shotMid) {
+        shotMid = true;
+        await shot('mid-game');
+      }
+    }
+    check(mine > 0, `you played, drew or passed ${mine} times with the buttons`);
+    await page.locator('.tl-over').waitFor({ timeout: 60_000 });
+    const winner = await page.locator('.e8-winner').textContent();
+    check(/hết bài trước/.test(winner), `the game ends with a winner and points ("${winner.trim()}")`);
+    await shot('game-over');
+    await page.getByRole('button', { name: /Ván mới/ }).click();
+    await page.locator('.screen-title', { hasText: 'Ván 2' }).waitFor();
+    check(true, 'a new game is dealt (Ván 2)');
+    await page.getByRole('button', { name: /Quay lại|←/ }).first().click();
+    check(await page.getByRole('button', { name: /Chơi với máy/ }).isVisible(), "leaving goes back to Crazy Eights' menu");
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
+  /** Crazy Eights online: two phones and a computer player in one room (needs `npm run server` too). */
+  async eightsonline({ browser }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    const phone = async (name) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: dark ? 'dark' : 'light' });
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => {
+        errors++;
+        console.error(`${name}: ${e.message}`);
+      });
+      reportCrash(page, name);
+      return { name, ctx, page };
+    };
+    const dang = await phone('Đăng');
+    const lan = await phone('Lan');
+    const save = (p, label) => p.page.screenshot({ path: path.join(outDir, `${label}.png`) });
+
+    await dang.page.goto(BASE_URL);
+    await dang.page.getByRole('button', { name: /Vào chơi/ }).click();
+    await dang.page.locator('.hub-game', { hasText: 'Tám Điên' }).click();
+    await dang.page.getByRole('button', { name: /Chơi online/ }).click();
+    await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    check((await dang.page.locator('.lobby-title').textContent()).includes('Tám Điên'), `a Crazy Eights room is created (${code})`);
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.waitForSelector('.lobby-seat');
+    await lan.page.getByPlaceholder('Tên').fill('Lan');
+    await lan.page.getByRole('button', { name: 'Vào phòng' }).click();
+    await lan.page.waitForSelector('.badge-you');
+    await dang.page.getByRole('button', { name: 'Thêm máy chơi cùng' }).click();
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 3);
+    await dang.page.getByRole('button', { name: /Bắt đầu ván/ }).click();
+    for (const p of [dang, lan]) await p.page.waitForSelector('.tl-hand .pcard');
+    const hands = await Promise.all([dang, lan].map((p) => p.page.locator('.tl-hand .pcard').evaluateAll((cards) => cards.map((c) => c.getAttribute('aria-label')))));
+    check(hands.every((h) => h.length === 5) && !hands[0].some((c) => hands[1].includes(c)), 'each phone is dealt its own five cards');
+
+    // What a phone without a seat receives: counts for hands and the deck, the pile face up, no shuffle.
+    const server = BASE_URL.includes('github.io') ? 'wss://dangopoly-server.danglayloi1.workers.dev' : 'ws://localhost:8787';
+    const seen = await new Promise((resolve, reject) => {
+      const ws = new WebSocket(`${server}/room/${code}`);
+      ws.onopen = () => ws.send(JSON.stringify({ t: 'look' }));
+      ws.onerror = () => reject(new Error('could not reach the room'));
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.t !== 'room') return;
+        ws.close();
+        resolve(msg.room);
+      };
+    });
+    const g = seen.eights;
+    check(
+      seen.kind === 'eights' && g.rngState === 0 && g.deck.length > 0 && g.deck.every((c) => c === -1) && g.players.every((p) => p.hand.every((c) => c === -1)) && g.pile[0] >= 0,
+      'a watcher receives counts for every hand and the deck, the pile face up, and nothing else',
+    );
+    await save(lan, 'table');
+
+    const moves = { Đăng: 0, Lan: 0 };
+    for (let step = 0; step < 800 && !(await dang.page.locator('.tl-over').count()); step++) {
+      let moved = false;
+      for (const p of [dang, lan]) {
+        const playable = p.page.locator('.tl-hand button.pcard:not(:disabled)');
+        const pass = p.page.getByRole('button', { name: 'Bỏ lượt' });
+        const draw = p.page.locator('.tl-actions .primary');
+        if ((await playable.count()) > 0) {
+          await playable.first().click();
+          if (await p.page.locator('.e8-suit-picker').count()) await p.page.locator('.e8-suit-choice').first().click();
+        } else if (await pass.isEnabled().catch(() => false)) await pass.click();
+        else if (await draw.isEnabled().catch(() => false)) await draw.click();
+        else continue;
+        moves[p.name]++;
+        moved = true;
+        if (moves.Đăng + moves.Lan === 3) await save(dang, 'mid-game');
+        await p.page.waitForTimeout(300);
+      }
+      if (!moved) await dang.page.waitForTimeout(300);
+    }
+    check(moves.Đăng > 0 && moves.Lan > 0, `both phones played their own turns (Đăng ${moves.Đăng}, Lan ${moves.Lan}); the bot played its own`);
+    for (const p of [dang, lan]) await p.page.locator('.tl-over').waitFor({ timeout: 30_000 });
+    const winners = await Promise.all([dang, lan].map((p) => p.page.locator('.e8-winner').textContent()));
+    check(winners[0] === winners[1], `both phones show the same result ("${winners[0].trim()}")`);
+    check((await lan.page.getByRole('button', { name: /Ván mới/ }).count()) === 0, 'only the host can deal again');
+    await save(lan, 'game-over');
+    await dang.page.getByRole('button', { name: /Ván mới/ }).click();
+    for (const p of [dang, lan]) await p.page.locator('.screen-title', { hasText: 'Ván 2' }).waitFor({ timeout: 10_000 });
+    check(true, 'the host deals again: Ván 2 on both phones');
+    check(errors === 0, `no errors on any phone (${errors})`);
+    await dang.ctx.close();
+    await lan.ctx.close();
+  },
+
+  /** The card games' tutorials, followed step by step with real taps (and one wrong move). */
+  async lessons({ page, shot }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', (e) => {
+      errors++;
+      console.error(e.message);
+    });
+    const at = (n) => page.locator('.lesson-step', { hasText: `Bước ${n}/` }).waitFor({ timeout: 10_000 });
+    const card = (name) => page.locator(`.tl-hand .pcard[aria-label="${name}"]`);
+    const open = async (game) => {
+      await page.goto('about:blank');
+      await page.goto(BASE_URL);
+      await page.getByRole('button', { name: /Vào chơi/ }).click();
+      await page.locator('.hub-game', { hasText: game }).click();
+      await page.getByRole('button', { name: /Hướng dẫn chơi/ }).click();
+      await page.locator('.lesson-bubble').waitFor();
+    };
+
+    // Tiến lên.
+    await open('Tiến lên');
+    await shot('tienlen-1-intro');
+    await page.getByRole('button', { name: /Tiếp/ }).click();
+    await at(2);
+    check(await card('3♠').evaluate((el) => el.classList.contains('glow')), 'the lesson points at the 3♠');
+    await card('3♠').click();
+    await page.getByRole('button', { name: /^Đánh/ }).click();
+    await at(3);
+    check((await page.locator('.tl-play .pcard').getAttribute('aria-label')) === '4♣', 'Cu Đơ answers with the 4♣ by himself');
+    await page.getByRole('button', { name: 'Bỏ lượt' }).click();
+    await at(4);
+    await card('2♠').click();
+    await page.getByRole('button', { name: /^Đánh/ }).click();
+    await at(5);
+    await shot('tienlen-5-straight');
+    // A move the step doesn't ask for is refused, and the cards stay in your hand.
+    await card('9♠').click();
+    await page.getByRole('button', { name: /^Đánh/ }).click();
+    await page.locator('.lesson-wrong').waitFor();
+    check((await card('9♠').count()) === 1, 'a move the step doesn\'t ask for is refused, with a reminder');
+    await shot('tienlen-wrong-move');
+    check((await page.locator('.tl-hand .pcard.selected').count()) === 0, 'and the choice is cleared, ready to try again');
+    for (const c of ['6♣', '7♥', '8♠']) await card(c).click();
+    await page.getByRole('button', { name: /^Đánh/ }).click();
+    await at(6);
+    for (const c of ['9♠', '9♥']) await card(c).click();
+    await page.getByRole('button', { name: /^Đánh/ }).click();
+    await at(7);
+    check((await page.locator('.tl-hand .pcard').count()) === 0, 'Tiến lên: following every step, you go out first');
+    await shot('tienlen-7-done');
+    await page.getByRole('button', { name: /Chơi với máy/ }).click();
+    check(await page.getByRole('button', { name: /Chia bài/ }).isVisible(), 'after the lesson, straight to a game against the computer');
+
+    // Crazy Eights.
+    await open('Tám Điên');
+    await page.getByRole('button', { name: /Tiếp/ }).click();
+    const steps = [
+      [2, '5♥'],
+      [3, '9♥'],
+      [4, 'Q♣'],
+      [5, '2♣'],
+    ];
+    for (const [n, c] of steps) {
+      await at(n);
+      await card(c).click();
+    }
+    await at(6);
+    await shot('eights-6-draw');
+    await page.locator('.tl-actions .primary').click(); // Rút bài
+    await at(7);
+    await card('6♣').click();
+    await at(8);
+    await card('4♦').click();
+    await at(9);
+    await card('8♠').click();
+    await page.locator('.e8-suit-picker').waitFor();
+    await page.locator('.e8-suit-choice').nth(3).click(); // hearts
+    await at(10);
+    check((await page.locator('.tl-hand .pcard').count()) === 0, 'Crazy Eights: following every step, you go out with the 8');
+    await shot('eights-10-done');
+    await page.getByRole('button', { name: 'Xong' }).click();
+    check(await page.getByRole('button', { name: /Hướng dẫn chơi/ }).isVisible(), "leaving the lesson goes back to the game's menu");
+    check(errors === 0, `no errors on the page (${errors})`);
   },
 
   /** Every drawn icon in every theme, side by side, to spot lines that vanish into a fill (dev server only). */

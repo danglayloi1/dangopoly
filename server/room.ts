@@ -21,6 +21,8 @@ import type { Action, BotLevel, Dice, GameState, VietRules } from '../src/engine
 import { tienLenBotAction } from '../src/games/tienlen/bot';
 import { DECK_SIZE } from '../src/games/tienlen/cards';
 import { applyTienLen, createTienLen, TienLenError, type TienLenAction, type TienLenState } from '../src/games/tienlen/game';
+import { eightsBotAction } from '../src/games/eights/bot';
+import { applyEights, createEights, EightsError, type EightsAction, type EightsState } from '../src/games/eights/game';
 import {
   CHAT_KEEP,
   CHAT_MAX_LENGTH,
@@ -51,6 +53,7 @@ export interface RoomState {
   seats: Seat[];
   game: GameState | null; // Dangopoly
   tienlen?: TienLenState | null; // Tiến lên
+  eights?: EightsState | null; // Crazy Eights
   firstTurn: FirstTurnRound[] | null;
   chat?: ChatMessage[]; // missing in rooms saved before chat
   listed?: boolean; // in the public room list; missing means yes (rooms are listed unless the host hides them)
@@ -78,11 +81,18 @@ const TIENLEN_BOT_MS = 1_100; // the last play lands on the table, then the usua
 
 export const kindOf = (room: RoomState): GameKind => room.kind ?? 'dangopoly';
 /** Whether a game is being played in the room (or has been, until the host takes it back to the lobby). */
-export const started = (room: RoomState): boolean => room.game !== null || Boolean(room.tienlen);
+export const started = (room: RoomState): boolean => room.game !== null || Boolean(room.tienlen) || Boolean(room.eights);
+
+/** The game being played, whichever it is (the room's alarm compares it before and after a change). */
+export const currentGame = (room: RoomState): GameState | TienLenState | EightsState | null => room.tienlen ?? room.eights ?? room.game;
+
+// Crazy Eights's bots wait as long as Tiến lên's: the card lands, then the usual pause.
+const CARD_FIRST_MOVE_MS = TIENLEN_FIRST_MOVE_MS;
+const CARD_BOT_MS = TIENLEN_BOT_MS;
 
 export function newRoom(code: string, host: Profile, random: Randomness, kind: GameKind = 'dangopoly'): { room: RoomState; key: string } {
   const key = random.key();
-  return { room: { code, kind, host: 0, seats: [{ ...host, key }], game: null, tienlen: null, firstTurn: null }, key };
+  return { room: { code, kind, host: 0, seats: [{ ...host, key }], game: null, tienlen: null, eights: null, firstTurn: null }, key };
 }
 
 /** A profile from a message, tidied up, or null if it can't be used. */
@@ -189,6 +199,10 @@ export function start(
     const players = room.seats.map(({ name, token, color, bot }) => ({ name, token, color, ...(bot ? { bot } : {}) }));
     return ok({ ...room, tienlen: createTienLen({ players, seed: random.seed() }), firstTurn: null });
   }
+  if (kindOf(room) === 'eights') {
+    const players = room.seats.map(({ name, token, color, bot }) => ({ name, token, color, ...(bot ? { bot } : {}) }));
+    return ok({ ...room, eights: createEights({ players, seed: random.seed() }), firstTurn: null });
+  }
   if (!Number.isInteger(startingCash) || (startingCash as number) < MIN_STARTING_CASH || (startingCash as number) > MAX_STARTING_CASH) {
     return fail('badMessage');
   }
@@ -251,8 +265,21 @@ export function chat(room: RoomState, seat: number, raw: unknown, now: number = 
 /** After a game, the host takes the room back to the lobby: same seats, choices and host; a new game can start. */
 export function rematch(room: RoomState, seat: number): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
-  if (room.game?.phase.kind !== 'gameOver' && room.tienlen?.phase !== 'over') return fail('notAllowed');
-  return ok({ ...room, game: null, tienlen: null, firstTurn: null });
+  if (room.game?.phase.kind !== 'gameOver' && room.tienlen?.phase !== 'over' && room.eights?.phase !== 'over') return fail('notAllowed');
+  return ok({ ...room, game: null, tienlen: null, eights: null, firstTurn: null });
+}
+
+/** Crazy Eights: a card, a draw or a pass from the phone whose turn it is; a new deal from the host, after a game. */
+function actEights(room: RoomState, state: EightsState, seat: number, raw: unknown): Result<RoomState> {
+  const action = cleanEightsAction(raw);
+  if (!action) return fail('badMessage');
+  if (action.type === 'NEXT_GAME' ? seat !== room.host : seat !== state.current) return fail(action.type === 'NEXT_GAME' ? 'notHost' : 'notYourMove');
+  try {
+    return ok({ ...room, eights: applyEights(state, action) });
+  } catch (e) {
+    if (e instanceof EightsError) return fail('notAllowed');
+    throw e;
+  }
 }
 
 /** Tiến lên: a play or a pass from the phone whose turn it is; a new deal from the host, after a game. */
@@ -275,6 +302,7 @@ function actTienLen(room: RoomState, state: TienLenState, seat: number, raw: unk
  */
 export function act(room: RoomState, seat: number, raw: unknown, now: number = Date.now()): Result<RoomState> {
   if (room.tienlen) return actTienLen(room, room.tienlen, seat, raw);
+  if (room.eights) return actEights(room, room.eights, seat, raw);
   if (!room.game) return fail('notAllowed');
   const action = cleanAction(raw);
   if (!action) return fail('badMessage');
@@ -304,6 +332,10 @@ export function playBot(room: RoomState, now: number = Date.now()): RoomState | 
     const move = tienLenBotAction(room.tienlen);
     return move ? { ...room, tienlen: applyTienLen(room.tienlen, move) } : null;
   }
+  if (room.eights) {
+    const move = eightsBotAction(room.eights);
+    return move ? { ...room, eights: applyEights(room.eights, move) } : null;
+  }
   const action = room.game && botAction(room.game);
   if (!room.game || !action) return null;
   const { mode } = room.game.rules;
@@ -322,7 +354,11 @@ export function playBot(room: RoomState, now: number = Date.now()): RoomState | 
  * last move has to play out on the phones first (`before` is the game before it), then a short pause,
  * just as on one device. Phones set to faster animations simply finish sooner.
  */
-export function botWaitMs(room: RoomState, before: GameState | TienLenState | null): number | null {
+export function botWaitMs(room: RoomState, before: GameState | TienLenState | EightsState | null): number | null {
+  if (room.eights) {
+    if (!eightsBotAction(room.eights)) return null;
+    return before === null || (before as EightsState).game !== room.eights.game ? CARD_FIRST_MOVE_MS : CARD_BOT_MS;
+  }
   if (room.tienlen) {
     if (!tienLenBotAction(room.tienlen)) return null;
     return before === null || (before as TienLenState).game !== room.tienlen.game ? TIENLEN_FIRST_MOVE_MS : TIENLEN_BOT_MS;
@@ -347,15 +383,16 @@ export function setListed(room: RoomState, seat: number, listed: unknown): Resul
  */
 export function listing(room: RoomState, online: ReadonlySet<number>, watchers: number, now: number = Date.now()): RoomListing | null {
   if (room.listed === false || online.size === 0) return null;
-  if (room.tienlen) {
+  const cards = room.tienlen ?? room.eights;
+  if (cards) {
     return {
       code: room.code,
-      kind: 'tienlen',
+      kind: kindOf(room),
       stage: 'playing',
       host: room.seats[room.host]?.name ?? '',
       players: room.seats.map(({ name, token, color, bot }, i) => ({ name, token, color, online: online.has(i) || bot !== undefined })),
       watchers,
-      round: room.tienlen.game,
+      round: cards.game,
       updatedAt: now,
     };
   }
@@ -398,6 +435,22 @@ function tienLenFor(state: TienLenState | null | undefined, you: number | null):
   };
 }
 
+/**
+ * Crazy Eights as one phone may see it: its own hand, how many cards everyone else holds and how many
+ * are left to draw, and the face-up pile. The card someone just drew stays theirs.
+ */
+function eightsFor(state: EightsState | null | undefined, you: number | null): EightsState | null {
+  if (!state) return null;
+  const hide = (cards: number[]) => cards.map(() => HIDDEN_CARD);
+  return {
+    ...state,
+    rngState: 0,
+    deck: hide(state.deck),
+    drawn: state.drawn === null || state.current === you ? state.drawn : HIDDEN_CARD,
+    players: state.players.map((p, i) => (i === you ? p : { ...p, hand: hide(p.hand) })),
+  };
+}
+
 export function view(room: RoomState, you: number | null, online: ReadonlySet<number>, watchers = 0): RoomView {
   return {
     code: room.code,
@@ -408,6 +461,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
     you,
     game: gameFor(room.game, you),
     tienlen: tienLenFor(room.tienlen, you),
+    eights: eightsFor(room.eights, you),
     firstTurn: room.firstTurn,
     chat: room.chat ?? [],
     listed: room.listed !== false,
@@ -462,6 +516,16 @@ export function cleanTienLenAction(raw: unknown): TienLenAction | null {
   if (a.type !== 'PLAY' || !Array.isArray(a.cards) || a.cards.length === 0 || a.cards.length > 13) return null;
   if (!a.cards.every((c) => isInt(c, 0, DECK_SIZE - 1)) || new Set(a.cards).size !== a.cards.length) return null;
   return { type: 'PLAY', cards: [...(a.cards as number[])] };
+}
+
+/** A Crazy Eights move from the network: a card (an 8 with the suit it calls), a draw, a pass, or a new deal. */
+export function cleanEightsAction(raw: unknown): EightsAction | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const a = raw as Record<string, unknown>;
+  if (a.type === 'DRAW' || a.type === 'PASS' || a.type === 'NEXT_GAME') return { type: a.type };
+  if (a.type !== 'PLAY' || !isInt(a.card, 0, DECK_SIZE - 1)) return null;
+  if (a.suit !== undefined && !isInt(a.suit, 0, 3)) return null;
+  return a.suit === undefined ? { type: 'PLAY', card: a.card } : { type: 'PLAY', card: a.card, suit: a.suit };
 }
 
 export function cleanAction(raw: unknown): Action | null {

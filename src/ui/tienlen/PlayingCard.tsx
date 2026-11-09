@@ -4,6 +4,8 @@ import { cardName, isRed, RANKS, rankOf, SUITS, suitOf, type Card } from '../../
 interface Props {
   card: Card;
   selected?: boolean;
+  disabled?: boolean; // in your hand, but it can't be played now
+  glow?: boolean; // a lesson points at it
   onClick?: () => void;
   style?: CSSProperties;
 }
@@ -12,10 +14,10 @@ interface Props {
  * A playing card, printed like the rest of the game: cream paper, an ink border, red or black.
  * Clickable cards (in your hand) are buttons; the others are pictures.
  */
-export function PlayingCard({ card, selected = false, onClick, style }: Props) {
+export function PlayingCard({ card, selected = false, disabled = false, glow = false, onClick, style }: Props) {
   const rank = RANKS[rankOf(card)];
   const suit = SUITS[suitOf(card)];
-  const className = `pcard${isRed(card) ? ' red' : ''}${selected ? ' selected' : ''}`;
+  const className = `pcard${isRed(card) ? ' red' : ''}${selected ? ' selected' : ''}${glow ? ' glow' : ''}`;
   const face = (
     <>
       <span className="pcard-corner">
@@ -36,7 +38,7 @@ export function PlayingCard({ card, selected = false, onClick, style }: Props) {
     );
   }
   return (
-    <button type="button" className={className} style={style} aria-pressed={selected} aria-label={cardName(card)} onClick={onClick}>
+    <button type="button" className={className} style={style} aria-pressed={selected} aria-label={cardName(card)} disabled={disabled} onClick={onClick}>
       {face}
     </button>
   );
