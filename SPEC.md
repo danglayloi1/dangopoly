@@ -571,14 +571,15 @@ Nghệ Tĩnh. The site stays at the same address.
   and the hub's back button to the entry screen. Room links (`?room=…`) still open the room directly.
 - **Shared by every game:** language, colors, sound, animation speed and music. Settings are on the hub
   too. Records, saves and online rooms are Dangopoly's for now.
-- **Next steps:** a room server that can host any game (each game brings its rules, its bots, and what
-  each phone may see), so the other games can be played online too.
+- **Online:** since v2.5.0 a room plays one game, chosen when it's created (`kind`: Dangopoly or Tiến lên;
+  rooms from before have none and play Dangopoly). The room list says which.
 
 ---
 
 ## 20. Tiến lên
 
-The second game in the hub: southern Tiến lên, played against one to three computer players on one device.
+The second game in the hub: southern Tiến lên, played against one to three computer players on one device,
+or online. Its menu has **Chơi với máy** and **Chơi online**.
 - **Cards:** a normal 52-card deck, 13 each (with fewer than four players the rest stay in the box).
   From lowest to highest: 3 … 10, J, Q, K, A, 2 (*heo*); suits break ties ♠ < ♣ < ♦ < ♥.
 - **Combinations:** a single (*rác*), a pair (*đôi*), three of a kind (*sám*), four of a kind (*tứ quý*), a
@@ -598,5 +599,13 @@ The second game in the hub: southern Tiến lên, played against one to three co
   go out, and don't break up pairs and runs. Dễ is careless and rarely wins; Khó doesn't yet play better
   than Vừa (in 400 test games they won about as often).
 - **Code:** `src/games/tienlen/` holds the rules as a pure state machine like Dangopoly's (`applyTienLen`), the
-  bots, and the words in three languages; the screens are in `src/ui/tienlen/`. Not yet: online play, and
-  keeping a match when you leave it.
+  bots, and the words in three languages; the screens are in `src/ui/tienlen/`. Not yet: keeping a match when
+  you leave it on one device.
+- **Online:** the same rooms as Dangopoly (link, QR code, room list, chat, reactions; no throwing, since there's
+  no board). The lobby has no options; the host adds computer players if seats are free, and starts. Each phone
+  plays its own seat, and only the host deals the next game.
+  - **Hidden cards:** the room server keeps the game. Each phone receives its own hand and, for everyone else,
+    one `HIDDEN_CARD` (−1) per card held, so it can count them but not see them; watchers get only counts.
+    The random state is left out too (`rngState: 0`), so the next deal can't be worked out.
+  - The room checks each move: only the player whose turn it is plays or passes, and only cards they hold.
+  - Computer players are played by the room, as in Dangopoly, about a second after the last play.

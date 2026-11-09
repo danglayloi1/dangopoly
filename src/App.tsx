@@ -10,6 +10,9 @@ import { HubScreen } from './ui/HubScreen';
 import { createTienLen, type NewTienLenPlayer, type TienLenState } from './games/tienlen/game';
 import { TienLenScreen } from './ui/tienlen/TienLenScreen';
 import { TienLenSetup } from './ui/tienlen/TienLenSetup';
+import { TienLenMenu } from './ui/tienlen/TienLenMenu';
+import { TIENLEN_TEXT } from './games/tienlen/text';
+import type { GameKind } from './net/protocol';
 import { MenuScreen } from './ui/MenuScreen';
 import { MusicPanel } from './ui/MusicPanel';
 import { OnlineCard } from './ui/OnlineCard';
@@ -35,7 +38,7 @@ export default function App() {
  * The entry screen, the hub (pick a game), and Dangopoly's menu with the screens reached from it
  * (a game or a room is shown on top of them).
  */
-type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen';
+type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen' | 'tienlenBots' | 'tienlenOnline';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -61,13 +64,14 @@ function screenInHistory(): Screen {
 interface OnlineRoom {
   code: string;
   creating: boolean;
+  kind?: GameKind; // what a new room will play
 }
 
 /** How the next screen comes in: from the right going forward, from the left going back, rising for a game or room. */
 type Direction = 'forward' | 'back' | 'rise';
 
 function Screens() {
-  const { t, lang } = useLang();
+  const { t, lang, uiLang } = useLang();
   const [screen, setScreen] = useState<Screen>(screenInHistory);
   const [game, setGame] = useState<GameState | null>(null);
   const [gameNumber, setGameNumber] = useState(0);
@@ -138,10 +142,10 @@ function Screens() {
   };
 
   // A new room's link only goes in the address once the room exists (see onCreated).
-  const openRoom = (code: string, creating: boolean) => {
+  const openRoom = (code: string, creating: boolean, kind: GameKind = 'dangopoly') => {
     direction.current = 'rise';
     history.pushState({ dangopoly: 'room' } satisfies NavState, '', creating ? location.pathname : `?room=${code}`);
-    setOnline({ code, creating });
+    setOnline({ code, creating, kind });
   };
 
   const discardSaved = () => {
@@ -187,13 +191,17 @@ function Screens() {
     }
   };
 
-  const leaveRoom = () => {
+  const leaveRoom = (kind: GameKind) => {
     if (navState()?.dangopoly === 'room') history.back();
     else {
-      // Opened from a link: there's no menu behind it in the history.
+      // Opened from a link: there's no menu behind it in the history, so go to the game's own.
       setOnline(null);
       setSaved(loadSavedGame());
-      toMenu();
+      if (kind === 'tienlen') {
+        direction.current = 'back';
+        history.replaceState({ dangopoly: 'screen', screen: 'tienlen' } satisfies NavState, '', location.pathname);
+        setScreen('tienlen');
+      } else toMenu();
     }
   };
 
@@ -211,6 +219,7 @@ function Screens() {
         key={online.code}
         code={online.code}
         creating={online.creating}
+        kind={online.kind}
         onCreated={() => history.replaceState(history.state, '', `?room=${online.code}`)}
         onLeave={leaveRoom}
       />,
@@ -234,7 +243,17 @@ function Screens() {
           <HubScreen saved={saved} onDangopoly={() => go('menu')} onTienLen={() => go('tienlen')} onSettings={() => go('settings')} onBack={toTitle} />
         );
       case 'tienlen':
+        return <TienLenMenu onBots={() => go('tienlenBots')} onOnline={() => go('tienlenOnline')} onBack={toHub} />;
+      case 'tienlenBots':
         return <TienLenSetup onStart={startTienLen} onBack={back} />;
+      case 'tienlenOnline':
+        return (
+          <main className="setup">
+            <ScreenTop title={`${TIENLEN_TEXT[uiLang].name} · ${TIENLEN_TEXT[uiLang].online}`} onBack={back} />
+            <OnlineCard onCreateRoom={() => openRoom(newRoomCode(), true, 'tienlen')} onJoinRoom={(code) => openRoom(code, false)} />
+            <RoomList onOpen={(code) => openRoom(code, false)} />
+          </main>
+        );
       case 'local':
         return <SetupScreen onStart={start} onBack={back} saved={saved} />;
       case 'bots':

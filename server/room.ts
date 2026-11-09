@@ -18,11 +18,16 @@ import {
 } from '../src/engine/game';
 import { botAction, BOT_LEVELS, freeBotName } from '../src/engine/bot';
 import type { Action, BotLevel, Dice, GameState, VietRules } from '../src/engine/types';
+import { tienLenBotAction } from '../src/games/tienlen/bot';
+import { DECK_SIZE } from '../src/games/tienlen/cards';
+import { applyTienLen, createTienLen, TienLenError, type TienLenAction, type TienLenState } from '../src/games/tienlen/game';
 import {
   CHAT_KEEP,
   CHAT_MAX_LENGTH,
+  HIDDEN_CARD,
   type ChatMessage,
   type ErrorCode,
+  type GameKind,
   type FirstTurn,
   type FirstTurnRound,
   type Profile,
@@ -41,9 +46,11 @@ export interface Seat extends Profile {
 /** Everything about a room that is stored between messages. */
 export interface RoomState {
   code: string;
+  kind?: GameKind; // missing in rooms saved before Tiến lên: Dangopoly
   host: number;
   seats: Seat[];
-  game: GameState | null;
+  game: GameState | null; // Dangopoly
+  tienlen?: TienLenState | null; // Tiến lên
   firstTurn: FirstTurnRound[] | null;
   chat?: ChatMessage[]; // missing in rooms saved before chat
   listed?: boolean; // in the public room list; missing means yes (rooms are listed unless the host hides them)
@@ -66,10 +73,16 @@ const MAX_NAME_LENGTH = 16;
 const TOKEN_IDS: readonly string[] = TOKENS.map((t) => t.id);
 const FIRST_BOT_MOVE_MS = 2_000; // a computer player going first: the board has just appeared
 const FIRST_BOT_MOVE_AFTER_DICE_MS = 6_000; // ...and when people are reading who rolled what
+const TIENLEN_FIRST_MOVE_MS = 2_000; // Tiến lên: the cards have just been dealt
+const TIENLEN_BOT_MS = 1_100; // the last play lands on the table, then the usual pause
 
-export function newRoom(code: string, host: Profile, random: Randomness): { room: RoomState; key: string } {
+export const kindOf = (room: RoomState): GameKind => room.kind ?? 'dangopoly';
+/** Whether a game is being played in the room (or has been, until the host takes it back to the lobby). */
+export const started = (room: RoomState): boolean => room.game !== null || Boolean(room.tienlen);
+
+export function newRoom(code: string, host: Profile, random: Randomness, kind: GameKind = 'dangopoly'): { room: RoomState; key: string } {
   const key = random.key();
-  return { room: { code, host: 0, seats: [{ ...host, key }], game: null, firstTurn: null }, key };
+  return { room: { code, kind, host: 0, seats: [{ ...host, key }], game: null, tienlen: null, firstTurn: null }, key };
 }
 
 /** A profile from a message, tidied up, or null if it can't be used. */
@@ -91,7 +104,7 @@ function profileProblem(room: RoomState, profile: Profile, except: number | null
 }
 
 export function join(room: RoomState, profile: Profile, random: Randomness): Result<{ room: RoomState; seat: number; key: string }> {
-  if (room.game) return fail('started');
+  if (started(room)) return fail('started');
   if (room.seats.length >= MAX_PLAYERS) return fail('full');
   const problem = profileProblem(room, profile, null);
   if (problem) return fail(problem);
@@ -106,7 +119,7 @@ export function seatOfKey(room: RoomState, key: string): number | null {
 }
 
 export function changeProfile(room: RoomState, seat: number, profile: Profile): Result<RoomState> {
-  if (room.game) return fail('started');
+  if (started(room)) return fail('started');
   const problem = profileProblem(room, profile, seat);
   if (problem) return fail(problem);
   return ok({ ...room, seats: room.seats.map((s, i) => (i === seat ? { ...profile, key: s.key } : s)) });
@@ -117,7 +130,7 @@ const cleanLevel = (raw: unknown): BotLevel | null => (BOT_LEVELS.includes(raw a
 /** The host seats a computer player: it takes a free name, token and color. */
 export function addBot(room: RoomState, seat: number, rawLevel: unknown, random: Randomness): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
-  if (room.game) return fail('started');
+  if (started(room)) return fail('started');
   if (room.seats.length >= MAX_PLAYERS) return fail('full');
   const bot = cleanLevel(rawLevel);
   if (!bot) return fail('badMessage');
@@ -130,14 +143,14 @@ export function addBot(room: RoomState, seat: number, rawLevel: unknown, random:
 /** The host takes a computer player out; the seats after it move up by one. */
 export function removeBot(room: RoomState, seat: number, target: unknown): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
-  if (room.game) return fail('started');
+  if (started(room)) return fail('started');
   if (typeof target !== 'number' || !room.seats[target]?.bot) return fail('badMessage');
   return ok({ ...room, seats: room.seats.filter((_, i) => i !== target), host: room.host > target ? room.host - 1 : room.host });
 }
 
 export function setBotLevel(room: RoomState, seat: number, target: unknown, rawLevel: unknown): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
-  if (room.game) return fail('started');
+  if (started(room)) return fail('started');
   const bot = cleanLevel(rawLevel);
   if (!bot || typeof target !== 'number' || !room.seats[target]?.bot) return fail('badMessage');
   return ok({ ...room, seats: room.seats.map((s, i) => (i === target ? { ...s, bot } : s)) });
@@ -148,7 +161,7 @@ export function setBotLevel(room: RoomState, seat: number, target: unknown, rawL
  * next person becomes host. Returns null when no people are left (computer players don't keep a room).
  */
 export function leave(room: RoomState, seat: number): Result<RoomState | null> {
-  if (room.game) return fail('started');
+  if (started(room)) return fail('started');
   const seats = room.seats.filter((_, i) => i !== seat);
   if (seats.every((s) => s.bot)) return ok(null);
   const host = room.host === seat ? seats.findIndex((s) => !s.bot) : room.host > seat ? room.host - 1 : room.host;
@@ -169,8 +182,13 @@ export function start(
   now: number = Date.now(),
 ): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
-  if (room.game) return fail('started');
+  if (started(room)) return fail('started');
   if (room.seats.length < MIN_PLAYERS) return fail('notEnoughPlayers');
+  if (kindOf(room) === 'tienlen') {
+    // Tiến lên has no options: the seats as they are, and the lowest card leads.
+    const players = room.seats.map(({ name, token, color, bot }) => ({ name, token, color, ...(bot ? { bot } : {}) }));
+    return ok({ ...room, tienlen: createTienLen({ players, seed: random.seed() }), firstTurn: null });
+  }
   if (!Number.isInteger(startingCash) || (startingCash as number) < MIN_STARTING_CASH || (startingCash as number) > MAX_STARTING_CASH) {
     return fail('badMessage');
   }
@@ -233,8 +251,21 @@ export function chat(room: RoomState, seat: number, raw: unknown, now: number = 
 /** After a game, the host takes the room back to the lobby: same seats, choices and host; a new game can start. */
 export function rematch(room: RoomState, seat: number): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
-  if (room.game?.phase.kind !== 'gameOver') return fail('notAllowed');
-  return ok({ ...room, game: null, firstTurn: null });
+  if (room.game?.phase.kind !== 'gameOver' && room.tienlen?.phase !== 'over') return fail('notAllowed');
+  return ok({ ...room, game: null, tienlen: null, firstTurn: null });
+}
+
+/** Tiến lên: a play or a pass from the phone whose turn it is; a new deal from the host, after a game. */
+function actTienLen(room: RoomState, state: TienLenState, seat: number, raw: unknown): Result<RoomState> {
+  const action = cleanTienLenAction(raw);
+  if (!action) return fail('badMessage');
+  if (action.type === 'NEXT_GAME' ? seat !== room.host : seat !== state.current) return fail(action.type === 'NEXT_GAME' ? 'notHost' : 'notYourMove');
+  try {
+    return ok({ ...room, tienlen: applyTienLen(state, action) });
+  } catch (e) {
+    if (e instanceof TienLenError) return fail('notAllowed');
+    throw e;
+  }
 }
 
 /**
@@ -243,6 +274,7 @@ export function rematch(room: RoomState, seat: number): Result<RoomState> {
  * game ends at the start of the next turn even if nobody says so.
  */
 export function act(room: RoomState, seat: number, raw: unknown, now: number = Date.now()): Result<RoomState> {
+  if (room.tienlen) return actTienLen(room, room.tienlen, seat, raw);
   if (!room.game) return fail('notAllowed');
   const action = cleanAction(raw);
   if (!action) return fail('badMessage');
@@ -268,6 +300,10 @@ export function act(room: RoomState, seat: number, raw: unknown, now: number = D
  * limit works as it does for a move from a phone (see act).
  */
 export function playBot(room: RoomState, now: number = Date.now()): RoomState | null {
+  if (room.tienlen) {
+    const move = tienLenBotAction(room.tienlen);
+    return move ? { ...room, tienlen: applyTienLen(room.tienlen, move) } : null;
+  }
   const action = room.game && botAction(room.game);
   if (!room.game || !action) return null;
   const { mode } = room.game.rules;
@@ -286,10 +322,14 @@ export function playBot(room: RoomState, now: number = Date.now()): RoomState | 
  * last move has to play out on the phones first (`before` is the game before it), then a short pause,
  * just as on one device. Phones set to faster animations simply finish sooner.
  */
-export function botWaitMs(room: RoomState, before: GameState | null): number | null {
+export function botWaitMs(room: RoomState, before: GameState | TienLenState | null): number | null {
+  if (room.tienlen) {
+    if (!tienLenBotAction(room.tienlen)) return null;
+    return before === null || (before as TienLenState).game !== room.tienlen.game ? TIENLEN_FIRST_MOVE_MS : TIENLEN_BOT_MS;
+  }
   const action = room.game && botAction(room.game);
   if (!room.game || !action) return null;
-  if (!before) return room.firstTurn ? FIRST_BOT_MOVE_AFTER_DICE_MS : FIRST_BOT_MOVE_MS;
+  if (!before || !('round' in before)) return room.firstTurn ? FIRST_BOT_MOVE_AFTER_DICE_MS : FIRST_BOT_MOVE_MS;
   const entries = newLogEntries(before.log, room.game.log);
   return showMs(entries, before.players.map((p) => p.position)) + botPauseMs(action);
 }
@@ -307,8 +347,21 @@ export function setListed(room: RoomState, seat: number, listed: unknown): Resul
  */
 export function listing(room: RoomState, online: ReadonlySet<number>, watchers: number, now: number = Date.now()): RoomListing | null {
   if (room.listed === false || online.size === 0) return null;
+  if (room.tienlen) {
+    return {
+      code: room.code,
+      kind: 'tienlen',
+      stage: 'playing',
+      host: room.seats[room.host]?.name ?? '',
+      players: room.seats.map(({ name, token, color, bot }, i) => ({ name, token, color, online: online.has(i) || bot !== undefined })),
+      watchers,
+      round: room.tienlen.game,
+      updatedAt: now,
+    };
+  }
   return {
     code: room.code,
+    kind: kindOf(room),
     stage: !room.game ? 'lobby' : room.game.phase.kind === 'gameOver' ? 'over' : 'playing',
     host: room.seats[room.host]?.name ?? '',
     players: room.seats.map(({ name, token, color, bot }, i) => ({ name, token, color, online: online.has(i) || bot !== undefined })),
@@ -332,14 +385,29 @@ function gameFor(game: GameState | null, you: number | null): GameState | null {
   };
 }
 
+/**
+ * Tiến lên as one phone may see it: its own hand, and only how many cards everyone else holds. The
+ * random state is left out too, since the next deal could be worked out from it.
+ */
+function tienLenFor(state: TienLenState | null | undefined, you: number | null): TienLenState | null {
+  if (!state) return null;
+  return {
+    ...state,
+    rngState: 0,
+    players: state.players.map((p, i) => (i === you ? p : { ...p, hand: p.hand.map(() => HIDDEN_CARD) })),
+  };
+}
+
 export function view(room: RoomState, you: number | null, online: ReadonlySet<number>, watchers = 0): RoomView {
   return {
     code: room.code,
-    stage: room.game ? 'playing' : 'lobby',
+    kind: kindOf(room),
+    stage: started(room) ? 'playing' : 'lobby',
     host: room.host,
     seats: room.seats.map(({ name, token, color, bot }, i) => ({ name, token, color, online: online.has(i) || bot !== undefined, ...(bot ? { bot } : {}) })),
     you,
     game: gameFor(room.game, you),
+    tienlen: tienLenFor(room.tienlen, you),
     firstTurn: room.firstTurn,
     chat: room.chat ?? [],
     listed: room.listed !== false,
@@ -384,6 +452,16 @@ export function cleanRules(raw: unknown): RulesChoice | null {
   if (m.kind === 'rounds' && isInt(m.rounds, 1, MAX_ROUNDS)) return { mode: { kind: 'rounds', rounds: m.rounds }, festivals, viet };
   if (m.kind === 'time' && isInt(m.minutes, 1, MAX_MINUTES)) return { mode: { kind: 'time', minutes: m.minutes }, festivals, viet };
   return null;
+}
+
+/** A Tiến lên move from the network: a play of up to 13 different cards, a pass, or a new deal. */
+export function cleanTienLenAction(raw: unknown): TienLenAction | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const a = raw as Record<string, unknown>;
+  if (a.type === 'PASS' || a.type === 'NEXT_GAME') return { type: a.type };
+  if (a.type !== 'PLAY' || !Array.isArray(a.cards) || a.cards.length === 0 || a.cards.length > 13) return null;
+  if (!a.cards.every((c) => isInt(c, 0, DECK_SIZE - 1)) || new Set(a.cards).size !== a.cards.length) return null;
+  return { type: 'PLAY', cards: [...(a.cards as number[])] };
 }
 
 export function cleanAction(raw: unknown): Action | null {

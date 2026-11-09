@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { whoseMove } from '../engine/game';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
-import type { RoomView } from '../net/protocol';
+import type { GameKind, RoomView } from '../net/protocol';
+import { OnlineTienLen } from './tienlen/OnlineTienLen';
 import { useRoom, type RoomState } from '../net/useRoom';
 import { BotTalk } from './BotTalk';
 import { ChatBox } from './ChatBox';
@@ -23,15 +24,18 @@ import { Icon } from './icons';
 interface Props {
   code: string;
   creating: boolean;
+  kind?: GameKind; // for a new room: what it will play (a room that exists says itself)
   onCreated: () => void; // the new room now exists, so its link can go in the address
-  onLeave: () => void;
+  onLeave: (kind: GameKind) => void;
 }
 
 /** An online room: the lobby until the host starts, then the game. */
-export function OnlineScreen({ code, creating, onCreated, onLeave }: Props) {
+export function OnlineScreen({ code, creating, kind: newKind = 'dangopoly', onCreated, onLeave: leaveAs }: Props) {
   const { t } = useLang();
   const state = useRoom(code, creating);
   const exists = state.room !== null;
+  const kind = state.room?.kind ?? newKind;
+  const onLeave = () => leaveAs(kind);
 
   useEffect(() => {
     if (creating && exists) onCreated();
@@ -52,10 +56,13 @@ export function OnlineScreen({ code, creating, onCreated, onLeave }: Props) {
       </main>
     );
   }
+  if (state.room?.stage === 'playing' && state.room.tienlen) {
+    return <OnlineTienLen room={state.room} game={state.room.tienlen} state={state} onLeave={onLeave} />;
+  }
   if (state.room?.stage === 'playing' && state.room.game) {
     return <OnlineGame room={state.room} game={state.room.game} state={state} onLeave={onLeave} />;
   }
-  return <Lobby code={code} creating={creating} state={state} onLeave={onLeave} />;
+  return <Lobby code={code} creating={creating} kind={kind} state={state} onLeave={onLeave} />;
 }
 
 function OnlineGame({ room, game, state, onLeave }: { room: RoomView; game: GameState; state: RoomState; onLeave: () => void }) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { tienLenBotAction } from '../../games/tienlen/bot';
 import { cardName, type Card } from '../../games/tienlen/cards';
 import { comboOf, type Combo } from '../../games/tienlen/combos';
@@ -14,7 +14,6 @@ import { TokenIcon } from '../TokenIcon';
 import { CardBack, PlayingCard } from './PlayingCard';
 import './tienlen.css';
 
-const ME = 0; // on one device, you are always the first player
 const THINK_MS = 900;
 
 /** A play in words: "Đôi 7♣ 7♥". */
@@ -40,15 +39,20 @@ export function logLine(tl: TienLenText, e: TienLenLog, state: TienLenState): st
   }
 }
 
-/** A game of Tiến lên against the computer: the others around the table, the play to beat, your hand. */
+/**
+ * The log entries added since the last one seen. Online every update is a fresh copy of the log (and
+ * it's trimmed once it's long), so the last entry seen is found by value, from the end.
+ */
+function freshEntries(lastSeen: string | null, log: readonly TienLenLog[]): TienLenLog[] {
+  if (lastSeen === null) return [];
+  for (let i = log.length - 1; i >= 0; i--) if (JSON.stringify(log[i]) === lastSeen) return log.slice(i + 1);
+  return [];
+}
+
+/** A game of Tiến lên against the computer, on this device: you are the first player. */
 export function TienLenScreen({ initial, onLeave }: { initial: TienLenState; onLeave: () => void }) {
   const { uiLang } = useLang();
-  const tl = TIENLEN_TEXT[uiLang];
   const [state, setState] = useState(initial);
-  const [selected, setSelected] = useState<Card[]>([]);
-  const [hintIndex, setHintIndex] = useState(0);
-  const seenLog = useRef(state.log.length);
-
   const act = (action: TienLenAction) => setState((s) => applyTienLen(s, action));
 
   // Computer players move after a short pause, so you can follow what they do.
@@ -59,32 +63,53 @@ export function TienLenScreen({ initial, onLeave }: { initial: TienLenState; onL
     return () => clearTimeout(timer);
   }, [state]);
 
+  // Dev only: lets the screenshot script see and drive the game.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as { __tienlen?: unknown }).__tienlen = { get: () => state, act };
+  }, [state]);
+
+  return <TienLenTable state={state} me={0} onAct={act} onLeave={onLeave} leaveLabel={TIENLEN_TEXT[uiLang].toMenu} canDeal />;
+}
+
+interface TableProps {
+  state: TienLenState;
+  me: number | null; // this device's player; null when only watching
+  onAct: (action: TienLenAction) => void;
+  onLeave: () => void;
+  leaveLabel: string;
+  canDeal: boolean; // may start the next game (online: only the host)
+  waitingFor?: string; // online: who deals the next game, when it isn't you
+  connected?: readonly boolean[]; // online: whose phone is connected
+  top?: ReactNode; // under the title: the room's chip, a note for watchers…
+  children?: ReactNode; // reactions, chat
+}
+
+/** The table: the others around the top, the play to beat in the middle, your hand at the bottom. */
+export function TienLenTable({ state, me, onAct, onLeave, leaveLabel, canDeal, waitingFor, connected, top, children }: TableProps) {
+  const { t, uiLang } = useLang();
+  const tl = TIENLEN_TEXT[uiLang];
+  const [selected, setSelected] = useState<Card[]>([]);
+  const [hintIndex, setHintIndex] = useState(0);
+  const lastSeen = useRef<string | null>(JSON.stringify(state.log.at(-1) ?? null));
+
   // Sounds for what just happened.
   useEffect(() => {
-    const fresh = state.log.slice(Math.min(seenLog.current, state.log.length));
-    seenLog.current = state.log.length;
+    const fresh = freshEntries(lastSeen.current, state.log);
+    lastSeen.current = JSON.stringify(state.log.at(-1) ?? null);
     if (fresh.some((e) => e.type === 'gameOver' || e.type === 'instantWin')) playSound('win');
     else if (fresh.some((e) => e.type === 'played' && e.chop)) playSound('thud');
     else if (fresh.some((e) => e.type === 'played' || e.type === 'dealt')) playSound('card');
   }, [state.log]);
 
+  const mine = me === null ? null : state.players[me];
   // A new game, or the hand changed under the selection: start the selection over.
   useEffect(() => {
-    setSelected((sel) => sel.filter((c) => state.players[ME].hand.includes(c)));
+    setSelected((sel) => sel.filter((c) => mine?.hand.includes(c)));
     setHintIndex(0);
-  }, [state.players[ME].hand.length, state.game]);
+  }, [mine?.hand.length, state.game]);
 
-  // Dev only: lets the screenshot script see and drive the game.
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    (window as unknown as { __tienlen?: unknown }).__tienlen = {
-      get: () => state,
-      act,
-    };
-  }, [state]);
-
-  const me = state.players[ME];
-  const myTurn = state.phase === 'playing' && state.current === ME;
+  const myTurn = me !== null && state.phase === 'playing' && state.current === me;
   const plays = useMemo(() => (myTurn ? legalPlays(state) : []), [state, myTurn]);
   // Hints: the cheapest plays first (lowest top card, then fewest cards).
   const hints = useMemo(() => [...plays].sort((a, b) => a.top - b.top || a.cards.length - b.cards.length), [plays]);
@@ -99,11 +124,11 @@ export function TienLenScreen({ initial, onLeave }: { initial: TienLenState; onL
   };
   const play = () => {
     if (!legal) return;
-    act({ type: 'PLAY', cards: selected });
+    onAct({ type: 'PLAY', cards: selected });
     setSelected([]);
   };
 
-  // What to tell you now.
+  // What to tell you now, and whose token goes with it.
   const problem =
     myTurn && selected.length > 0 && !legal
       ? !chosen
@@ -112,28 +137,33 @@ export function TienLenScreen({ initial, onLeave }: { initial: TienLenState; onL
           ? tl.mustHave(cardName(state.mustInclude))
           : tl.tooLow
       : null;
+  const turnOf = state.players[state.current];
   const status =
     state.phase === 'over'
       ? tl.gameOver
-      : me.place !== null
-        ? tl.youAreOut(placeName(tl, me.place, state.players.length))
+      : mine?.place != null
+        ? tl.youAreOut(placeName(tl, mine.place, state.players.length))
         : myTurn
           ? (problem ?? (state.mustInclude !== null ? tl.mustInclude(cardName(state.mustInclude)) : state.table ? tl.beat : tl.lead))
-          : tl.thinking(state.players[state.current].name);
+          : tl.thinking(turnOf.name);
+  const statusPlayer = myTurn || state.phase === 'over' || mine?.place != null ? mine : turnOf;
 
-  // The others, in playing order after you.
-  const others = state.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== ME);
+  // The others, in playing order after you (everyone, for a watcher).
+  const others = state.players.map((p, i) => ({ p, i }));
+  const seats = me === null ? others : [...others.slice(me + 1), ...others.slice(0, me)];
   const recent = state.log.slice(-4).reverse();
+  const lastPlay = state.log.at(-1);
 
   return (
     <main className="tl-screen">
       <ScreenTop title={`${tl.name} · ${tl.game(state.game)}`} onBack={onLeave} />
+      {top}
 
       <ul className="tl-opponents">
-        {others.map(({ p, i }) => (
+        {seats.map(({ p, i }) => (
           <li
             key={i}
-            className={`tl-seat${state.current === i && state.phase === 'playing' ? ' current' : ''}`}
+            className={`tl-seat${state.current === i && state.phase === 'playing' ? ' current' : ''}${connected && !connected[i] ? ' away' : ''}`}
             style={{ '--player': colorHex(p.color) } as CSSProperties}
           >
             <TokenIcon token={p.token} color={colorHex(p.color)} size={34} />
@@ -150,6 +180,8 @@ export function TienLenScreen({ initial, onLeave }: { initial: TienLenState; onL
             </span>
             {p.place !== null ? (
               <span className="badge tl-place">{placeName(tl, p.place, state.players.length)}</span>
+            ) : connected && !connected[i] ? (
+              <span className="badge badge-away">{t.offline}</span>
             ) : (
               p.passed && <span className="badge">{tl.passed}</span>
             )}
@@ -157,13 +189,10 @@ export function TienLenScreen({ initial, onLeave }: { initial: TienLenState; onL
         ))}
       </ul>
 
-      <section
-        className={`tl-table${state.table?.combo && state.log.at(-1)?.type === 'played' && (state.log.at(-1) as { chop: boolean }).chop ? ' chop' : ''}`}
-        aria-label={tl.table}
-      >
+      <section className={`tl-table${state.table && lastPlay?.type === 'played' && lastPlay.chop ? ' chop' : ''}`} aria-label={tl.table}>
         {state.table ? (
           <>
-            <div className="tl-play" key={state.log.length}>
+            <div className="tl-play" key={JSON.stringify(state.table.combo.cards)}>
               {state.table.combo.cards.map((c) => (
                 <PlayingCard key={c} card={c} />
               ))}
@@ -174,47 +203,68 @@ export function TienLenScreen({ initial, onLeave }: { initial: TienLenState; onL
             </p>
           </>
         ) : (
-          <p className="tl-empty">{state.phase === 'playing' ? (myTurn ? tl.yourTurn : tl.turnOf(state.players[state.current].name)) : tl.gameOver}</p>
+          <p className="tl-empty">{state.phase === 'playing' ? (myTurn ? tl.yourTurn : tl.turnOf(turnOf.name)) : tl.gameOver}</p>
         )}
       </section>
 
       <ul className="tl-log" aria-live="polite">
         {recent.map((e, k) => (
-          <li key={state.log.length - k}>{logLine(tl, e, state)}</li>
+          <li key={`${state.log.length - k}-${e.type}`}>{logLine(tl, e, state)}</li>
         ))}
       </ul>
 
-      <section className={`tl-me${myTurn ? ' current' : ''}`} style={{ '--player': colorHex(me.color) } as CSSProperties}>
-        <p className={`tl-status${problem ? ' problem' : ''}`} role="status">
-          <TokenIcon token={me.token} color={colorHex(me.color)} size={24} /> {status}
-        </p>
-        <div className="tl-hand" style={{ '--n': Math.max(me.hand.length, 1) } as CSSProperties}>
-          {me.hand.map((c) => (
-            <PlayingCard key={c} card={c} selected={selected.includes(c)} onClick={() => toggle(c)} />
-          ))}
-        </div>
-        {state.phase === 'playing' && me.place === null && (
-          <div className="tl-actions">
-            <button type="button" className="secondary" onClick={hint} disabled={!myTurn || hints.length === 0}>
-              <Icon name="scroll" /> {tl.hint}
-            </button>
-            <button type="button" className="secondary" onClick={() => act({ type: 'PASS' })} disabled={!myTurn || !canPass(state)}>
-              {tl.pass}
-            </button>
-            <button type="button" className="primary" onClick={play} disabled={!myTurn || !legal}>
-              {tl.play} →
-            </button>
+      {mine && (
+        <section className={`tl-me${myTurn ? ' current' : ''}`} style={{ '--player': colorHex(mine.color) } as CSSProperties}>
+          <p className={`tl-status${problem ? ' problem' : ''}`} role="status">
+            {statusPlayer && <TokenIcon token={statusPlayer.token} color={colorHex(statusPlayer.color)} size={24} />} {status}
+          </p>
+          <div className="tl-hand" style={{ '--n': Math.max(mine.hand.length, 1) } as CSSProperties}>
+            {mine.hand.map((c) => (
+              <PlayingCard key={c} card={c} selected={selected.includes(c)} onClick={() => toggle(c)} />
+            ))}
           </div>
-        )}
-      </section>
+          {state.phase === 'playing' && mine.place === null && (
+            <div className="tl-actions">
+              <button type="button" className="secondary" onClick={hint} disabled={!myTurn || hints.length === 0}>
+                <Icon name="scroll" /> {tl.hint}
+              </button>
+              <button type="button" className="secondary" onClick={() => onAct({ type: 'PASS' })} disabled={!myTurn || !canPass(state)}>
+                {tl.pass}
+              </button>
+              <button type="button" className="primary" onClick={play} disabled={!myTurn || !legal}>
+                {tl.play} →
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
-      {state.phase === 'over' && <GameOver state={state} tl={tl} onNext={() => act({ type: 'NEXT_GAME' })} onLeave={onLeave} />}
+      {state.phase === 'over' && (
+        <GameOver
+          state={state}
+          tl={tl}
+          onNext={canDeal ? () => onAct({ type: 'NEXT_GAME' }) : null}
+          waitingFor={waitingFor}
+          onLeave={onLeave}
+          leaveLabel={leaveLabel}
+        />
+      )}
+      {children}
     </main>
   );
 }
 
-/** After a game: everyone's place and the points so far; deal again or leave. */
-function GameOver({ state, tl, onNext, onLeave }: { state: TienLenState; tl: TienLenText; onNext: () => void; onLeave: () => void }) {
+interface GameOverProps {
+  state: TienLenState;
+  tl: TienLenText;
+  onNext: (() => void) | null;
+  waitingFor?: string;
+  onLeave: () => void;
+  leaveLabel: string;
+}
+
+/** After a game: everyone's place and the points so far; deal again (or wait for the host to) or leave. */
+function GameOver({ state, tl, onNext, waitingFor, onLeave, leaveLabel }: GameOverProps) {
   const ranked = state.players.map((p, i) => ({ p, i })).sort((a, b) => (a.p.place ?? 99) - (b.p.place ?? 99));
   return (
     <section className="tl-over" role="dialog" aria-label={tl.gameOver}>
@@ -234,13 +284,16 @@ function GameOver({ state, tl, onNext, onLeave }: { state: TienLenState; tl: Tie
             </li>
           ))}
         </ol>
+        {!onNext && waitingFor && <p className="muted tl-waiting">{tl.waitingDeal(waitingFor)}</p>}
         <div className="tl-over-actions">
           <button type="button" className="secondary" onClick={onLeave}>
-            {tl.toHub}
+            {leaveLabel}
           </button>
-          <button type="button" className="primary big" onClick={onNext} autoFocus>
-            {tl.nextGame} →
-          </button>
+          {onNext && (
+            <button type="button" className="primary big" onClick={onNext} autoFocus>
+              {tl.nextGame} →
+            </button>
+          )}
         </div>
       </div>
     </section>

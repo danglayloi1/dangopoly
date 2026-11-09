@@ -1280,6 +1280,7 @@ const scenes = {
     check(await card.isVisible(), 'the hub has a card for Tiến lên');
     await shot('hub');
     await card.click();
+    await page.getByRole('button', { name: /Chơi với máy/ }).click();
     await page.getByPlaceholder('Tên bạn').fill('Đăng');
     await shot('setup');
     await page.getByRole('button', { name: /Chia bài/ }).click();
@@ -1326,8 +1327,111 @@ const scenes = {
     await page.waitForSelector('.tl-hand .pcard');
     check((await page.locator('.screen-title').textContent()).includes('Ván 2'), 'a new game is dealt (Ván 2)');
     await page.getByRole('button', { name: /Quay lại|←/ }).first().click();
-    check(await page.locator('.hub-game', { hasText: 'Tiến lên' }).isVisible(), 'leaving goes back to the hub');
+    check(await page.getByRole('button', { name: /Chơi với máy/ }).isVisible(), "leaving goes back to Tiến lên's menu");
     check(errors === 0, `no errors on the page (${errors})`);
+  },
+
+  /** Tiến lên online: two phones and a computer player in one room (needs `npm run server` too). */
+  async tienlenonline({ browser }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    const phone = async (name) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: dark ? 'dark' : 'light' });
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => {
+        errors++;
+        console.error(`${name}: ${e.message}`);
+      });
+      reportCrash(page, name);
+      return { name, ctx, page };
+    };
+    const dang = await phone('Đăng');
+    const lan = await phone('Lan');
+    const save = (p, label) => p.page.screenshot({ path: path.join(outDir, `${label}.png`) });
+
+    // Đăng opens a Tiến lên room from the game's own menu; Lan joins from the link; a bot fills a seat.
+    await dang.page.goto(BASE_URL);
+    await dang.page.getByRole('button', { name: /Vào chơi/ }).click();
+    await dang.page.locator('.hub-game', { hasText: 'Tiến lên' }).click();
+    await dang.page.getByRole('button', { name: /Chơi online/ }).click();
+    await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    check((await dang.page.locator('.lobby-title').textContent()).includes('Tiến lên'), `a Tiến lên room is created (${code})`);
+    check((await dang.page.locator('.cash-field').count()) === 0, "the lobby has none of Dangopoly's options");
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.waitForSelector('.lobby-seat');
+    await lan.page.getByPlaceholder('Tên').fill('Lan');
+    await lan.page.getByRole('button', { name: 'Vào phòng' }).click();
+    await lan.page.waitForSelector('.badge-you');
+    await dang.page.getByRole('button', { name: 'Thêm máy chơi cùng' }).click();
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 3);
+    await save(dang, 'lobby');
+    await dang.page.getByRole('button', { name: /Bắt đầu ván/ }).click();
+    for (const p of [dang, lan]) await p.page.waitForSelector('.tl-hand .pcard');
+    const hands = await Promise.all([dang, lan].map((p) => p.page.locator('.tl-hand .pcard').evaluateAll((cards) => cards.map((c) => c.getAttribute('aria-label')))));
+    check(hands.every((h) => h.length === 13) && !hands[0].some((c) => hands[1].includes(c)), 'each phone is dealt its own 13 cards');
+    check((await lan.page.locator('.tl-seat').count()) === 2, "each phone shows the other two players' seats");
+
+    // What a phone without a seat actually receives: card counts, never cards, and no shuffle.
+    const server = BASE_URL.includes('github.io') ? 'wss://dangopoly-server.danglayloi1.workers.dev' : 'ws://localhost:8787';
+    const seen = await new Promise((resolve, reject) => {
+      const ws = new WebSocket(`${server}/room/${code}`);
+      ws.onopen = () => ws.send(JSON.stringify({ t: 'look' }));
+      ws.onerror = () => reject(new Error('could not reach the room'));
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.t !== 'room') return;
+        ws.close();
+        resolve(msg.room);
+      };
+    });
+    check(
+      seen.kind === 'tienlen' && seen.tienlen.rngState === 0 && seen.tienlen.players.every((p) => p.hand.length === 13 && p.hand.every((c) => c === -1)),
+      'a watcher receives how many cards each player holds, and nothing else',
+    );
+    await save(lan, 'table');
+
+    // Play it out: whoever's phone has the turn takes the first hint (or passes); the bot plays itself.
+    let moves = { Đăng: 0, Lan: 0 };
+    for (let step = 0; step < 500 && !(await dang.page.locator('.tl-over').count()); step++) {
+      let moved = false;
+      for (const p of [dang, lan]) {
+        const hint = p.page.getByRole('button', { name: /Gợi ý/ });
+        const pass = p.page.getByRole('button', { name: 'Bỏ lượt' });
+        if (await hint.isEnabled().catch(() => false)) {
+          await hint.click();
+          const play = p.page.getByRole('button', { name: /^Đánh/ });
+          if (await play.isEnabled()) await play.click();
+          else await pass.click();
+        } else if (await pass.isEnabled().catch(() => false)) {
+          await pass.click(); // nothing beats the table
+        } else continue;
+        moves[p.name]++;
+        moved = true;
+        if (moves.Đăng + moves.Lan === 4) await save(dang, 'mid-game');
+        await p.page.waitForTimeout(300);
+      }
+      if (!moved) await dang.page.waitForTimeout(300);
+    }
+    check(moves.Đăng > 0 && moves.Lan > 0, `both phones played their own turns (Đăng ${moves.Đăng}, Lan ${moves.Lan}); the bot played its own`);
+    await dang.page.locator('.tl-over').waitFor({ timeout: 30_000 });
+    await lan.page.locator('.tl-over').waitFor({ timeout: 30_000 });
+    const ranks = await Promise.all([dang, lan].map((p) => p.page.locator('.tl-ranking li').allTextContents()));
+    check(ranks[0].join() === ranks[1].join() && ranks[0].length === 3, `both phones show the same ranking (${ranks[0].map((r) => r.replace(/\s+/g, ' ').trim()).join(' | ')})`);
+    check(
+      (await lan.page.getByRole('button', { name: /Ván mới/ }).count()) === 0 && (await lan.page.locator('.tl-waiting').textContent()).includes('Đăng'),
+      'only the host can deal again; Lan waits for Đăng',
+    );
+    await save(lan, 'game-over');
+    await dang.page.getByRole('button', { name: /Ván mới/ }).click();
+    for (const p of [dang, lan]) await p.page.locator('.screen-title', { hasText: 'Ván 2' }).waitFor({ timeout: 10_000 });
+    check(true, 'the host deals again: Ván 2 on both phones');
+
+    check(errors === 0, `no errors on any phone (${errors})`);
+    await dang.ctx.close();
+    await lan.ctx.close();
   },
 
   /** Every drawn icon in every theme, side by side, to spot lines that vanish into a fill (dev server only). */
