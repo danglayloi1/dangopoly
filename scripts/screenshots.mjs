@@ -1742,7 +1742,7 @@ const scenes = {
     await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
     await dang.page.getByPlaceholder('Tên').fill('Đăng');
     const picker = dang.page.locator('.token-picker');
-    check((await picker.locator('.token-choice').count()) === 12, 'twelve tokens to choose from');
+    check((await picker.locator('.token-choice').count()) === 16, 'sixteen tokens to choose from, the meme ones too');
     await picker.scrollIntoViewIfNeeded();
     await picker.screenshot({ path: path.join(outDir, 'tokens.png') });
     await picker.getByRole('radio', { name: /cháo lươn/ }).click();

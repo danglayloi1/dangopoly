@@ -180,11 +180,17 @@ They can still appear respectfully in cards and the tutorial, e.g. *"Visit Ngã 
 ---
 
 ## 5. Tokens
-Each player picks one (2–4 players, 12 choices):
+Each player picks one (2–4 players, 16 choices):
 **Nón lá** · **Con trâu** · **Quả cam Xã Đoài** · **Bóng đá SLNA** · **Gói kẹo cu đơ** · **Xe đạp** ·
-**Bát cháo lươn** · **Gà trống** · **Ấm chè xanh** · **Heo đất** · **Con hến sông Lam** · **Mũ cối**
+**Bát cháo lươn** · **Gà trống** · **Ấm chè xanh** · **Heo đất** · **Con hến sông Lam** · **Mũ cối**, and four
+meme-style ones of our own: **Chó Shiba liếc** (a side-eye Shiba) · **Ếch cười** · **Mèo khóc** · **Vịt cao su**.
 
-Drawn as simple flat SVG icons, each with its own player color.
+Drawn as simple flat SVG icons on a disc of the player's color. There are 14 colors: 8 plain ones and 6 two-color
+ones (Đỏ vàng, Biển và cát, Lúa chín, Sen hồng lá xanh, Đêm trăng, Kẹo dừa), whose disc is split diagonally.
+Everywhere else a player's color shows (borders, marks on the board), a two-color choice uses its first color.
+
+**Whose turn** is shown with the player's token: on the card games' felt ("Lượt của …", pulsing on your own
+turn) with a gold "Đang đánh" tag on that seat, and in Dangopoly with a gold "Đang đi" tag on that player's card.
 
 ---
 

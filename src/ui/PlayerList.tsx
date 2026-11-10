@@ -79,6 +79,11 @@ export function PlayerList({ game, onShowSpace }: Props) {
             <div className="player-info">
               <span className="player-name">
                 {p.name}
+                {isCurrent && (
+                  <span className="badge badge-turn">
+                    <Icon name="dice" /> {t.turnBadge}
+                  </span>
+                )}
                 {p.inJail && (
                   <span className="badge-jail" title={t.inJailBadge}>
                     <Icon name="jail" /> {t.inJailBadge}

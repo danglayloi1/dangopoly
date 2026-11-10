@@ -168,6 +168,7 @@ export function EightsTable({
             style={{ '--player': colorHex(p.color) } as CSSProperties}
           >
             <TokenIcon token={p.token} color={colorHex(p.color)} size={34} />
+            {state.current === i && state.phase === 'playing' && <span className="tl-turn-badge">▶ {e8.turnBadge}</span>}
             <span className="tl-seat-name">{p.name}</span>
             <span className="tl-seat-cards" aria-label={e8.cards(p.hand.length)}>
               {p.hand.length > 0 && (
@@ -210,7 +211,14 @@ export function EightsTable({
             </span>
           </div>
         </div>
-        <p className="tl-empty">{state.phase === 'playing' ? (myTurn ? e8.yourTurn : e8.turnOf(turnOf.name)) : e8.gameOver}</p>
+        {state.phase === 'playing' ? (
+          <p className={`tl-turn${myTurn ? ' mine' : ''}`} style={{ '--player': colorHex(turnOf.color) } as CSSProperties}>
+            <TokenIcon token={turnOf.token} color={colorHex(turnOf.color)} size={26} />
+            {myTurn ? e8.yourTurn : e8.turnOf(turnOf.name)}
+          </p>
+        ) : (
+          <p className="tl-empty">{e8.gameOver}</p>
+        )}
       </section>
 
       <ul className="tl-log" aria-live="polite">
