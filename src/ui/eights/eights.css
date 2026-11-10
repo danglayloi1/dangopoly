@@ -77,23 +77,24 @@
   gap: 6px;
 }
 
-.e8-suit {
+/* Two classes: the theme's own .badge colours (dark in the dark theme) mustn't win here. */
+.badge.e8-suit {
   background: #fbf6e8;
   color: #2b2420;
   border-color: #2b2420;
   font-size: 0.8rem;
 }
 
-.e8-suit.red {
+.badge.e8-suit.red {
   color: #b8322a;
 }
 
 /* After an 8, the suit to follow isn't the top card's: make that stand out. */
-.e8-suit.called {
+.badge.e8-suit.called {
   box-shadow: 0 0 0 3px #d9ae4f;
 }
 
-.e8-penalty {
+.badge.e8-penalty {
   background: #b8322a;
   border-color: #fbf6e8;
   color: #fbf6e8;

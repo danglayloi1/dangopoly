@@ -680,6 +680,37 @@ button.secondary:disabled {
   transform: translate(-2px, -2px);
 }
 
+/* Whose turn it is, said on their card too (not only by its shadow): a tag on its top edge, so it never squeezes the name. */
+.player-card {
+  position: relative;
+}
+
+.player-name .badge-turn {
+  position: absolute;
+  top: -11px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-color: var(--ink);
+  background: #d9ae4f;
+  color: #2b2420;
+  font-size: 0.68rem;
+  animation: turn-tag-bob calc(1.4s * var(--fx, 1)) ease-in-out infinite;
+}
+
+@keyframes turn-tag-bob {
+  50% {
+    translate: 0 -2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-name .badge-turn {
+    animation: none;
+  }
+}
+
 .holding-swatch {
   border: 1.5px solid var(--ink);
   border-radius: 3px;

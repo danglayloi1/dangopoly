@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
+import { SECOND_COLOR } from '../data/colors';
 import type { TokenId } from '../data/tokens';
 
 // The local tokens as little woodblock stamps: pigment colors with ink outlines,
-// on a disc of the player's color inside a gold rim.
+// on a disc of the player's color inside a gold rim (split diagonally for a two-colour choice).
 const INK = '#2b2420';
 const CREAM = '#f6ecd4';
 const STRAW = '#e8c872';
@@ -135,6 +136,63 @@ const DRAWINGS: Record<TokenId, ReactNode> = {
       <path d="M12 21 Q16 24.5 20 21" fill="none" />
     </>
   ),
+  // A Shiba giving you the side-eye, the way the internet likes them
+  shiba: (
+    <>
+      <path d="M7 13 L8.2 4 L14 9.5 Z M25 13 L23.8 4 L18 9.5 Z" fill="#d9893a" />
+      <path d="M8.8 10.5 L9.4 6.8 L12.2 9.4 Z M23.2 10.5 L22.6 6.8 L19.8 9.4 Z" fill={CREAM} stroke="none" />
+      <ellipse cx="16" cy="17" rx="10.2" ry="9.2" fill="#d9893a" />
+      <path d="M7.5 19 Q8.5 26.5 16 26.8 Q23.5 26.5 24.5 19 Q20 16.6 16 18.6 Q12 16.6 7.5 19 Z" fill={CREAM} />
+      <ellipse cx="12" cy="14.6" rx="2.3" ry="1.4" fill={CREAM} />
+      <ellipse cx="20" cy="14.6" rx="2.3" ry="1.4" fill={CREAM} />
+      <circle cx="10.8" cy="14.6" r="1" fill={INK} stroke="none" />
+      <circle cx="18.8" cy="14.6" r="1" fill={INK} stroke="none" />
+      <path d="M9.8 11.6 L13.8 12.6 M18.2 12.4 L22.2 11.2" fill="none" strokeWidth="0.9" />
+      <ellipse cx="16" cy="19.6" rx="1.9" ry="1.3" fill={INK} stroke="none" />
+      <path d="M16 20.8 Q15.6 22.8 13.4 22.6 M16 20.8 Q17.6 22.4 19.8 21.2" fill="none" strokeWidth="0.9" />
+    </>
+  ),
+  // A green frog with a very wide grin
+  ech: (
+    <>
+      <circle cx="10" cy="10.5" r="4.8" fill="#6fae4a" />
+      <circle cx="22" cy="10.5" r="4.8" fill="#6fae4a" />
+      <path d="M4.2 19 Q4.2 11.5 16 11.5 Q27.8 11.5 27.8 19 Q27.8 26.5 16 26.5 Q4.2 26.5 4.2 19 Z" fill="#6fae4a" />
+      <circle cx="10" cy="10.5" r="3.1" fill={CREAM} />
+      <circle cx="22" cy="10.5" r="3.1" fill={CREAM} />
+      <circle cx="10.9" cy="11" r="1.5" fill={INK} stroke="none" />
+      <circle cx="22.9" cy="11" r="1.5" fill={INK} stroke="none" />
+      <path d="M7.5 18.5 Q16 26 24.5 18.5" fill="none" strokeWidth="1.3" />
+      <ellipse cx="7.6" cy="20.4" rx="1.6" ry="1" fill={PINK} stroke="none" />
+      <ellipse cx="24.4" cy="20.4" rx="1.6" ry="1" fill={PINK} stroke="none" />
+    </>
+  ),
+  // A grey cat with big wet eyes, trying very hard not to cry
+  meoKhoc: (
+    <>
+      <path d="M6.5 13 L7.5 4.5 L13.5 9 Z M25.5 13 L24.5 4.5 L18.5 9 Z" fill="#9a9aa0" />
+      <ellipse cx="16" cy="17.5" rx="10.5" ry="9" fill="#9a9aa0" />
+      <circle cx="11.5" cy="15.5" r="3.3" fill={INK} stroke="none" />
+      <circle cx="20.5" cy="15.5" r="3.3" fill={INK} stroke="none" />
+      <circle cx="12.5" cy="14.3" r="1.2" fill={CREAM} stroke="none" />
+      <circle cx="21.5" cy="14.3" r="1.2" fill={CREAM} stroke="none" />
+      <circle cx="10.6" cy="16.9" r="0.55" fill={CREAM} stroke="none" />
+      <circle cx="19.6" cy="16.9" r="0.55" fill={CREAM} stroke="none" />
+      <path d="M10 18.6 Q8.5 22.2 10 23.6 Q11.5 22.2 10 18.6 Z M22 18.6 Q20.5 22.2 22 23.6 Q23.5 22.2 22 18.6 Z" fill="#6fa8c4" />
+      <path d="M15 19.6 H17 L16 20.7 Z" fill={PINK} />
+      <path d="M13 23.4 Q14.5 22.2 16 23.4 Q17.5 22.2 19 23.4" fill="none" strokeWidth="0.9" />
+    </>
+  ),
+  // A rubber duck, bobbing
+  vitCaoSu: (
+    <>
+      <path d="M4.5 20.5 Q4.5 27.5 15 27.5 Q25.5 27.5 27 19.5 Q23 21 20 18.8 Q16 17.6 12 19.2 Q7 18.6 4.5 20.5 Z" fill="#f2c230" />
+      <circle cx="13" cy="12.5" r="6.3" fill="#f2c230" />
+      <path d="M18.6 12.4 Q23.6 11.4 25.2 13.6 Q23.2 15.6 18.6 14.9 Z" fill="#e8762b" />
+      <circle cx="14.6" cy="11" r="1.1" fill={INK} stroke="none" />
+      <path d="M10 22 Q14 19.6 18 22.4 Q14 24.6 10 22 Z" fill="#e0ad22" />
+    </>
+  ),
   // Mũ cối: the green pith helmet every grandfather still has
   muCoi: (
     <>
@@ -171,6 +229,7 @@ export function TokenIcon({ token, color, size = 32, title }: Props) {
     >
       <circle cx="16" cy="16" r="15.3" fill={GOLD} />
       <circle cx="16" cy="16" r="12.6" fill={color} />
+      {SECOND_COLOR[color] && <path d="M16 3.4 A12.6 12.6 0 0 1 16 28.6 Z" transform="rotate(45 16 16)" fill={SECOND_COLOR[color]} stroke="none" />}
       <g transform="translate(4.2 4.2) scale(0.74)">{DRAWINGS[token]}</g>
     </svg>
   );

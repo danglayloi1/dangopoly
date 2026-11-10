@@ -180,8 +180,66 @@ button.pcard:focus-visible {
   text-align: center;
 }
 
+.tl-seat {
+  position: relative;
+}
+
 .tl-seat.current {
   box-shadow: 0 0 0 3px var(--player);
+}
+
+/* Whose turn: a little gold tag on that seat… */
+.tl-turn-badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 1px 8px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #d9ae4f;
+  color: #2b2420;
+  font-size: 0.68rem;
+  font-weight: 900;
+  white-space: nowrap;
+  animation: turn-bob calc(1.4s * var(--fx, 1)) ease-in-out infinite;
+}
+
+/* …and on the felt, with their token. Your own turn pulses. */
+.tl-turn {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 4px;
+  border: 2px solid var(--player);
+  border-radius: 999px;
+  background: #fbf6e8;
+  color: #2b2420;
+  font-weight: 900;
+}
+
+.tl-turn.mine {
+  animation: turn-pulse calc(1.2s * var(--fx, 1)) ease-in-out infinite;
+}
+
+@keyframes turn-bob {
+  50% {
+    translate: -50% -2px;
+  }
+}
+
+@keyframes turn-pulse {
+  50% {
+    box-shadow: 0 0 0 4px #d9ae4f;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-turn-badge,
+  .tl-turn.mine {
+    animation: none;
+  }
 }
 
 .tl-seat-name {

@@ -66,7 +66,7 @@ export function ColorPicker({
             title={c.name[lang]}
             disabled={taken.includes(c.id)}
             className={`color-choice${selected ? ' selected' : ''}`}
-            style={{ background: c.hex }}
+            style={{ background: 'second' in c ? `linear-gradient(135deg, ${c.hex} 50%, ${c.second} 50%)` : c.hex }}
             onClick={() => onChange(c.id)}
           />
         );

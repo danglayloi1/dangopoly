@@ -184,6 +184,7 @@ export function TienLenTable({
             style={{ '--player': colorHex(p.color) } as CSSProperties}
           >
             <TokenIcon token={p.token} color={colorHex(p.color)} size={34} />
+            {state.current === i && state.phase === 'playing' && <span className="tl-turn-badge">▶ {tl.turnBadge}</span>}
             <span className="tl-seat-name">{p.name}</span>
             <span className="tl-seat-cards" aria-label={tl.cards(p.hand.length)}>
               {p.hand.length > 0 && (
@@ -220,7 +221,13 @@ export function TienLenTable({
             </p>
           </>
         ) : (
-          <p className="tl-empty">{state.phase === 'playing' ? (myTurn ? tl.yourTurn : tl.turnOf(turnOf.name)) : tl.gameOver}</p>
+          state.phase !== 'playing' && <p className="tl-empty">{tl.gameOver}</p>
+        )}
+        {state.phase === 'playing' && (
+          <p className={`tl-turn${myTurn ? ' mine' : ''}`} style={{ '--player': colorHex(turnOf.color) } as CSSProperties}>
+            <TokenIcon token={turnOf.token} color={colorHex(turnOf.color)} size={26} />
+            {myTurn ? tl.yourTurn : tl.turnOf(turnOf.name)}
+          </p>
         )}
       </section>
 
