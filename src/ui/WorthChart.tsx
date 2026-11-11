@@ -1,13 +1,16 @@
 import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
-import { playerColor } from './look';
+import { playerColor, playerSecondColor } from './look';
 
 const W = 320;
 const H = 170;
 const PAD = { left: 44, right: 10, top: 10, bottom: 22 };
 
-/** Each player's total wealth at the start of every round and at the end (🏁), as lines in their color. */
+/**
+ * Each player's total wealth at the start of every round and at the end (🏁), as lines in their color
+ * (a two-color choice: dashes of the second color over the first, and a split dot at the end).
+ */
 export function WorthChart({ game }: { game: GameState }) {
   const { t } = useLang();
   const rows = game.worth;
@@ -35,19 +38,22 @@ export function WorthChart({ game }: { game: GameState }) {
             {i === rows.length - 1 ? '🏁' : i + 1}
           </text>
         ))}
-        {game.players.map((p) => (
-          <g key={p.id}>
-            <polyline
-              points={rows.map((row, i) => `${x(i)},${y(row[p.id])}`).join(' ')}
-              fill="none"
-              stroke={playerColor(p)}
-              strokeWidth={2.5}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-            <circle cx={x(rows.length - 1)} cy={y(rows[rows.length - 1][p.id])} r={3.5} fill={playerColor(p)} />
-          </g>
-        ))}
+        {game.players.map((p) => {
+          const points = rows.map((row, i) => `${x(i)},${y(row[p.id])}`).join(' ');
+          const second = playerSecondColor(p);
+          const twoColor = second !== playerColor(p);
+          const end = { x: x(rows.length - 1), y: y(rows[rows.length - 1][p.id]) };
+          return (
+            <g key={p.id}>
+              <polyline points={points} fill="none" stroke={playerColor(p)} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+              {twoColor && <polyline points={points} fill="none" stroke={second} strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="5 5" />}
+              <circle cx={end.x} cy={end.y} r={3.5} fill={playerColor(p)} />
+              {twoColor && (
+                <path d={`M ${end.x} ${end.y - 3.5} A 3.5 3.5 0 0 1 ${end.x} ${end.y + 3.5} Z`} transform={`rotate(45 ${end.x} ${end.y})`} fill={second} />
+              )}
+            </g>
+          );
+        })}
       </svg>
       <figcaption className="muted small-note">{t.worthChart}</figcaption>
     </figure>

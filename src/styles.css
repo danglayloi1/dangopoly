@@ -1591,10 +1591,15 @@ footer {
   font-variant-numeric: tabular-nums;
 }
 
-/* The owner's color along the outer edge. */
+/* The owner's color along the outer edge; a two-color choice alternates its two colors. */
 .owner-mark {
   position: absolute;
-  background: var(--owner);
+  background: repeating-linear-gradient(var(--stripes, 90deg), var(--owner) 0 1.4cqw, var(--owner2, var(--owner)) 1.4cqw 2.8cqw);
+}
+
+.side-left .owner-mark,
+.side-right .owner-mark {
+  --stripes: 180deg;
 }
 
 .side-bottom .owner-mark {

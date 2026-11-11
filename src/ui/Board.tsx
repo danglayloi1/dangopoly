@@ -7,7 +7,7 @@ import { useLang } from '../i18n/LangContext';
 import { BoardEffects } from './Effects';
 import { cellPosition } from './geometry';
 import { Icon } from './icons';
-import { groupFill, playerColor, spaceIcon } from './look';
+import { groupFill, playerColor, playerSecondColor, spaceIcon } from './look';
 import { Buildings } from './PropertyButtons';
 import { TokenIcon } from './TokenIcon';
 import type { ShownEffect } from './usePresentation';
@@ -41,6 +41,7 @@ export function Board({ game, positions, busy, onSelectSpace, effects, children 
           gridColumn: col + 1,
           '--group': space.kind === 'property' ? groupFill(space.group) : undefined,
           '--owner': own ? playerColor(game.players[own.owner]) : undefined,
+          '--owner2': own ? playerSecondColor(game.players[own.owner]) : undefined,
         } as CSSProperties;
 
         return (

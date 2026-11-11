@@ -6,7 +6,7 @@ import { formatMoney } from '../engine/money';
 import { ownsWholeGroup } from '../engine/rent';
 import type { Action, GameState } from '../engine/types';
 import { useLang } from '../i18n/LangContext';
-import { groupFill, playerColor, spaceIcon } from './look';
+import { groupFill, playerPaint, spaceIcon } from './look';
 import { Buildings, PropertyButtons } from './PropertyButtons';
 import { useModalDialog } from './useModalDialog';
 
@@ -130,7 +130,7 @@ export function SpaceCard({ index, game, dispatch, onClose }: Props) {
           <div className="deed-owner">
             {own ? (
               <>
-                <span className="owner-dot" style={{ background: playerColor(game.players[own.owner]) }} />
+                <span className="owner-dot" style={{ background: playerPaint(game.players[own.owner]) }} />
                 {t.ownedBy(game.players[own.owner].name)}
                 {own.mortgaged && <span className="mortgaged-tag">{t.mortgaged}</span>}
                 {own.houses > 0 && (

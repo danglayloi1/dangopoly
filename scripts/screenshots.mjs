@@ -1686,6 +1686,52 @@ const scenes = {
     check(errors === 0, `no errors on the page (${errors})`);
   },
 
+  /** Places owned by players with two-color choices: the strip on the board and the dot on the card show both. */
+  async ownercolors({ page, shot, startGame, setup }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    await startGame(['Đăng', 'Lan', 'Minh']);
+    await setup((game) => {
+      game.players[0].color = 'redGold';
+      game.players[1].color = 'seaSand';
+      game.players[2].color = 'green';
+      for (const [space, owner] of [[1, 0], [3, 0], [6, 1], [8, 1], [9, 1], [11, 2], [13, 2], [21, 0], [24, 1], [31, 0], [34, 2]]) {
+        game.ownership[space] = { owner, houses: 0, mortgaged: false };
+      }
+    });
+    const mark = (space) => page.locator(`[data-space="${space}"] .owner-mark`).evaluate((el) => getComputedStyle(el).backgroundImage);
+    const twoColour = await mark(1);
+    const oneColour = await mark(11);
+    check(/gradient/.test(twoColour) && twoColour.includes('224, 177, 58'), `a two-color owner's strip shows both colors (${twoColour.slice(0, 60)}…)`);
+    check(!/224, 177, 58/.test(oneColour), 'a one-color owner\'s strip stays one color');
+    await shot('board');
+    await page.locator('[data-space="21"]').click();
+    const dot = await page.locator('.owner-dot').evaluate((el) => el.style.background);
+    check(/gradient/.test(dot), 'the place card\'s owner dot is split in two');
+    await shot('place-card');
+    await page.keyboard.press('Escape');
+
+    // The game ends: the wealth chart and the picture to share show both colors too.
+    await setup((game) => {
+      game.worth = [
+        [15e6, 15e6, 15e6],
+        [17e6, 14e6, 13e6],
+        [16e6, 18e6, 11e6],
+        [21e6, 17e6, 9e6],
+        [24e6, 16e6, 8e6],
+      ];
+      game.phase = { kind: 'gameOver', winner: 0 };
+      game.endReason = 'lastStanding';
+    });
+    // The summary opens by itself when a game ends.
+    await page.locator('dialog.summary-dialog .worth-chart').waitFor({ timeout: 10_000 });
+    const dashes = await page.locator('.worth-chart polyline[stroke-dasharray]').count();
+    check(dashes === 2, `on the chart, the two two-color players' lines are dashed with their second color (${dashes})`);
+    await page.locator('.worth-chart').screenshot({ path: path.join(outDir, 'chart.png') });
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Lưu ảnh/ }).click()]);
+    await download.saveAs(path.join(outDir, 'summary-picture.png'));
+    check(true, 'the picture to share is drawn');
+  },
+
   /** Every drawn icon in every theme, side by side, to spot lines that vanish into a fill (dev server only). */
   async iconsheet({ page }) {
     const source = await readFile(new URL('../src/ui/icons.tsx', import.meta.url), 'utf8');
