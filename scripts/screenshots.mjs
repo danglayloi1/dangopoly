@@ -1601,6 +1601,225 @@ const scenes = {
     await lan.ctx.close();
   },
 
+  /** Màu Mè against three computer players, with the real buttons, from the hub to the next game. */
+  async maume({ page, shot }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', (e) => {
+      errors++;
+      console.error(e.message);
+    });
+    await page.goto('about:blank');
+    await page.goto(BASE_URL);
+    await page.getByRole('button', { name: /Vào chơi/ }).click();
+    const card = page.locator('.hub-game', { hasText: 'Màu Mè' });
+    check(await card.isVisible(), 'the hub has a card for Màu Mè');
+    await shot('hub');
+    await card.click();
+    await page.getByRole('button', { name: /Chơi với máy/ }).click();
+    await page.getByPlaceholder('Tên bạn').fill('Đăng');
+    await page.getByRole('button', { name: /Chia bài/ }).click();
+    await page.waitForSelector('.tl-hand .pcard');
+    check((await page.locator('.tl-hand .pcard').count()) === 7, 'four players: seven cards each');
+    check((await page.locator('.e8-pile .mcard').count()) === 1, 'a card is turned up on the pile');
+    await shot('table');
+
+    let mine = 0;
+    let eights = 0;
+    let shotMid = false;
+    let shotLast = false;
+    for (let step = 0; step < 600 && !(await page.locator('.tl-over').count()); step++) {
+      const playable = page.locator('.tl-hand button.pcard:not(:disabled)');
+      const pass = page.getByRole('button', { name: 'Bỏ lượt' });
+      const draw = page.locator('.tl-actions .primary');
+      if ((await playable.count()) > 0) {
+        await playable.first().click();
+        if (await page.locator('.mm-color-picker').count()) {
+          if (!eights++) await shot('choose-color');
+          await page.locator('.mm-color-choice').first().click();
+        }
+        mine++;
+      } else if (await pass.isEnabled().catch(() => false)) {
+        await pass.click();
+        mine++;
+      } else if (await draw.isEnabled().catch(() => false)) {
+        await draw.click();
+        mine++;
+      } else {
+        await page.waitForTimeout(300);
+      }
+      if (!shotLast && (await page.locator('.mm-last').count())) {
+        shotLast = true;
+        await shot('last-card');
+      }
+      if (mine === 4 && !shotMid) {
+        shotMid = true;
+        await shot('mid-game');
+      }
+    }
+    check(mine > 0, `you played, drew or passed ${mine} times with the buttons`);
+    await page.locator('.tl-over').waitFor({ timeout: 60_000 });
+    const winner = await page.locator('.e8-winner').textContent();
+    check(/hết bài trước/.test(winner), `the game ends with a winner and points ("${winner.trim()}")`);
+    await shot('game-over');
+    await page.getByRole('button', { name: /Ván mới/ }).click();
+    await page.locator('.screen-title', { hasText: 'Ván 2' }).waitFor();
+    check(true, 'a new game is dealt (Ván 2)');
+    await page.getByRole('button', { name: /Quay lại|←/ }).first().click();
+    check(await page.getByRole('button', { name: /Chơi với máy/ }).isVisible(), "leaving goes back to Màu Mè's menu");
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
+  /** Màu Mè online: two phones and a computer player in one room (needs `npm run server` too). */
+  async maumeonline({ browser }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    const phone = async (name) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: dark ? 'dark' : 'light' });
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => {
+        errors++;
+        console.error(`${name}: ${e.message}`);
+      });
+      reportCrash(page, name);
+      return { name, ctx, page };
+    };
+    const dang = await phone('Đăng');
+    const lan = await phone('Lan');
+    const save = (p, label) => p.page.screenshot({ path: path.join(outDir, `${label}.png`) });
+
+    await dang.page.goto(BASE_URL);
+    await dang.page.getByRole('button', { name: /Vào chơi/ }).click();
+    await dang.page.locator('.hub-game', { hasText: 'Màu Mè' }).click();
+    await dang.page.getByRole('button', { name: /Chơi online/ }).click();
+    await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    check((await dang.page.locator('.lobby-title').textContent()).includes('Màu Mè'), `a Màu Mè room is created (${code})`);
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.waitForSelector('.lobby-seat');
+    await lan.page.getByPlaceholder('Tên').fill('Lan');
+    await lan.page.getByRole('button', { name: 'Vào phòng' }).click();
+    await lan.page.waitForSelector('.badge-you');
+    await dang.page.getByRole('button', { name: 'Thêm máy chơi cùng' }).click();
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 3);
+    await dang.page.getByRole('button', { name: /Bắt đầu ván/ }).click();
+    for (const p of [dang, lan]) await p.page.waitForSelector('.tl-hand .pcard');
+    const hands = await Promise.all([dang, lan].map((p) => p.page.locator('.tl-hand .pcard').evaluateAll((cards) => cards.map((c) => c.getAttribute('aria-label')))));
+    check(hands.every((h) => h.length === 7), 'each phone is dealt seven cards of its own');
+
+    // What a phone without a seat receives: counts for hands and the deck, the pile face up, no shuffle.
+    const server = BASE_URL.includes('github.io') ? 'wss://dangopoly-server.danglayloi1.workers.dev' : 'ws://localhost:8787';
+    const seen = await new Promise((resolve, reject) => {
+      const ws = new WebSocket(`${server}/room/${code}`);
+      ws.onopen = () => ws.send(JSON.stringify({ t: 'look' }));
+      ws.onerror = () => reject(new Error('could not reach the room'));
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.t !== 'room') return;
+        ws.close();
+        resolve(msg.room);
+      };
+    });
+    const g = seen.maume;
+    check(
+      seen.kind === 'maume' && g.rngState === 0 && g.deck.length > 0 && g.deck.every((c) => c === -1) && g.players.every((p) => p.hand.every((c) => c === -1)) && g.pile[0] >= 0,
+      'a watcher receives counts for every hand and the deck, the pile face up, and nothing else',
+    );
+    await save(lan, 'table');
+
+    const moves = { Đăng: 0, Lan: 0 };
+    for (let step = 0; step < 800 && !(await dang.page.locator('.tl-over').count()); step++) {
+      let moved = false;
+      for (const p of [dang, lan]) {
+        const playable = p.page.locator('.tl-hand button.pcard:not(:disabled)');
+        const pass = p.page.getByRole('button', { name: 'Bỏ lượt' });
+        const draw = p.page.locator('.tl-actions .primary');
+        if ((await playable.count()) > 0) {
+          await playable.first().click();
+          if (await p.page.locator('.mm-color-picker').count()) await p.page.locator('.mm-color-choice').first().click();
+        } else if (await pass.isEnabled().catch(() => false)) await pass.click();
+        else if (await draw.isEnabled().catch(() => false)) await draw.click();
+        else continue;
+        moves[p.name]++;
+        moved = true;
+        if (moves.Đăng + moves.Lan === 3) await save(dang, 'mid-game');
+        await p.page.waitForTimeout(300);
+      }
+      if (!moved) await dang.page.waitForTimeout(300);
+    }
+    check(moves.Đăng > 0 && moves.Lan > 0, `both phones played their own turns (Đăng ${moves.Đăng}, Lan ${moves.Lan}); the bot played its own`);
+    for (const p of [dang, lan]) await p.page.locator('.tl-over').waitFor({ timeout: 30_000 });
+    const winners = await Promise.all([dang, lan].map((p) => p.page.locator('.e8-winner').textContent()));
+    check(winners[0] === winners[1], `both phones show the same result ("${winners[0].trim()}")`);
+    check((await lan.page.getByRole('button', { name: /Ván mới/ }).count()) === 0, 'only the host can deal again');
+    await save(lan, 'game-over');
+    await dang.page.getByRole('button', { name: /Ván mới/ }).click();
+    for (const p of [dang, lan]) await p.page.locator('.screen-title', { hasText: 'Ván 2' }).waitFor({ timeout: 10_000 });
+    check(true, 'the host deals again: Ván 2 on both phones');
+    check(errors === 0, `no errors on any phone (${errors})`);
+    await dang.ctx.close();
+    await lan.ctx.close();
+  },
+
+  /** Màu Mè's tutorial, followed step by step with real taps (and one wrong move). */
+  async maumelesson({ page, shot }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', (e) => {
+      errors++;
+      console.error(e.message);
+    });
+    const at = (n) => page.locator('.lesson-step', { hasText: `Bước ${n}/` }).waitFor({ timeout: 10_000 });
+    const card = (name) => page.locator(`.tl-hand .pcard[aria-label="${name}"]`);
+    await page.goto('about:blank');
+    await page.goto(BASE_URL);
+    await page.getByRole('button', { name: /Vào chơi/ }).click();
+    await page.locator('.hub-game', { hasText: 'Màu Mè' }).click();
+    await page.getByRole('button', { name: /Hướng dẫn chơi/ }).click();
+    await page.locator('.lesson-bubble').waitFor();
+    await shot('1-intro');
+    await page.getByRole('button', { name: /Tiếp/ }).click();
+    await at(2);
+    check(await card('Son 8').evaluate((el) => el.classList.contains('glow')), 'the lesson points at Son 8');
+    await shot('2-follow-color');
+    await card('Son 8').click();
+    await at(3);
+    check((await page.locator('.e8-pile .mcard').getAttribute('aria-label')) === 'Nghệ 8', 'Cu Đơ answers with Nghệ 8 by himself');
+    // A card the step doesn't ask for (the +4 fits, but it's worth keeping) is refused.
+    await card('+4').click();
+    await page.locator('.mm-color-choice').first().click();
+    await page.locator('.lesson-wrong').waitFor();
+    check((await card('+4').count()) === 1, "a move the step doesn't ask for is refused, with a reminder");
+    await shot('3-wrong-move');
+    await card('Lá 8').click();
+    await at(4);
+    await card('Lá Chặn').click();
+    await at(5);
+    await card('Lá +2').click();
+    await at(6);
+    await shot('6-draw');
+    await page.locator('.tl-actions .primary').click(); // Rút bài
+    await at(7);
+    await card('Lá 6').click();
+    await at(8);
+    await card('Chàm 4').click();
+    await at(9);
+    check((await page.locator('.tl-status .mm-last').count()) === 1, 'down to one card: "Báo!"');
+    await shot('9-bao');
+    await card('+4').click();
+    await page.locator('.mm-color-picker').waitFor();
+    await shot('9-pick-color');
+    await page.locator('.mm-color-choice').nth(2).click(); // lá
+    await at(10);
+    check((await page.locator('.tl-hand .pcard').count()) === 0, 'following every step, you go out with the +4');
+    await shot('10-done');
+    await page.getByRole('button', { name: /Chơi với máy/ }).click();
+    check(await page.getByRole('button', { name: /Chia bài/ }).isVisible(), 'after the lesson, straight to a game against the computer');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
   /** The card games' tutorials, followed step by step with real taps (and one wrong move). */
   async lessons({ page, shot }) {
     const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);

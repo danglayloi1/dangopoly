@@ -9,6 +9,7 @@ import { roomLink } from '../net/config';
 import type { FirstTurn, GameKind, Profile } from '../net/protocol';
 import { TIENLEN_TEXT } from '../games/tienlen/text';
 import { EIGHTS_TEXT } from '../games/eights/text';
+import { MAUME_TEXT } from '../games/maume/text';
 import { forgetSeat } from '../net/seats';
 import type { RoomState } from '../net/useRoom';
 import { LangSwitch, ThemeButton } from './Header';
@@ -97,7 +98,13 @@ export function Lobby({ code, creating, kind, state, onLeave }: Props) {
         <LangSwitch />
       </div>
 
-      <h1 className="lobby-title">{dangopoly ? t.roomTitle(code) : kind === 'eights' ? EIGHTS_TEXT[uiLang].inRoom(code) : TIENLEN_TEXT[uiLang].inRoom(code)}</h1>
+      <h1 className="lobby-title">{dangopoly
+          ? t.roomTitle(code)
+          : kind === 'eights'
+            ? EIGHTS_TEXT[uiLang].inRoom(code)
+            : kind === 'maume'
+              ? MAUME_TEXT[uiLang].inRoom(code)
+              : TIENLEN_TEXT[uiLang].inRoom(code)}</h1>
       {status !== 'open' && (
         <p className="connection-note" role="status">
           {status === 'connecting' ? t.connecting : t.reconnecting}

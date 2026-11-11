@@ -16,6 +16,10 @@ import { EIGHTS_TEXT } from './games/eights/text';
 import { EightsScreen } from './ui/eights/EightsScreen';
 import { EightsLesson } from './ui/eights/EightsLesson';
 import { TienLenLesson } from './ui/tienlen/TienLenLesson';
+import { createMauMe, type MauMeState } from './games/maume/game';
+import { MAUME_TEXT } from './games/maume/text';
+import { MauMeScreen } from './ui/maume/MauMeScreen';
+import { MauMeLesson } from './ui/maume/MauMeLesson';
 import { TIENLEN_TEXT } from './games/tienlen/text';
 import type { GameKind } from './net/protocol';
 import { MenuScreen } from './ui/MenuScreen';
@@ -43,7 +47,8 @@ export default function App() {
  * The entry screen, the hub (pick a game), and Dangopoly's menu with the screens reached from it
  * (a game or a room is shown on top of them).
  */
-type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen' | 'tienlenBots' | 'tienlenOnline' | 'eights' | 'eightsBots' | 'eightsOnline';
+type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen' | 'tienlenBots' | 'tienlenOnline' | 'eights' | 'eightsBots' | 'eightsOnline' | 'maume' | 'maumeBots' | 'maumeOnline';
+type CardGame = 'tienlen' | 'eights' | 'maume';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -83,7 +88,8 @@ function Screens() {
   const [tutorial, setTutorial] = useState(false);
   const [tienLen, setTienLen] = useState<TienLenState | null>(null);
   const [eights, setEights] = useState<EightsState | null>(null);
-  const [lesson, setLesson] = useState<'tienlen' | 'eights' | null>(null); // a card game's guided first game
+  const [maume, setMauMe] = useState<MauMeState | null>(null);
+  const [lesson, setLesson] = useState<CardGame | null>(null); // a card game's guided first game
   // An unfinished game from an earlier visit, offered on the menu.
   const [saved, setSaved] = useState<SaveFile | null>(loadSavedGame);
   const [online, setOnline] = useState<OnlineRoom | null>(() => {
@@ -156,6 +162,14 @@ function Screens() {
     setGameNumber((n) => n + 1);
   };
 
+  /** A Màu Mè match, the same way. */
+  const startMauMe = (players: NewTienLenPlayer[]) => {
+    history.replaceState({ dangopoly: 'game' } satisfies NavState, '');
+    direction.current = 'rise';
+    setMauMe(createMauMe({ players, seed: crypto.getRandomValues(new Uint32Array(1))[0] }));
+    setGameNumber((n) => n + 1);
+  };
+
   // A new room's link only goes in the address once the room exists (see onCreated).
   const openRoom = (code: string, creating: boolean, kind: GameKind = 'dangopoly') => {
     direction.current = 'rise';
@@ -176,6 +190,7 @@ function Screens() {
       setGame(null);
       setTienLen(null);
       setEights(null);
+      setMauMe(null);
       setLesson(null);
       setSaved(loadSavedGame());
       const code = roomInUrl();
@@ -209,7 +224,7 @@ function Screens() {
   };
 
   /** A card game's lesson goes on top of its menu, like a game. */
-  const startLesson = (game: 'tienlen' | 'eights') => {
+  const startLesson = (game: CardGame) => {
     history.pushState({ dangopoly: 'game' } satisfies NavState, '');
     direction.current = 'rise';
     setLesson(game);
@@ -222,8 +237,8 @@ function Screens() {
   };
 
   /** After a lesson: straight to a real game against the computer (its setup takes the lesson's place). */
-  const lessonToBots = (game: 'tienlen' | 'eights') => {
-    const next: Screen = game === 'tienlen' ? 'tienlenBots' : 'eightsBots';
+  const lessonToBots = (game: CardGame) => {
+    const next: Screen = `${game}Bots`;
     history.replaceState({ dangopoly: 'screen', screen: next } satisfies NavState, '', location.pathname);
     direction.current = 'forward';
     setLesson(null);
@@ -238,13 +253,21 @@ function Screens() {
     }
   };
 
+  const leaveMauMe = () => {
+    if (navState()?.dangopoly === 'game') history.back();
+    else {
+      setMauMe(null);
+      toHub();
+    }
+  };
+
   const leaveRoom = (kind: GameKind) => {
     if (navState()?.dangopoly === 'room') history.back();
     else {
       // Opened from a link: there's no menu behind it in the history, so go to the game's own.
       setOnline(null);
       setSaved(loadSavedGame());
-      if (kind === 'tienlen' || kind === 'eights') {
+      if (kind !== 'dangopoly') {
         direction.current = 'back';
         history.replaceState({ dangopoly: 'screen', screen: kind } satisfies NavState, '', location.pathname);
         setScreen(kind);
@@ -278,6 +301,12 @@ function Screens() {
   if (lesson === 'eights') {
     return shown(`lesson-${gameNumber}`, <EightsLesson onLeave={leaveLesson} onPlay={() => lessonToBots('eights')} />);
   }
+  if (lesson === 'maume') {
+    return shown(`lesson-${gameNumber}`, <MauMeLesson onLeave={leaveLesson} onPlay={() => lessonToBots('maume')} />);
+  }
+  if (maume) {
+    return shown(`maume-${gameNumber}`, <MauMeScreen initial={maume} onLeave={leaveMauMe} />);
+  }
   if (eights) {
     return shown(`eights-${gameNumber}`, <EightsScreen initial={eights} onLeave={leaveEights} />);
   }
@@ -301,6 +330,7 @@ function Screens() {
             onDangopoly={() => go('menu')}
             onTienLen={() => go('tienlen')}
             onEights={() => go('eights')}
+            onMauMe={() => go('maume')}
             onSettings={() => go('settings')}
             onBack={toTitle}
           />
@@ -324,6 +354,26 @@ function Screens() {
             onTutorial={() => startLesson('eights')}
             onBack={toHub}
           />
+        );
+      case 'maume':
+        return (
+          <CardGameMenu
+            text={MAUME_TEXT[uiLang]}
+            onBots={() => go('maumeBots')}
+            onOnline={() => go('maumeOnline')}
+            onTutorial={() => startLesson('maume')}
+            onBack={toHub}
+          />
+        );
+      case 'maumeBots':
+        return <TienLenSetup title={MAUME_TEXT[uiLang].name} onStart={startMauMe} onBack={back} />;
+      case 'maumeOnline':
+        return (
+          <main className="setup">
+            <ScreenTop title={`${MAUME_TEXT[uiLang].name} · ${MAUME_TEXT[uiLang].online}`} onBack={back} />
+            <OnlineCard onCreateRoom={() => openRoom(newRoomCode(), true, 'maume')} onJoinRoom={(code) => openRoom(code, false)} />
+            <RoomList onOpen={(code) => openRoom(code, false)} />
+          </main>
         );
       case 'eightsBots':
         return <TienLenSetup title={EIGHTS_TEXT[uiLang].name} onStart={startEights} onBack={back} />;

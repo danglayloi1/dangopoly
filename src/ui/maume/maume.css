@@ -1,0 +1,218 @@
+/* ===== Màu Mè (MauMeScreen.tsx, ColorCard.tsx); the seats, table and hand come from tienlen.css and eights.css ===== */
+
+/* A card in its folk color, with a cream cartouche in the middle, printed like a woodblock: a thin
+   cream frame inside the ink border. The colors stay the same in the dark theme. */
+.pcard.mcard {
+  --c: #2b2420;
+  background: var(--c);
+  background-image: var(--paper);
+  color: var(--on, #fbf6e8);
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.045) var(--c),
+    inset 0 0 0 calc(var(--w) * 0.065) rgba(251, 246, 232, 0.7),
+    1px 2px 0 rgba(43, 36, 32, 0.35);
+  font-family: 'Playfair Display', Georgia, serif;
+  overflow: hidden;
+}
+
+.mcard-corner,
+.mcard-shape {
+  position: absolute;
+  font-size: calc(var(--w) * 0.2);
+  line-height: 1;
+}
+
+.mcard-corner {
+  left: calc(var(--w) * 0.1);
+  top: calc(var(--w) * 0.09);
+}
+
+.mcard-shape {
+  right: calc(var(--w) * 0.1);
+  bottom: calc(var(--w) * 0.09);
+}
+
+/* The cartouche: a cream panel with cut corners, like a seal on a folk print. */
+.mcard-panel {
+  position: absolute;
+  inset: 24% 15%;
+  display: grid;
+  place-items: center;
+  background: #fbf6e8;
+  border: calc(var(--w) * 0.025) solid rgba(43, 36, 32, 0.55);
+  clip-path: polygon(14% 0, 86% 0, 100% 10%, 100% 90%, 86% 100%, 14% 100%, 0 90%, 0 10%);
+}
+
+.mcard-face {
+  color: var(--face, var(--c));
+  font-size: calc(var(--w) * 0.46);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.mcard-face.long {
+  font-size: calc(var(--w) * 0.32);
+}
+
+/* Action cards: an ink cartouche with a cream face, so they stand out from the numbers. */
+.pcard.mcard.action .mcard-panel {
+  background: #2b2420;
+  border-color: #fbf6e8;
+}
+
+.pcard.mcard.action .mcard-face {
+  color: #fbf6e8;
+}
+
+/* Wild cards: ink black, the four colors in the cartouche. */
+.pcard.mcard.wild {
+  --c: #2b2420;
+}
+
+.pcard.mcard.wild .mcard-panel {
+  background: conic-gradient(#c8372d 0 25%, #e0a01a 0 50%, #3f8a3c 0 75%, #2f4f8f 0);
+  border-color: #fbf6e8;
+}
+
+.pcard.mcard.wild .mcard-face {
+  color: #fbf6e8;
+  -webkit-text-stroke: calc(var(--w) * 0.02) #2b2420;
+  paint-order: stroke fill;
+}
+
+/* The back: ink black, a gold frame and the four shapes. */
+.pcard.mcard.back {
+  background: #2b2420;
+  background-image: var(--paper);
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.06) #2b2420,
+    inset 0 0 0 calc(var(--w) * 0.085) #d9ae4f,
+    1px 1px 0 rgba(43, 36, 32, 0.35);
+}
+
+.mcard-back-shapes {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  place-content: center;
+  place-items: center;
+  gap: calc(var(--w) * 0.04);
+  font-size: calc(var(--w) * 0.22);
+  line-height: 1;
+}
+
+/* The opponents' tiny fans are too small for the shapes. */
+.tl-mini-fan .mcard-back-shapes {
+  display: none;
+}
+
+/* The deck's own frame (the playing cards' is red lacquer). */
+.mm-deck .pcard.mcard {
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.06) #2b2420,
+    inset 0 0 0 calc(var(--w) * 0.085) #d9ae4f,
+    2px 2px 0 #1a1512,
+    4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* The color to follow: the pile sits on a ring of it, and the badge wears it. */
+.mm-table .e8-pile {
+  padding: 5px;
+  border-radius: 14px;
+  background: var(--now);
+  box-shadow: 0 0 0 2px #fbf6e8;
+  transition: background calc(0.3s * var(--fx, 1));
+}
+
+.badge.mm-color {
+  background: var(--now);
+  border-color: #fbf6e8;
+  color: var(--now-ink);
+  font-size: 0.85rem;
+}
+
+/* After a wild card, the color isn't the card's own: make that stand out. */
+.badge.mm-color.called {
+  box-shadow: 0 0 0 3px #d9ae4f;
+}
+
+/* One card left: "Báo!" */
+.badge.mm-last {
+  background: #d9ae4f;
+  border-color: #2b2420;
+  color: #2b2420;
+  font-weight: 900;
+  animation: mm-bao calc(0.9s * var(--fx, 1)) ease-in-out infinite alternate;
+}
+
+.tl-status .badge.mm-last {
+  margin-left: 6px;
+}
+
+@keyframes mm-bao {
+  to {
+    transform: scale(1.12) rotate(-4deg);
+  }
+}
+
+/* A wild card from your hand: choose the next color. */
+.mm-color-picker {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.mm-color-picker p {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 800;
+}
+
+.mm-color-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px;
+  border: 2px solid #2b2420;
+  border-radius: 10px;
+  background: var(--c);
+  color: var(--on);
+  font: inherit;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 #2b2420;
+  cursor: pointer;
+}
+
+.mm-color-choice span {
+  font-size: 1.3rem;
+}
+
+.mm-color-choice:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The hub's card for Màu Mè: a fan of colors on the felt. */
+.hub-game-art.mm-hub-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f5d46;
+  background-image: var(--paper);
+}
+
+.hub-game-art.mm-hub-art .pcard {
+  --w: clamp(48px, 14%, 76px);
+  margin: 0 -12px;
+  transform: rotate(calc((var(--k) - 1.5) * 10deg)) translateY(calc((var(--k) - 1.5) * (var(--k) - 1.5) * 3px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge.mm-last {
+    animation: none;
+  }
+}
