@@ -1,12 +1,22 @@
 // Visual details that aren't game rules: player colors and space icons.
 
 import type { ColorGroup } from '../data/board';
-import { PLAYER_COLORS, type PlayerColorId } from '../data/colors';
+import { PLAYER_COLORS, SECOND_COLOR, type PlayerColorId } from '../data/colors';
 
 export const colorHex = (id: PlayerColorId): string => PLAYER_COLORS.find((c) => c.id === id)!.hex;
 
 /** A player's chosen color, used for tokens, ownership marks and the player list. */
 export const playerColor = (player: { color: PlayerColorId }): string => colorHex(player.color);
+
+/** The second color of a two-color choice; the first again for a one-color choice. */
+export const playerSecondColor = (player: { color: PlayerColorId }): string => SECOND_COLOR[playerColor(player)] ?? playerColor(player);
+
+/** A CSS background in the player's colors: split diagonally for a two-color choice, like the token. */
+export const playerPaint = (player: { color: PlayerColorId }): string => {
+  const first = playerColor(player);
+  const second = SECOND_COLOR[first];
+  return second ? `linear-gradient(135deg, ${first} 50%, ${second} 50%)` : first;
+};
 
 // Natural-pigment versions of the classic 8 set colors (kept clearly different from each other).
 export const GROUP_COLORS: Record<ColorGroup, string> = {
