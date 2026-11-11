@@ -1708,6 +1708,28 @@ const scenes = {
     const dot = await page.locator('.owner-dot').evaluate((el) => el.style.background);
     check(/gradient/.test(dot), 'the place card\'s owner dot is split in two');
     await shot('place-card');
+    await page.keyboard.press('Escape');
+
+    // The game ends: the wealth chart and the picture to share show both colors too.
+    await setup((game) => {
+      game.worth = [
+        [15e6, 15e6, 15e6],
+        [17e6, 14e6, 13e6],
+        [16e6, 18e6, 11e6],
+        [21e6, 17e6, 9e6],
+        [24e6, 16e6, 8e6],
+      ];
+      game.phase = { kind: 'gameOver', winner: 0 };
+      game.endReason = 'lastStanding';
+    });
+    // The summary opens by itself when a game ends.
+    await page.locator('dialog.summary-dialog .worth-chart').waitFor({ timeout: 10_000 });
+    const dashes = await page.locator('.worth-chart polyline[stroke-dasharray]').count();
+    check(dashes === 2, `on the chart, the two two-color players' lines are dashed with their second color (${dashes})`);
+    await page.locator('.worth-chart').screenshot({ path: path.join(outDir, 'chart.png') });
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Lưu ảnh/ }).click()]);
+    await download.saveAs(path.join(outDir, 'summary-picture.png'));
+    check(true, 'the picture to share is drawn');
   },
 
   /** Every drawn icon in every theme, side by side, to spot lines that vanish into a fill (dev server only). */

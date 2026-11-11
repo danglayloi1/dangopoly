@@ -5,7 +5,7 @@
 import boardArt from '../assets/art/board.webp';
 import { formatMoney } from '../engine/money';
 import type { GameState } from '../engine/types';
-import { playerColor } from './look';
+import { playerColor, playerSecondColor } from './look';
 
 const W = 1080;
 const H = 1350;
@@ -125,6 +125,8 @@ export async function drawSummary(
     ctx.stroke();
     ctx.fillStyle = playerColor(p);
     ctx.fillRect(90, y, 14, 84);
+    ctx.fillStyle = playerSecondColor(p); // a two-color choice: its second color below
+    ctx.fillRect(90, y + 42, 14, 42);
     // medal
     ctx.fillStyle = p.bankrupt ? MUTED : (MEDALS[i] ?? MUTED);
     ctx.beginPath();
@@ -175,6 +177,13 @@ export async function drawSummary(
         else ctx.lineTo(px, py);
       });
       ctx.stroke();
+      // A two-color choice: dashes of its second color over the first.
+      if (playerSecondColor(p) !== playerColor(p)) {
+        ctx.strokeStyle = playerSecondColor(p);
+        ctx.setLineDash([14, 14]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     });
   }
   y = chart.y + chart.h + 40;
