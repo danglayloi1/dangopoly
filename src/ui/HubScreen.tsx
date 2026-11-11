@@ -7,6 +7,10 @@ import { TIENLEN_TEXT } from '../games/tienlen/text';
 import { EIGHTS_TEXT } from '../games/eights/text';
 import './eights/eights.css';
 import { parseCard } from '../games/tienlen/cards';
+import { parseCards as parseColorCards } from '../games/maume/cards';
+import { MAUME_TEXT } from '../games/maume/text';
+import { ColorCard } from './maume/ColorCard';
+import './maume/maume.css';
 import { Icon } from './icons';
 import { MenuChoice } from './MenuScreen';
 import { PlayingCard } from './tienlen/PlayingCard';
@@ -16,12 +20,15 @@ import './tienlen/tienlen.css';
 const FAN = ['A♠', '2♥', 'K♦'].map(parseCard);
 // …and the four 8s on the Crazy Eights card.
 const EIGHTS = ['8♠', '8♥', '8♣', '8♦'].map(parseCard);
+// …and a fan of colors on the Màu Mè card.
+const COLOR_FAN = parseColorCards('son 7, nghe skip, la +2, wild');
 
 interface Props {
   saved: SaveFile | null; // an unfinished Dangopoly game, so its card can say so
   onDangopoly: () => void;
   onTienLen: () => void;
   onEights: () => void;
+  onMauMe: () => void;
   onSettings: () => void;
   onBack: () => void; // to the entry screen
 }
@@ -30,10 +37,11 @@ interface Props {
  * Sân nhởi, the hub: pick a game. Each game has its own menu behind its card; the settings
  * (sound, animations, language, colors) are shared by all of them.
  */
-export function HubScreen({ saved, onDangopoly, onTienLen, onEights, onSettings, onBack }: Props) {
+export function HubScreen({ saved, onDangopoly, onTienLen, onEights, onMauMe, onSettings, onBack }: Props) {
   const { t, uiLang } = useLang();
   const tl = TIENLEN_TEXT[uiLang];
   const e8 = EIGHTS_TEXT[uiLang];
+  const mm = MAUME_TEXT[uiLang];
   return (
     <main className="setup menu hub">
       <header className="menu-top">
@@ -76,6 +84,17 @@ export function HubScreen({ saved, onDangopoly, onTienLen, onEights, onSettings,
           <span className="hub-game-text">
             <strong>{e8.name}</strong>
             <span>{e8.blurb}</span>
+          </span>
+        </button>
+        <button className="hub-game" onClick={onMauMe}>
+          <span className="hub-game-art mm-hub-art" aria-hidden="true">
+            {COLOR_FAN.map((c, k) => (
+              <ColorCard key={c} card={c} style={{ '--k': k } as CSSProperties} />
+            ))}
+          </span>
+          <span className="hub-game-text">
+            <strong>{mm.name}</strong>
+            <span>{mm.blurb}</span>
           </span>
         </button>
         <div className="hub-game soon" aria-disabled="true">

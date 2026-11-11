@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { EIGHTS_LESSON } from '../src/games/eights/lesson';
 import { playableCards } from '../src/games/eights/game';
 import type { Lesson } from '../src/games/lesson';
+import { MAUME_LESSON } from '../src/games/maume/lesson';
+import { playableCards as mauMePlayable } from '../src/games/maume/game';
 import { TIENLEN_LESSON } from '../src/games/tienlen/lesson';
 import { legalPlays } from '../src/games/tienlen/game';
 
@@ -52,6 +54,32 @@ describe('the card game lessons', () => {
     }
     expect(s.phase).toBe('over');
     expect(s.log.at(-1)).toMatchObject({ type: 'won', player: 0 });
+  });
+
+  it('Màu Mè: every step is a legal move, it points at the card to play, and you go out with the +4', () => {
+    let s = MAUME_LESSON.start('en');
+    expect(s.players[0].name).toBe('You');
+    for (const step of MAUME_LESSON.steps) {
+      if (step.expect?.type === 'PLAY') {
+        expect(mauMePlayable(s)).toContain(step.expect.card);
+        expect(step.glow).toEqual([step.expect.card]);
+      }
+      if (step.expect) {
+        expect(s.current).toBe(0);
+        s = MAUME_LESSON.apply(s, step.expect);
+      }
+      for (const reply of step.replies ?? []) {
+        expect(s.current).toBe(1);
+        s = MAUME_LESSON.apply(s, reply);
+      }
+    }
+    expect(s.phase).toBe('over');
+    expect(s.log.at(-1)).toMatchObject({ type: 'won', player: 0 });
+    expect(s.log.some((e) => e.type === 'lastCard' && e.player === 0)).toBe(true);
+    // A wild card may name any color.
+    const wild = MAUME_LESSON.steps.at(-2)!.expect!;
+    if (wild.type !== 'PLAY') throw new Error('not a play');
+    expect(MAUME_LESSON.same({ type: 'PLAY', card: wild.card, color: 2 }, wild)).toBe(true);
   });
 
   it('a move is matched to the step: the same cards in any order; an 8 with any suit', () => {

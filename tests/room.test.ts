@@ -26,7 +26,9 @@ import {
   setBotLevel,
   start,
   view,
+  cleanMauMeAction,
 } from '../server/room';
+import { parseCard as parseColorCard } from '../src/games/maume/cards';
 
 // Fixed "random" numbers: dice come from a list, keys count up.
 function fakeRandom(dice: number[] = []): Randomness {
@@ -358,6 +360,85 @@ describe('Crazy Eights rooms', () => {
     const moved = playBot(room)!;
     expect(moved.eights!.log.length).toBeGreaterThan(room.eights!.log.length);
     expect(listing(room, new Set([0]), 0)).toMatchObject({ kind: 'eights', stage: 'playing', round: 1 });
+  });
+});
+
+describe('Màu Mè rooms', () => {
+  function mauMeLobby(...profiles: Profile[]): RoomState {
+    const random = fakeRandom();
+    let { room } = newRoom('MAU234', profiles[0], random, 'maume');
+    for (const p of profiles.slice(1)) room = must(join(room, p, random)).room;
+    return room;
+  }
+  const dealt = (...profiles: Profile[]) => must(start(mauMeLobby(...profiles), 0, undefined, 'inOrder', fakeRandom()));
+
+  it('start with no options: seven cards each, a card turned up', () => {
+    const room = dealt(DANG, LAN, MINH);
+    expect(kindOf(room)).toBe('maume');
+    expect(room.maume!.players.map((p) => p.hand.length)).toEqual([7, 7, 7]);
+    expect(room.maume!.pile).toHaveLength(1);
+    expect(room.eights ?? null).toBeNull();
+    expect(join(room, HOA, fakeRandom())).toEqual({ ok: false, error: 'started' });
+  });
+
+  it('each phone sees only its own hand: no other cards, no deck, no shuffle', () => {
+    const room = dealt(DANG, LAN, MINH);
+    const lan = view(room, 1, new Set([0, 1, 2])).maume!;
+    expect(lan.players[1].hand).toEqual(room.maume!.players[1].hand);
+    expect(lan.players[0].hand.every((c) => c === HIDDEN_CARD) && lan.players[0].hand.length === 7).toBe(true);
+    expect(lan.deck.every((c) => c === HIDDEN_CARD) && lan.deck.length === room.maume!.deck.length).toBe(true);
+    expect(lan.pile).toEqual(room.maume!.pile);
+    expect(lan.rngState).toBe(0);
+    expect(view(room, null, new Set([0])).maume!.players.every((p) => p.hand.every((c) => c === HIDDEN_CARD))).toBe(true);
+  });
+
+  it('the card someone just drew stays theirs', () => {
+    const room = dealt(DANG, LAN);
+    const s = room.maume!;
+    // Đăng draws a wild card, which always fits, so it waits for him to play it or pass.
+    const wild = parseColorCard('wild');
+    const others = s.deck.filter((c) => c !== wild);
+    const fits = { ...s, current: 0, deck: [...others, wild], players: s.players.map((p) => ({ ...p, hand: p.hand.filter((c) => c !== wild) })) };
+    const drawn = must(act({ ...room, maume: fits }, 0, { type: 'DRAW' }));
+    expect(drawn.maume!.drawn).toBe(wild);
+    expect(view(drawn, 0, new Set([0, 1])).maume!.drawn).toBe(wild);
+    expect(view(drawn, 1, new Set([0, 1])).maume!.drawn).toBe(HIDDEN_CARD);
+    expect(act(drawn, 0, { type: 'PLAY', card: wild })).toEqual({ ok: false, error: 'notAllowed' }); // a wild card needs its color
+    expect(must(act(drawn, 0, { type: 'PLAY', card: wild, color: 2 })).maume!.color).toBe(2);
+  });
+
+  it('only the player whose turn it is moves; only the host deals again or goes back to the lobby', () => {
+    const room = dealt(DANG, LAN);
+    const turn = room.maume!.current;
+    expect(act(room, 1 - turn, { type: 'DRAW' })).toEqual({ ok: false, error: 'notYourMove' });
+    expect(must(act(room, turn, { type: 'DRAW' })).maume!.log.at(-1)?.type).toBe('drew');
+    expect(rematch(room, 0)).toEqual({ ok: false, error: 'notAllowed' });
+    const over = { ...room, maume: { ...room.maume!, phase: 'over' as const } };
+    expect(act(over, 1, { type: 'NEXT_GAME' })).toEqual({ ok: false, error: 'notHost' });
+    expect(must(act(over, 0, { type: 'NEXT_GAME' })).maume!.game).toBe(2);
+    const lobbyAgain = must(rematch(over, 0));
+    expect(lobbyAgain.maume).toBeNull();
+    expect(view(lobbyAgain, 0, new Set([0])).stage).toBe('lobby');
+  });
+
+  it('refuses moves that are not a card, a draw, a pass or a new deal', () => {
+    expect(cleanMauMeAction({ type: 'PLAY', card: 104 })).toBeNull();
+    expect(cleanMauMeAction({ type: 'PLAY', card: 20, color: 4 })).toBeNull();
+    expect(cleanMauMeAction({ type: 'ROLL' })).toBeNull();
+    expect(cleanMauMeAction({ type: 'PLAY', card: 98, color: 2, extra: 1 })).toEqual({ type: 'PLAY', card: 98, color: 2 });
+    expect(cleanMauMeAction({ type: 'DRAW', card: 3 })).toEqual({ type: 'DRAW' });
+  });
+
+  it('plays its computer players and lists itself as Màu Mè', () => {
+    let room = mauMeLobby(DANG);
+    room = must(addBot(room, 0, 'normal', fakeRandom()));
+    room = must(start(room, 0, undefined, 'inOrder', fakeRandom()));
+    room = { ...room, maume: { ...room.maume!, current: 1 } };
+    expect(botWaitMs(room, room.maume!)).toBeGreaterThan(0);
+    const moved = playBot(room)!;
+    expect(moved.maume!.log.length).toBeGreaterThan(room.maume!.log.length);
+    expect(botWaitMs({ ...room, maume: { ...room.maume!, current: 0 } }, room.maume!)).toBeNull();
+    expect(listing(room, new Set([0]), 0)).toMatchObject({ kind: 'maume', stage: 'playing', round: 1 });
   });
 });
 

@@ -651,7 +651,7 @@ a normal deck and the usual action cards. Against one to three computer players,
 ## 22. Tutorials for the card games
 
 Each card game's menu has **Hướng dẫn chơi**, like Dangopoly's: a short guided first game on the real table,
-you against Cu Đơ, with a fixed deal (`src/games/tienlen/lesson.ts`, `src/games/eights/lesson.ts`).
+you against Cu Đơ, with a fixed deal (`src/games/tienlen/lesson.ts`, `src/games/eights/lesson.ts`, `src/games/maume/lesson.ts`).
 - A hint at the top says what to do, step by step (in all three languages), and the cards to play glow.
   A step that only explains has **Tiếp**; a step that asks for a move refuses any other ("Chưa phải nước
   này"), then plays Cu Đơ's scripted replies one by one.
@@ -659,5 +659,41 @@ you against Cu Đơ, with a fixed deal (`src/games/tienlen/lesson.ts`, `src/game
   straight, and a pair to go out; the last step names the rest (triples, fours, pairs in a row, bombs).
 - **Crazy Eights** (10 steps): following the number, then the suit, a queen, a 2, drawing (and playing the
   card drawn), and an 8 to go out; the last step adds aces and the scoring.
+- **Màu Mè** (10 steps): the four colors, following the color, then the number, Chặn, +2, drawing (and playing
+  the card drawn), "Báo!" at one card, and a +4 to go out; the last step adds Quay and the scoring.
 - The last step offers **Chơi với máy**, straight to a real game. The moves are real moves through each game's
-  rules; a test plays both lessons through, so a rule change that breaks a lesson fails the tests.
+  rules; a test plays every lesson through, so a rule change that breaks a lesson fails the tests.
+
+---
+
+## 23. Màu Mè
+
+The fourth game in the hub (since v2.8.0): a color-matching card game in the family of Crazy Eights, with its
+own deck. It is our own design and look, not a copy of any branded game: the colors are the folk-print ones
+(**Son** vermilion ●, **Nghệ** turmeric ▲, **Lá** leaf ■, **Chàm** indigo ◆), each with a shape so the cards
+read without the colors. Against one to three computer players, or online.
+- **Deck (104):** per color, two of each number 1–9 and two each of **Chặn** ⊘ (skip), **Quay** ⇄ (reverse) and
+  **+2**; then four **Đổi màu** ✦ (wild) and four **+4** (wild, the next player draws four).
+- **Deal:** 7 cards each; a number card is turned up to start the pile.
+- **A turn:** play a card of the color to follow or with the same face as the top card (numbers by number,
+  action cards by kind). Wild cards go on anything and name the next color. Chặn skips the next player; Quay
+  turns the direction around (with two players it works like Chặn).
+- **Draws add up:** a +2 may be answered with another +2 or a +4, a +4 only with another +4; whoever can't
+  (or won't) draws the lot and loses the turn.
+- **Can't (or won't) play?** Draw one card; if it fits, play it at once or pass. When the deck runs out, the
+  pile under its top card is shuffled back in.
+- **Báo!** At one card the game calls it for the player: a gold badge on their seat and a line in the log.
+- **Scoring:** the first to empty their hand scores the cards left in everyone else's: numbers as printed,
+  action cards 20, wild cards 50. Points add up over the match; **Ván mới** deals again, the winner starts.
+- **Cards:** the whole card in its color with a cream cartouche (cut corners, like a seal); action cards have
+  an ink cartouche; wild cards are ink black with the four colors. The back is ink with a gold frame and the
+  four shapes. The pile sits on a ring of the color to follow. The colors stay the same in the dark theme;
+  text on turmeric is ink, not cream, so it stays readable.
+- **Bots** pass draws on when they can (a +2 before a +4), keep wild cards while another card fits, stay in
+  the color they hold most of, hit a player about to go out with Chặn, Quay, +2 or +4, and name the color they
+  hold most of. Easy bots play any card that fits and name a color at random.
+- **Online:** like the other card rooms (`kind: 'maume'`, `RoomView.maume`): each phone receives its own
+  hand; everyone else's cards and the deck come as `HIDDEN_CARD` counts, the random state is left out, and the
+  card a player has just drawn stays theirs.
+- **Code:** `src/games/maume/` (cards, rules, bots, words, tutorial), `src/ui/maume/` (cards and screens); the
+  setup and the game menu are shared (`TienLenSetup`, `CardGameMenu`).
