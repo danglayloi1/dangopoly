@@ -651,7 +651,7 @@ a normal deck and the usual action cards. Against one to three computer players,
 ## 22. Tutorials for the card games
 
 Each card game's menu has **Hướng dẫn chơi**, like Dangopoly's: a short guided first game on the real table,
-you against Cu Đơ, with a fixed deal (`src/games/tienlen/lesson.ts`, `src/games/eights/lesson.ts`, `src/games/maume/lesson.ts`).
+you against Cu Đơ, with a fixed deal (`src/games/tienlen/lesson.ts`, `src/games/eights/lesson.ts`, `src/games/maume/lesson.ts`, `src/games/phao/lesson.ts`).
 - A hint at the top says what to do, step by step (in all three languages), and the cards to play glow.
   A step that only explains has **Tiếp**; a step that asks for a move refuses any other ("Chưa phải nước
   này"), then plays Cu Đơ's scripted replies one by one.
@@ -661,6 +661,9 @@ you against Cu Đơ, with a fixed deal (`src/games/tienlen/lesson.ts`, `src/game
   card drawn), and an 8 to go out; the last step adds aces and the scoring.
 - **Màu Mè** (10 steps): the four colors, following the color, then the number, Chặn, +2, drawing (and playing
   the card drawn), "Báo!" at one card, and a +4 to go out; the last step adds Quay and the scoring.
+- **Pháo Tết** (6 steps): the firecrackers and the bucket, peeking (a firecracker on top), dodging it, Cu Đơ
+  putting it out and hiding it again, taking his last card with a pair, drawing, and Cu Đơ blowing up; the
+  last step names Đẩy, Xóc, Rút đáy and Xin.
 - The last step offers **Chơi với máy**, straight to a real game. The moves are real moves through each game's
   rules; a test plays every lesson through, so a rule change that breaks a lesson fails the tests.
 
@@ -697,3 +700,33 @@ read without the colors. Against one to three computer players, or online.
   card a player has just drawn stays theirs.
 - **Code:** `src/games/maume/` (cards, rules, bots, words, tutorial), `src/ui/maume/` (cards and screens); the
   setup and the game menu are shared (`TienLenSetup`, `CardGameMenu`).
+
+---
+
+## 24. Pháo Tết
+
+The fifth game in the hub (since v2.9.0): a push-your-luck card game in the "don't draw the bomb" family, with
+our own theme, cards and drawings: Tết in a Nghệ village, where the deck hides lit firecrackers. Against one
+to three computer players, or online.
+- **Deck (49):** 3 **Pháo** (firecrackers), 6 **Xô nước** (buckets of water), 4 each of **Né** (end the turn
+  without drawing), **Đẩy** (end the turn without drawing; the next player takes two turns), **Nhòm** (look at
+  the top three cards), **Xóc** (shuffle the deck), **Rút đáy** (end the turn by drawing the bottom card) and
+  **Xin** (take a random card from someone), and 4 each of four Nghệ foods (**bánh chưng**, **kẹo cu đơ**,
+  **cam Vinh**, **nhút**): a pair of the same takes a random card from someone.
+- **Deal:** a bucket and five other cards each; then one firecracker fewer than the players and two spare
+  buckets are shuffled into the rest. The table shows how many firecrackers are in how many cards.
+- **A turn:** play any number of cards, then draw the top card to end it. A firecracker blows you up (out of
+  the game, hand and all) unless you have a bucket: it's used up, and you hide the firecracker back in the deck
+  wherever you like (on top, 2nd, 3rd, at the bottom, or anywhere at random). Nobody else learns where.
+- **Winning:** the last player left wins the game (one point); **Ván mới** deals again, the winner starts.
+- **Cards:** cream paper with a band in the card's color (red firecrackers, blue buckets, gold actions, green
+  foods) and a small woodblock-style drawing of each (`PhaoArt`); the back is red lacquer with a gold
+  firecracker. Tapping a card says what it does, with **Đánh** (or whom to take from); tapping one food picks
+  its pair. A firecracker going off shows a big **ĐÙNG!** burst and shakes the seat; one put out, a splash.
+- **Bots** are fair: they only know their own hand, what everyone can count and what their own Nhòm showed.
+  They take cards first, peek when the odds are bad, get out of drawing a firecracker they saw (Đẩy, Né, Xóc,
+  Rút đáy), and hide a put-out firecracker on top (hard), near the top (normal) or anywhere (easy).
+- **Online:** `kind: 'phao'`, `RoomView.phao`. Each phone receives its own hand; everyone else's cards and
+  the deck come as `HIDDEN_CARD` counts, the random state is left out, and a Nhòm's cards only go to whoever
+  played it. The room waits a little longer before a bot moves after a bang.
+- **Code:** `src/games/phao/` (cards, rules, bots, words, tutorial), `src/ui/phao/` (cards, drawings and screens).

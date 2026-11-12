@@ -11,6 +11,10 @@ import { parseCards as parseColorCards } from '../games/maume/cards';
 import { MAUME_TEXT } from '../games/maume/text';
 import { ColorCard } from './maume/ColorCard';
 import './maume/maume.css';
+import { pick as pickPhao } from '../games/phao/cards';
+import { PHAO_TEXT } from '../games/phao/text';
+import { PhaoCard } from './phao/PhaoCard';
+import './phao/phao.css';
 import { Icon } from './icons';
 import { MenuChoice } from './MenuScreen';
 import { PlayingCard } from './tienlen/PlayingCard';
@@ -22,6 +26,8 @@ const FAN = ['A♠', '2♥', 'K♦'].map(parseCard);
 const EIGHTS = ['8♠', '8♥', '8♣', '8♦'].map(parseCard);
 // …and a fan of colors on the Màu Mè card.
 const COLOR_FAN = parseColorCards('son 7, nghe skip, la +2, wild');
+// …and a firecracker between a bucket and a peek on the Pháo Tết card.
+const PHAO_FAN = pickPhao('nhom, phao, xo');
 
 interface Props {
   saved: SaveFile | null; // an unfinished Dangopoly game, so its card can say so
@@ -29,6 +35,7 @@ interface Props {
   onTienLen: () => void;
   onEights: () => void;
   onMauMe: () => void;
+  onPhao: () => void;
   onSettings: () => void;
   onBack: () => void; // to the entry screen
 }
@@ -37,11 +44,12 @@ interface Props {
  * Sân nhởi, the hub: pick a game. Each game has its own menu behind its card; the settings
  * (sound, animations, language, colors) are shared by all of them.
  */
-export function HubScreen({ saved, onDangopoly, onTienLen, onEights, onMauMe, onSettings, onBack }: Props) {
+export function HubScreen({ saved, onDangopoly, onTienLen, onEights, onMauMe, onPhao, onSettings, onBack }: Props) {
   const { t, uiLang } = useLang();
   const tl = TIENLEN_TEXT[uiLang];
   const e8 = EIGHTS_TEXT[uiLang];
   const mm = MAUME_TEXT[uiLang];
+  const ph = PHAO_TEXT[uiLang];
   return (
     <main className="setup menu hub">
       <header className="menu-top">
@@ -95,6 +103,17 @@ export function HubScreen({ saved, onDangopoly, onTienLen, onEights, onMauMe, on
           <span className="hub-game-text">
             <strong>{mm.name}</strong>
             <span>{mm.blurb}</span>
+          </span>
+        </button>
+        <button className="hub-game" onClick={onPhao}>
+          <span className="hub-game-art ph-hub-art" aria-hidden="true">
+            {PHAO_FAN.map((c, k) => (
+              <PhaoCard key={c} card={c} style={{ '--k': k } as CSSProperties} />
+            ))}
+          </span>
+          <span className="hub-game-text">
+            <strong>{ph.name}</strong>
+            <span>{ph.blurb}</span>
           </span>
         </button>
         <div className="hub-game soon" aria-disabled="true">

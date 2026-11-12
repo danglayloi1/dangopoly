@@ -1905,6 +1905,217 @@ const scenes = {
     check(errors === 0, `no errors on the page (${errors})`);
   },
 
+  /** Pháo Tết against three computer players, with the real buttons, from the hub to the next game. */
+  async phao({ page, shot }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', (e) => {
+      errors++;
+      console.error(e.message);
+    });
+    await page.goto('about:blank');
+    await page.goto(BASE_URL);
+    await page.getByRole('button', { name: /Vào chơi/ }).click();
+    const card = page.locator('.hub-game', { hasText: 'Pháo Tết' });
+    check(await card.isVisible(), 'the hub has a card for Pháo Tết');
+    await shot('hub');
+    await card.click();
+    await page.getByRole('button', { name: /Chơi với máy/ }).click();
+    await page.getByPlaceholder('Tên bạn').fill('Đăng');
+    await page.getByRole('button', { name: /Chia bài/ }).click();
+    await page.waitForSelector('.tl-hand .phcard');
+    check((await page.locator('.tl-hand .phcard').count()) === 6, 'a bucket and five cards each');
+    check((await page.locator('.tl-hand .ph-xo').count()) >= 1, 'your hand has a bucket of water');
+    check(/3 pháo/.test(await page.locator('.ph-danger').textContent()), 'four players: three firecrackers in the deck');
+    await shot('table');
+
+    // Look at a card, then play a peek if there is one.
+    await page.locator('.tl-hand .phcard').first().click();
+    check(await page.locator('.ph-info').isVisible(), 'tapping a card says what it does');
+    await page.getByRole('button', { name: 'Thôi' }).click();
+    const peekCard = page.locator('.tl-hand .ph-nhom').first();
+    if (await peekCard.count()) {
+      await peekCard.click();
+      await page.getByRole('button', { name: /^Đánh Nhòm/ }).click();
+      await page.locator('.ph-peek').waitFor();
+      check((await page.locator('.ph-peek .phcard').count()) === Math.min(3, Number((await page.locator('.e8-count').textContent()).trim())), 'Nhòm shows the top three cards');
+      await shot('peek');
+    }
+
+    let draws = 0;
+    let shotBurst = false;
+    let shotHide = false;
+    for (let step = 0; step < 400 && !(await page.locator('.tl-over').count()); step++) {
+      if (!shotBurst && (await page.locator('.ph-burst').count())) {
+        shotBurst = true;
+        await shot('bang');
+      }
+      const hide = page.locator('.ph-hide');
+      if (await hide.count()) {
+        if (!shotHide) {
+          shotHide = true;
+          await shot('hide');
+        }
+        await hide.getByRole('button').last().click(); // anywhere
+        continue;
+      }
+      const draw = page.locator('.ph-actions .primary');
+      if (await draw.isEnabled().catch(() => false)) {
+        await draw.click();
+        draws++;
+      } else await page.waitForTimeout(250);
+    }
+    check(draws > 0, `you drew ${draws} times with the button`);
+    await page.locator('.tl-over').waitFor({ timeout: 90_000 });
+    const winner = await page.locator('.ph-winner').textContent();
+    check(/còn lại cuối cùng/.test(winner), `the game ends with one player left ("${winner.trim()}")`);
+    check((await page.locator('.tl-ranking li').count()) === 4, 'the result lists everyone');
+    await shot('game-over');
+    await page.getByRole('button', { name: /Ván mới/ }).click();
+    await page.locator('.screen-title', { hasText: 'Ván 2' }).waitFor();
+    check(true, 'a new game is dealt (Ván 2)');
+    await page.getByRole('button', { name: /Quay lại|←/ }).first().click();
+    check(await page.getByRole('button', { name: /Chơi với máy/ }).isVisible(), "leaving goes back to Pháo Tết's menu");
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
+  /** Pháo Tết's tutorial, followed step by step with real taps (and one wrong move). */
+  async phaolesson({ page, shot }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    page.on('pageerror', (e) => {
+      errors++;
+      console.error(e.message);
+    });
+    const at = (n) => page.locator('.lesson-step', { hasText: `Bước ${n}/` }).waitFor({ timeout: 15_000 });
+    const card = (kind) => page.locator(`.tl-hand .ph-${kind}`).first();
+    await page.goto('about:blank');
+    await page.goto(BASE_URL);
+    await page.getByRole('button', { name: /Vào chơi/ }).click();
+    await page.locator('.hub-game', { hasText: 'Pháo Tết' }).click();
+    await page.getByRole('button', { name: /Hướng dẫn chơi/ }).click();
+    await page.locator('.lesson-bubble').waitFor();
+    await shot('1-intro');
+    await page.getByRole('button', { name: /Tiếp/ }).click();
+    await at(2);
+    check(await card('nhom').evaluate((el) => el.classList.contains('glow')), 'the lesson points at Nhòm');
+    // Drawing isn't what the step asks for: refused, with a reminder.
+    await page.locator('.ph-actions .primary').click();
+    await page.locator('.lesson-wrong').waitFor();
+    check((await page.locator('.tl-hand .phcard').count()) === 6, "a move the step doesn't ask for is refused");
+    await card('nhom').click();
+    await page.getByRole('button', { name: /^Đánh Nhòm/ }).click();
+    await at(3);
+    check((await page.locator('.ph-peek .ph-phao').count()) === 1, 'the peek shows the firecracker on top');
+    await shot('3-peek');
+    await card('ne').click();
+    await page.getByRole('button', { name: /^Đánh Né/ }).click();
+    await at(4);
+    await shot('4-cu-do-put-it-out');
+    await card('banhChung').click();
+    check((await page.locator('.tl-hand .ph-banhChung.selected').count()) === 2, 'tapping one Bánh chưng picks the pair');
+    await page.locator('.ph-target', { hasText: 'Cu Đơ' }).click();
+    await at(5);
+    check((await page.locator('.tl-hand .ph-ne').count()) === 1, "you took Cu Đơ's Né");
+    await page.locator('.ph-actions .primary').click();
+    await at(6);
+    await page.locator('.ph-burst').waitFor().catch(() => {});
+    await shot('6-bang');
+    check((await page.locator('.ph-out-badge').count()) === 1, 'Cu Đơ blew up: you win');
+    await page.getByRole('button', { name: /Chơi với máy/ }).click();
+    check(await page.getByRole('button', { name: /Chia bài/ }).isVisible(), 'after the lesson, straight to a game against the computer');
+    check(errors === 0, `no errors on the page (${errors})`);
+  },
+
+  /** Pháo Tết online: two phones and a computer player in one room (needs `npm run server` too). */
+  async phaoonline({ browser }) {
+    const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);
+    let errors = 0;
+    const phone = async (name) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: dark ? 'dark' : 'light' });
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => {
+        errors++;
+        console.error(`${name}: ${e.message}`);
+      });
+      reportCrash(page, name);
+      return { name, ctx, page };
+    };
+    const dang = await phone('Đăng');
+    const lan = await phone('Lan');
+    const save = (p, label) => p.page.screenshot({ path: path.join(outDir, `${label}.png`) });
+
+    await dang.page.goto(BASE_URL);
+    await dang.page.getByRole('button', { name: /Vào chơi/ }).click();
+    await dang.page.locator('.hub-game', { hasText: 'Pháo Tết' }).click();
+    await dang.page.getByRole('button', { name: /Chơi online/ }).click();
+    await dang.page.getByRole('button', { name: 'Tạo phòng' }).first().click();
+    await dang.page.getByPlaceholder('Tên').fill('Đăng');
+    await dang.page.locator('form').getByRole('button', { name: 'Tạo phòng' }).click();
+    const code = (await dang.page.locator('.room-code').textContent()).trim();
+    check((await dang.page.locator('.lobby-title').textContent()).includes('Pháo Tết'), `a Pháo Tết room is created (${code})`);
+    await lan.page.goto(`${BASE_URL}?room=${code}`);
+    await lan.page.waitForSelector('.lobby-seat');
+    await lan.page.getByPlaceholder('Tên').fill('Lan');
+    await lan.page.getByRole('button', { name: 'Vào phòng' }).click();
+    await lan.page.waitForSelector('.badge-you');
+    await dang.page.getByRole('button', { name: 'Thêm máy chơi cùng' }).click();
+    await dang.page.waitForFunction(() => document.querySelectorAll('.lobby-seat').length === 3);
+    await dang.page.getByRole('button', { name: /Bắt đầu ván/ }).click();
+    for (const p of [dang, lan]) await p.page.waitForSelector('.tl-hand .phcard');
+    const counts = await Promise.all([dang, lan].map((p) => p.page.locator('.tl-hand .phcard').count()));
+    check(counts.every((n) => n === 6), 'each phone is dealt a bucket and five cards of its own');
+
+    // What a phone without a seat receives: counts for hands and the deck, no shuffle, no peek.
+    const server = BASE_URL.includes('github.io') ? 'wss://dangopoly-server.danglayloi1.workers.dev' : 'ws://localhost:8787';
+    const seen = await new Promise((resolve, reject) => {
+      const ws = new WebSocket(`${server}/room/${code}`);
+      ws.onopen = () => ws.send(JSON.stringify({ t: 'look' }));
+      ws.onerror = () => reject(new Error('could not reach the room'));
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.t !== 'room') return;
+        ws.close();
+        resolve(msg.room);
+      };
+    });
+    const g = seen.phao;
+    check(
+      seen.kind === 'phao' && g.rngState === 0 && g.deck.length > 0 && g.deck.every((c) => c === -1) && g.players.every((p) => p.hand.every((c) => c === -1)) && g.peek === null,
+      'a watcher receives counts for every hand and the deck, and nothing else',
+    );
+    await save(lan, 'table');
+
+    const moves = { Đăng: 0, Lan: 0 };
+    for (let step = 0; step < 600 && !(await dang.page.locator('.tl-over').count()); step++) {
+      let moved = false;
+      for (const p of [dang, lan]) {
+        const hide = p.page.locator('.ph-hide');
+        const draw = p.page.locator('.ph-actions .primary');
+        if (await hide.count()) await hide.getByRole('button').first().click();
+        else if (await draw.isEnabled().catch(() => false)) await draw.click();
+        else continue;
+        moves[p.name]++;
+        moved = true;
+        if (moves.Đăng + moves.Lan === 3) await save(dang, 'mid-game');
+        await p.page.waitForTimeout(300);
+      }
+      if (!moved) await dang.page.waitForTimeout(300);
+    }
+    check(moves.Đăng > 0 || moves.Lan > 0, `the phones played their own turns (Đăng ${moves.Đăng}, Lan ${moves.Lan}); the bot played its own`);
+    for (const p of [dang, lan]) await p.page.locator('.tl-over').waitFor({ timeout: 60_000 });
+    const winners = await Promise.all([dang, lan].map((p) => p.page.locator('.ph-winner').textContent()));
+    check(winners[0] === winners[1], `both phones show the same result ("${winners[0].trim()}")`);
+    check((await lan.page.getByRole('button', { name: /Ván mới/ }).count()) === 0, 'only the host can deal again');
+    await save(lan, 'game-over');
+    await dang.page.getByRole('button', { name: /Ván mới/ }).click();
+    for (const p of [dang, lan]) await p.page.locator('.screen-title', { hasText: 'Ván 2' }).waitFor({ timeout: 10_000 });
+    check(true, 'the host deals again: Ván 2 on both phones');
+    check(errors === 0, `no errors on any phone (${errors})`);
+    await dang.ctx.close();
+    await lan.ctx.close();
+  },
+
   /** Places owned by players with two-color choices: the strip on the board and the dot on the card show both. */
   async ownercolors({ page, shot, startGame, setup }) {
     const check = (ok, what) => console.log(`${ok ? 'CHECK OK' : 'CHECK FAILED'}: ${what}`);

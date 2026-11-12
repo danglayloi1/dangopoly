@@ -6,6 +6,7 @@ import { fetchRoomList } from '../net/roomList';
 import { TIENLEN_TEXT } from '../games/tienlen/text';
 import { EIGHTS_TEXT } from '../games/eights/text';
 import { MAUME_TEXT } from '../games/maume/text';
+import { PHAO_TEXT } from '../games/phao/text';
 import { Icon } from './icons';
 import { colorHex } from './look';
 import { TokenIcon } from './TokenIcon';
@@ -20,10 +21,10 @@ export function RoomList({ onOpen }: { onOpen: (code: string) => void }) {
   const { t, uiLang } = useLang();
   const tl = TIENLEN_TEXT[uiLang];
   const e8 = EIGHTS_TEXT[uiLang];
-  const mm = MAUME_TEXT[uiLang];
-  const gameName = (kind: RoomListing['kind']) => (kind === 'tienlen' ? tl.name : kind === 'eights' ? e8.name : kind === 'maume' ? mm.name : 'Dangopoly');
-  const gameNumber = (kind: RoomListing['kind'], n: number) =>
-    kind === 'tienlen' ? tl.game(n) : kind === 'eights' ? e8.game(n) : kind === 'maume' ? mm.game(n) : t.roundOf(n, null);
+  const cardText = (kind: RoomListing['kind']) =>
+    kind === 'tienlen' ? tl : kind === 'eights' ? e8 : kind === 'maume' ? MAUME_TEXT[uiLang] : kind === 'phao' ? PHAO_TEXT[uiLang] : null;
+  const gameName = (kind: RoomListing['kind']) => cardText(kind)?.name ?? 'Dangopoly';
+  const gameNumber = (kind: RoomListing['kind'], n: number) => cardText(kind)?.game(n) ?? t.roundOf(n, null);
   const [rooms, setRooms] = useState<RoomListing[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [asked, setAsked] = useState(0); // the refresh button asks again

@@ -26,6 +26,9 @@ import { applyEights, createEights, EightsError, type EightsAction, type EightsS
 import { mauMeBotAction } from '../src/games/maume/bot';
 import { DECK_SIZE as MAUME_DECK_SIZE } from '../src/games/maume/cards';
 import { applyMauMe, createMauMe, MauMeError, type MauMeAction, type MauMeState } from '../src/games/maume/game';
+import { phaoBotAction } from '../src/games/phao/bot';
+import { DECK_SIZE as PHAO_DECK_SIZE } from '../src/games/phao/cards';
+import { applyPhao, createPhao, PhaoError, type PhaoAction, type PhaoState } from '../src/games/phao/game';
 import {
   CHAT_KEEP,
   CHAT_MAX_LENGTH,
@@ -58,6 +61,7 @@ export interface RoomState {
   tienlen?: TienLenState | null; // Tiến lên
   eights?: EightsState | null; // Crazy Eights
   maume?: MauMeState | null; // Màu Mè
+  phao?: PhaoState | null; // Pháo Tết
   firstTurn: FirstTurnRound[] | null;
   chat?: ChatMessage[]; // missing in rooms saved before chat
   listed?: boolean; // in the public room list; missing means yes (rooms are listed unless the host hides them)
@@ -85,19 +89,20 @@ const TIENLEN_BOT_MS = 1_100; // the last play lands on the table, then the usua
 
 export const kindOf = (room: RoomState): GameKind => room.kind ?? 'dangopoly';
 /** Whether a game is being played in the room (or has been, until the host takes it back to the lobby). */
-export const started = (room: RoomState): boolean => room.game !== null || Boolean(room.tienlen) || Boolean(room.eights) || Boolean(room.maume);
+export const started = (room: RoomState): boolean => room.game !== null || Boolean(room.tienlen) || Boolean(room.eights) || Boolean(room.maume) || Boolean(room.phao);
 
 /** The game being played, whichever it is (the room's alarm compares it before and after a change). */
-export const currentGame = (room: RoomState): GameState | TienLenState | EightsState | MauMeState | null =>
-  room.tienlen ?? room.eights ?? room.maume ?? room.game;
+export const currentGame = (room: RoomState): GameState | TienLenState | EightsState | MauMeState | PhaoState | null =>
+  room.tienlen ?? room.eights ?? room.maume ?? room.phao ?? room.game;
 
-// Crazy Eights's and Màu Mè's bots wait as long as Tiến lên's: the card lands, then the usual pause.
+// Crazy Eights's, Màu Mè's and Pháo Tết's bots wait as long as Tiến lên's: the card lands, then the usual pause.
 const CARD_FIRST_MOVE_MS = TIENLEN_FIRST_MOVE_MS;
 const CARD_BOT_MS = TIENLEN_BOT_MS;
+const PHAO_BANG_MS = 1_400; // Pháo Tết: a firecracker going off (or put out) plays out first
 
 export function newRoom(code: string, host: Profile, random: Randomness, kind: GameKind = 'dangopoly'): { room: RoomState; key: string } {
   const key = random.key();
-  return { room: { code, kind, host: 0, seats: [{ ...host, key }], game: null, tienlen: null, eights: null, maume: null, firstTurn: null }, key };
+  return { room: { code, kind, host: 0, seats: [{ ...host, key }], game: null, tienlen: null, eights: null, maume: null, phao: null, firstTurn: null }, key };
 }
 
 /** A profile from a message, tidied up, or null if it can't be used. */
@@ -212,6 +217,10 @@ export function start(
     const players = room.seats.map(({ name, token, color, bot }) => ({ name, token, color, ...(bot ? { bot } : {}) }));
     return ok({ ...room, maume: createMauMe({ players, seed: random.seed() }), firstTurn: null });
   }
+  if (kindOf(room) === 'phao') {
+    const players = room.seats.map(({ name, token, color, bot }) => ({ name, token, color, ...(bot ? { bot } : {}) }));
+    return ok({ ...room, phao: createPhao({ players, seed: random.seed() }), firstTurn: null });
+  }
   if (!Number.isInteger(startingCash) || (startingCash as number) < MIN_STARTING_CASH || (startingCash as number) > MAX_STARTING_CASH) {
     return fail('badMessage');
   }
@@ -274,9 +283,22 @@ export function chat(room: RoomState, seat: number, raw: unknown, now: number = 
 /** After a game, the host takes the room back to the lobby: same seats, choices and host; a new game can start. */
 export function rematch(room: RoomState, seat: number): Result<RoomState> {
   if (seat !== room.host) return fail('notHost');
-  const over = room.game?.phase.kind === 'gameOver' || room.tienlen?.phase === 'over' || room.eights?.phase === 'over' || room.maume?.phase === 'over';
+  const over = room.game?.phase.kind === 'gameOver' || room.tienlen?.phase === 'over' || room.eights?.phase === 'over' || room.maume?.phase === 'over' || room.phao?.phase.kind === 'over';
   if (!over) return fail('notAllowed');
-  return ok({ ...room, game: null, tienlen: null, eights: null, maume: null, firstTurn: null });
+  return ok({ ...room, game: null, tienlen: null, eights: null, maume: null, phao: null, firstTurn: null });
+}
+
+/** Pháo Tết: a card, a pair, a draw or hiding a firecracker from the phone whose turn it is; a new deal from the host. */
+function actPhao(room: RoomState, state: PhaoState, seat: number, raw: unknown): Result<RoomState> {
+  const action = cleanPhaoAction(raw);
+  if (!action) return fail('badMessage');
+  if (action.type === 'NEXT_GAME' ? seat !== room.host : seat !== state.current) return fail(action.type === 'NEXT_GAME' ? 'notHost' : 'notYourMove');
+  try {
+    return ok({ ...room, phao: applyPhao(state, action) });
+  } catch (e) {
+    if (e instanceof PhaoError) return fail('notAllowed');
+    throw e;
+  }
 }
 
 /** Màu Mè: a card, a draw or a pass from the phone whose turn it is; a new deal from the host, after a game. */
@@ -327,6 +349,7 @@ export function act(room: RoomState, seat: number, raw: unknown, now: number = D
   if (room.tienlen) return actTienLen(room, room.tienlen, seat, raw);
   if (room.eights) return actEights(room, room.eights, seat, raw);
   if (room.maume) return actMauMe(room, room.maume, seat, raw);
+  if (room.phao) return actPhao(room, room.phao, seat, raw);
   if (!room.game) return fail('notAllowed');
   const action = cleanAction(raw);
   if (!action) return fail('badMessage');
@@ -364,6 +387,10 @@ export function playBot(room: RoomState, now: number = Date.now()): RoomState | 
     const move = mauMeBotAction(room.maume);
     return move ? { ...room, maume: applyMauMe(room.maume, move) } : null;
   }
+  if (room.phao) {
+    const move = phaoBotAction(room.phao);
+    return move ? { ...room, phao: applyPhao(room.phao, move) } : null;
+  }
   const action = room.game && botAction(room.game);
   if (!room.game || !action) return null;
   const { mode } = room.game.rules;
@@ -382,7 +409,13 @@ export function playBot(room: RoomState, now: number = Date.now()): RoomState | 
  * last move has to play out on the phones first (`before` is the game before it), then a short pause,
  * just as on one device. Phones set to faster animations simply finish sooner.
  */
-export function botWaitMs(room: RoomState, before: GameState | TienLenState | EightsState | MauMeState | null): number | null {
+export function botWaitMs(room: RoomState, before: GameState | TienLenState | EightsState | MauMeState | PhaoState | null): number | null {
+  if (room.phao) {
+    if (!phaoBotAction(room.phao)) return null;
+    if (before === null || (before as PhaoState).game !== room.phao.game) return CARD_FIRST_MOVE_MS;
+    const last = room.phao.log.at(-1)?.type;
+    return CARD_BOT_MS + (last === 'exploded' || last === 'putOut' ? PHAO_BANG_MS : 0);
+  }
   if (room.maume) {
     if (!mauMeBotAction(room.maume)) return null;
     return before === null || (before as MauMeState).game !== room.maume.game ? CARD_FIRST_MOVE_MS : CARD_BOT_MS;
@@ -415,7 +448,7 @@ export function setListed(room: RoomState, seat: number, listed: unknown): Resul
  */
 export function listing(room: RoomState, online: ReadonlySet<number>, watchers: number, now: number = Date.now()): RoomListing | null {
   if (room.listed === false || online.size === 0) return null;
-  const cards = room.tienlen ?? room.eights ?? room.maume;
+  const cards = room.tienlen ?? room.eights ?? room.maume ?? room.phao;
   if (cards) {
     return {
       code: room.code,
@@ -496,6 +529,22 @@ function mauMeFor(state: MauMeState | null | undefined, you: number | null): Mau
   };
 }
 
+/**
+ * Pháo Tết as one phone may see it: its own hand, how many cards everyone else holds and how many are
+ * left to draw (never where the firecrackers are), and what a Nhòm showed only to whoever played it.
+ */
+function phaoFor(state: PhaoState | null | undefined, you: number | null): PhaoState | null {
+  if (!state) return null;
+  const hide = (cards: number[]) => cards.map(() => HIDDEN_CARD);
+  return {
+    ...state,
+    rngState: 0,
+    deck: hide(state.deck),
+    peek: state.peek && state.peek.player === you ? state.peek : null,
+    players: state.players.map((p, i) => (i === you ? p : { ...p, hand: hide(p.hand) })),
+  };
+}
+
 export function view(room: RoomState, you: number | null, online: ReadonlySet<number>, watchers = 0): RoomView {
   return {
     code: room.code,
@@ -508,6 +557,7 @@ export function view(room: RoomState, you: number | null, online: ReadonlySet<nu
     tienlen: tienLenFor(room.tienlen, you),
     eights: eightsFor(room.eights, you),
     maume: mauMeFor(room.maume, you),
+    phao: phaoFor(room.phao, you),
     firstTurn: room.firstTurn,
     chat: room.chat ?? [],
     listed: room.listed !== false,
@@ -582,6 +632,26 @@ export function cleanMauMeAction(raw: unknown): MauMeAction | null {
   if (a.type !== 'PLAY' || !isInt(a.card, 0, MAUME_DECK_SIZE - 1)) return null;
   if (a.color !== undefined && !isInt(a.color, 0, 3)) return null;
   return a.color === undefined ? { type: 'PLAY', card: a.card } : { type: 'PLAY', card: a.card, color: a.color };
+}
+
+/** A Pháo Tết move from the network: a card (Xin with whom), a pair of foods and whom, a draw, a place to hide, a new deal. */
+export function cleanPhaoAction(raw: unknown): PhaoAction | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const a = raw as Record<string, unknown>;
+  if (a.type === 'DRAW' || a.type === 'NEXT_GAME') return { type: a.type };
+  if (a.type === 'HIDE') return isInt(a.position, 0, PHAO_DECK_SIZE) ? { type: 'HIDE', position: a.position } : null;
+  if (a.type === 'PLAY') {
+    if (!isInt(a.card, 0, PHAO_DECK_SIZE - 1)) return null;
+    if (a.target === undefined) return { type: 'PLAY', card: a.card };
+    return isInt(a.target, 0, MAX_PLAYERS - 1) ? { type: 'PLAY', card: a.card, target: a.target } : null;
+  }
+  if (a.type === 'PAIR') {
+    const cards = a.cards;
+    if (!Array.isArray(cards) || cards.length !== 2 || !cards.every((c) => isInt(c, 0, PHAO_DECK_SIZE - 1))) return null;
+    if (!isInt(a.target, 0, MAX_PLAYERS - 1)) return null;
+    return { type: 'PAIR', cards: [cards[0], cards[1]], target: a.target };
+  }
+  return null;
 }
 
 export function cleanAction(raw: unknown): Action | null {

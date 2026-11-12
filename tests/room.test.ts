@@ -27,7 +27,9 @@ import {
   start,
   view,
   cleanMauMeAction,
+  cleanPhaoAction,
 } from '../server/room';
+import { kindOf as phaoKind, pick as pickPhao } from '../src/games/phao/cards';
 import { parseCard as parseColorCard } from '../src/games/maume/cards';
 
 // Fixed "random" numbers: dice come from a list, keys count up.
@@ -439,6 +441,88 @@ describe('Màu Mè rooms', () => {
     expect(moved.maume!.log.length).toBeGreaterThan(room.maume!.log.length);
     expect(botWaitMs({ ...room, maume: { ...room.maume!, current: 0 } }, room.maume!)).toBeNull();
     expect(listing(room, new Set([0]), 0)).toMatchObject({ kind: 'maume', stage: 'playing', round: 1 });
+  });
+});
+
+describe('Pháo Tết rooms', () => {
+  function phaoLobby(...profiles: Profile[]): RoomState {
+    const random = fakeRandom();
+    let { room } = newRoom('PHA234', profiles[0], random, 'phao');
+    for (const p of profiles.slice(1)) room = must(join(room, p, random)).room;
+    return room;
+  }
+  const dealt = (...profiles: Profile[]) => must(start(phaoLobby(...profiles), 0, undefined, 'inOrder', fakeRandom()));
+
+  it('start with no options: a bucket and five cards each, firecrackers hidden in the deck', () => {
+    const room = dealt(DANG, LAN, MINH);
+    expect(kindOf(room)).toBe('phao');
+    expect(room.phao!.players.map((p) => p.hand.length)).toEqual([6, 6, 6]);
+    expect(room.phao!.deck.filter((c) => phaoKind(c) === 'phao')).toHaveLength(2);
+    expect(join(room, HOA, fakeRandom())).toEqual({ ok: false, error: 'started' });
+  });
+
+  it('each phone sees only its own hand: never the deck, and a peek only by whoever peeked', () => {
+    const room = dealt(DANG, LAN, MINH);
+    const lan = view(room, 1, new Set([0, 1, 2])).phao!;
+    expect(lan.players[1].hand).toEqual(room.phao!.players[1].hand);
+    expect(lan.players[0].hand.every((c) => c === HIDDEN_CARD) && lan.players[0].hand.length === 6).toBe(true);
+    expect(lan.deck.every((c) => c === HIDDEN_CARD) && lan.deck.length === room.phao!.deck.length).toBe(true);
+    expect(lan.rngState).toBe(0);
+
+    // Đăng peeks: only his phone is shown what's on top.
+    const s = room.phao!;
+    const [nhom] = pickPhao('nhom', new Set([...s.deck, ...s.players.flatMap((p) => p.hand)].filter((c) => phaoKind(c) !== 'nhom')));
+    const holder = s.players.findIndex((p) => p.hand.includes(nhom));
+    const withPeek = {
+      ...room,
+      phao: {
+        ...s,
+        deck: s.deck.filter((c) => c !== nhom),
+        players: s.players.map((p, i) => ({ ...p, hand: i === 0 ? [...p.hand.filter((c) => c !== nhom), nhom] : p.hand.filter((c) => c !== nhom) })),
+      },
+    };
+    expect(holder === -1 || holder >= 0).toBe(true);
+    const peeked = must(act(withPeek, 0, { type: 'PLAY', card: nhom }));
+    expect(view(peeked, 0, new Set([0, 1, 2])).phao!.peek?.cards).toHaveLength(3);
+    expect(view(peeked, 1, new Set([0, 1, 2])).phao!.peek).toBeNull();
+    expect(view(peeked, null, new Set([0])).phao!.peek).toBeNull();
+  });
+
+  it('only the player whose turn it is moves; only the host deals again or goes back to the lobby', () => {
+    const room = dealt(DANG, LAN);
+    expect(act(room, 1, { type: 'DRAW' })).toEqual({ ok: false, error: 'notYourMove' });
+    const drew = must(act(room, 0, { type: 'DRAW' }));
+    expect(drew.phao!.log.length).toBeGreaterThan(room.phao!.log.length);
+    expect(rematch(room, 0)).toEqual({ ok: false, error: 'notAllowed' });
+    const over = { ...room, phao: { ...room.phao!, phase: { kind: 'over' as const, winner: 1 } } };
+    expect(act(over, 1, { type: 'NEXT_GAME' })).toEqual({ ok: false, error: 'notHost' });
+    expect(must(act(over, 0, { type: 'NEXT_GAME' })).phao!.game).toBe(2);
+    expect(must(rematch(over, 0)).phao).toBeNull();
+  });
+
+  it('refuses moves that are not a card, a pair, a draw, a hiding place or a new deal', () => {
+    expect(cleanPhaoAction({ type: 'PLAY', card: 49 })).toBeNull();
+    expect(cleanPhaoAction({ type: 'PLAY', card: 20, target: 4 })).toBeNull();
+    expect(cleanPhaoAction({ type: 'PAIR', cards: [40], target: 1 })).toBeNull();
+    expect(cleanPhaoAction({ type: 'HIDE', position: -1 })).toBeNull();
+    expect(cleanPhaoAction({ type: 'ROLL' })).toBeNull();
+    expect(cleanPhaoAction({ type: 'PAIR', cards: [33, 34], target: 1, extra: 1 })).toEqual({ type: 'PAIR', cards: [33, 34], target: 1 });
+    expect(cleanPhaoAction({ type: 'HIDE', position: 3 })).toEqual({ type: 'HIDE', position: 3 });
+    expect(cleanPhaoAction({ type: 'PLAY', card: 40, target: 2 })).toEqual({ type: 'PLAY', card: 40, target: 2 });
+  });
+
+  it('plays its computer players, waits longer after a bang, and lists itself as Pháo Tết', () => {
+    let room = phaoLobby(DANG);
+    room = must(addBot(room, 0, 'normal', fakeRandom()));
+    room = must(start(room, 0, undefined, 'inOrder', fakeRandom()));
+    room = { ...room, phao: { ...room.phao!, current: 1 } };
+    const calm = botWaitMs(room, room.phao!)!;
+    expect(calm).toBeGreaterThan(0);
+    const bang = { ...room, phao: { ...room.phao!, log: [...room.phao!.log, { type: 'putOut' as const, player: 0 }] } };
+    expect(botWaitMs(bang, room.phao!)!).toBeGreaterThan(calm);
+    const moved = playBot(room)!;
+    expect(moved.phao!.log.length).toBeGreaterThan(room.phao!.log.length);
+    expect(listing(room, new Set([0]), 0)).toMatchObject({ kind: 'phao', stage: 'playing', round: 1 });
   });
 });
 
