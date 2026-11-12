@@ -1,0 +1,343 @@
+/* ===== Pháo Tết (PhaoScreen.tsx, PhaoCard.tsx); the seats, table and hand come from tienlen.css and eights.css ===== */
+
+/* A card: cream paper, a band in the card's color with its name, and its drawing. */
+.pcard.phcard {
+  --band: #2b2420;
+  --band-ink: #fbf6e8;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.phcard-name {
+  display: grid;
+  place-items: center;
+  min-height: 28%;
+  padding: 0 calc(var(--w) * 0.05);
+  background: var(--band);
+  color: var(--band-ink);
+  font-size: calc(var(--w) * 0.15);
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  border-bottom: 1.5px solid #2b2420;
+}
+
+.phcard-art {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--w) * 0.08);
+  min-height: 0;
+}
+
+.phcard-art svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pcard.ph-phao {
+  --band: #c8372d;
+  background: #fbe9d9;
+}
+
+.pcard.ph-xo {
+  --band: #2f6f9f;
+  background: #e6f1f7;
+}
+
+.pcard.ph-ne,
+.pcard.ph-day,
+.pcard.ph-nhom,
+.pcard.ph-xoc,
+.pcard.ph-day2,
+.pcard.ph-xin {
+  --band: #d9ae4f;
+  --band-ink: #2b2420;
+}
+
+.pcard.ph-banhChung,
+.pcard.ph-cuDo,
+.pcard.ph-camVinh,
+.pcard.ph-nhut {
+  --band: #3f6b3c;
+}
+
+/* The back: red lacquer with a gold firecracker. */
+.pcard.phcard.back {
+  background: repeating-linear-gradient(-45deg, #b8322a 0 4px, #a12a23 4px 8px);
+  box-shadow:
+    inset 0 0 0 2px #d9ae4f,
+    1px 1px 0 rgba(43, 36, 32, 0.35);
+}
+
+.phcard-back-mark {
+  margin: auto;
+  width: 34%;
+  height: 52%;
+  border: calc(var(--w) * 0.03) solid #f2d488;
+  border-radius: calc(var(--w) * 0.04);
+  background:
+    linear-gradient(#f2d488 0 0) center 30% / 100% 12% no-repeat,
+    linear-gradient(#f2d488 0 0) center 72% / 100% 12% no-repeat;
+}
+
+.tl-mini-fan .phcard-back-mark {
+  display: none;
+}
+
+.ph-deck .pcard.phcard {
+  box-shadow:
+    inset 0 0 0 2px #d9ae4f,
+    2px 2px 0 #7a1f19,
+    4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Hands of these cards read better a little bigger than playing cards. */
+.ph-screen .tl-hand {
+  --card: clamp(48px, 15cqw, 74px);
+}
+
+.ph-screen .tl-hand button.pcard:disabled {
+  filter: none;
+}
+
+/* How dangerous the deck is. */
+.badge.ph-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #fbf6e8;
+  border-color: #2b2420;
+  color: #2b2420;
+  font-size: 0.85rem;
+}
+
+/* Out of the game. */
+.tl-seat.ph-out {
+  opacity: 0.6;
+  filter: grayscale(0.7);
+}
+
+.badge.ph-out-badge {
+  background: #2b2420;
+  border-color: #2b2420;
+  color: #fbf6e8;
+}
+
+/* What a Nhòm showed: three cards face up, for your eyes only. */
+.ph-peek {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  border: 2px dashed var(--gold);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.ph-peek p {
+  margin: 0;
+  font-weight: 800;
+}
+
+.ph-peek div {
+  display: flex;
+  gap: 8px;
+}
+
+.ph-peek .pcard {
+  --w: clamp(48px, 14vw, 64px);
+}
+
+.ph-peek .pcard:first-child {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    1px 2px 0 rgba(43, 36, 32, 0.35);
+}
+
+/* The chosen card: what it does. */
+.ph-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.ph-info p {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ph-tip {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.ph-actions {
+  flex-wrap: wrap;
+}
+
+.ph-targets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-weight: 800;
+}
+
+.ph-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Hiding a put-out firecracker. */
+.ph-hide p {
+  margin: 4px 0 10px;
+}
+
+.ph-hide-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+/* BANG! and the splash: a burst over the table, and the seat that was hit shakes. */
+.ph-table {
+  position: relative;
+}
+
+.ph-burst {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.ph-burst.boom strong {
+  position: relative;
+  padding: 10px 22px;
+  border: 3px solid #2b2420;
+  border-radius: 14px;
+  background: #e0a01a;
+  color: #b8322a;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(2.2rem, 10vw, 3.6rem);
+  font-weight: 900;
+  box-shadow: 5px 5px 0 #2b2420;
+  animation: ph-bang calc(1.4s * var(--fx, 1)) ease-out forwards;
+}
+
+.ph-burst-rays {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#e0a01a 0 10deg, transparent 10deg 30deg), radial-gradient(#c8372d 0 30%, transparent 31%);
+  animation: ph-rays calc(1.4s * var(--fx, 1)) ease-out forwards;
+}
+
+.ph-burst.splash svg {
+  animation: ph-splash calc(1.4s * var(--fx, 1)) ease-out forwards;
+}
+
+@keyframes ph-bang {
+  0% {
+    transform: scale(0.2) rotate(-12deg);
+  }
+  20% {
+    transform: scale(1.25) rotate(4deg);
+  }
+  35% {
+    transform: scale(1) rotate(-2deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes ph-rays {
+  0% {
+    transform: scale(0.1) rotate(0);
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.3) rotate(40deg);
+    opacity: 0;
+  }
+}
+
+@keyframes ph-splash {
+  0% {
+    transform: translateY(-30px) rotate(-30deg) scale(0.6);
+  }
+  30% {
+    transform: translateY(0) rotate(25deg) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(0) scale(1);
+    opacity: 0;
+  }
+}
+
+.tl-seat.ph-hit-boom {
+  animation: ph-shake calc(0.5s * var(--fx, 1)) ease-in-out 2;
+}
+
+@keyframes ph-shake {
+  25% {
+    transform: translateX(-6px) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(6px) rotate(2deg);
+  }
+}
+
+/* The hub's card for Pháo Tết. */
+.hub-game-art.ph-hub-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #7a1f19;
+  background-image: var(--paper);
+}
+
+.hub-game-art.ph-hub-art .pcard {
+  --w: clamp(48px, 14%, 76px);
+  margin: 0 -10px;
+  transform: rotate(calc((var(--k) - 1) * 12deg)) translateY(calc((var(--k) - 1) * (var(--k) - 1) * 4px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-burst.boom strong,
+  .ph-burst-rays,
+  .ph-burst.splash svg,
+  .tl-seat.ph-hit-boom {
+    animation: none;
+  }
+}

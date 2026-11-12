@@ -10,6 +10,7 @@ import type { FirstTurn, GameKind, Profile } from '../net/protocol';
 import { TIENLEN_TEXT } from '../games/tienlen/text';
 import { EIGHTS_TEXT } from '../games/eights/text';
 import { MAUME_TEXT } from '../games/maume/text';
+import { PHAO_TEXT } from '../games/phao/text';
 import { forgetSeat } from '../net/seats';
 import type { RoomState } from '../net/useRoom';
 import { LangSwitch, ThemeButton } from './Header';
@@ -104,7 +105,9 @@ export function Lobby({ code, creating, kind, state, onLeave }: Props) {
             ? EIGHTS_TEXT[uiLang].inRoom(code)
             : kind === 'maume'
               ? MAUME_TEXT[uiLang].inRoom(code)
-              : TIENLEN_TEXT[uiLang].inRoom(code)}</h1>
+              : kind === 'phao'
+                ? PHAO_TEXT[uiLang].inRoom(code)
+                : TIENLEN_TEXT[uiLang].inRoom(code)}</h1>
       {status !== 'open' && (
         <p className="connection-note" role="status">
           {status === 'connecting' ? t.connecting : t.reconnecting}

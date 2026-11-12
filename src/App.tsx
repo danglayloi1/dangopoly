@@ -20,6 +20,10 @@ import { createMauMe, type MauMeState } from './games/maume/game';
 import { MAUME_TEXT } from './games/maume/text';
 import { MauMeScreen } from './ui/maume/MauMeScreen';
 import { MauMeLesson } from './ui/maume/MauMeLesson';
+import { createPhao, type PhaoState } from './games/phao/game';
+import { PHAO_TEXT } from './games/phao/text';
+import { PhaoScreen } from './ui/phao/PhaoScreen';
+import { PhaoLesson } from './ui/phao/PhaoLesson';
 import { TIENLEN_TEXT } from './games/tienlen/text';
 import type { GameKind } from './net/protocol';
 import { MenuScreen } from './ui/MenuScreen';
@@ -47,8 +51,8 @@ export default function App() {
  * The entry screen, the hub (pick a game), and Dangopoly's menu with the screens reached from it
  * (a game or a room is shown on top of them).
  */
-type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen' | 'tienlenBots' | 'tienlenOnline' | 'eights' | 'eightsBots' | 'eightsOnline' | 'maume' | 'maumeBots' | 'maumeOnline';
-type CardGame = 'tienlen' | 'eights' | 'maume';
+type Screen = 'title' | 'hub' | 'menu' | 'local' | 'bots' | 'online' | 'records' | 'settings' | 'tienlen' | 'tienlenBots' | 'tienlenOnline' | 'eights' | 'eightsBots' | 'eightsOnline' | 'maume' | 'maumeBots' | 'maumeOnline' | 'phao' | 'phaoBots' | 'phaoOnline';
+type CardGame = 'tienlen' | 'eights' | 'maume' | 'phao';
 
 /**
  * Each screen, game and room gets a browser history entry, so the phone's back button moves
@@ -89,6 +93,7 @@ function Screens() {
   const [tienLen, setTienLen] = useState<TienLenState | null>(null);
   const [eights, setEights] = useState<EightsState | null>(null);
   const [maume, setMauMe] = useState<MauMeState | null>(null);
+  const [phao, setPhao] = useState<PhaoState | null>(null);
   const [lesson, setLesson] = useState<CardGame | null>(null); // a card game's guided first game
   // An unfinished game from an earlier visit, offered on the menu.
   const [saved, setSaved] = useState<SaveFile | null>(loadSavedGame);
@@ -170,6 +175,14 @@ function Screens() {
     setGameNumber((n) => n + 1);
   };
 
+  /** A Pháo Tết match, the same way. */
+  const startPhao = (players: NewTienLenPlayer[]) => {
+    history.replaceState({ dangopoly: 'game' } satisfies NavState, '');
+    direction.current = 'rise';
+    setPhao(createPhao({ players, seed: crypto.getRandomValues(new Uint32Array(1))[0] }));
+    setGameNumber((n) => n + 1);
+  };
+
   // A new room's link only goes in the address once the room exists (see onCreated).
   const openRoom = (code: string, creating: boolean, kind: GameKind = 'dangopoly') => {
     direction.current = 'rise';
@@ -191,6 +204,7 @@ function Screens() {
       setTienLen(null);
       setEights(null);
       setMauMe(null);
+      setPhao(null);
       setLesson(null);
       setSaved(loadSavedGame());
       const code = roomInUrl();
@@ -261,6 +275,14 @@ function Screens() {
     }
   };
 
+  const leavePhao = () => {
+    if (navState()?.dangopoly === 'game') history.back();
+    else {
+      setPhao(null);
+      toHub();
+    }
+  };
+
   const leaveRoom = (kind: GameKind) => {
     if (navState()?.dangopoly === 'room') history.back();
     else {
@@ -301,6 +323,12 @@ function Screens() {
   if (lesson === 'eights') {
     return shown(`lesson-${gameNumber}`, <EightsLesson onLeave={leaveLesson} onPlay={() => lessonToBots('eights')} />);
   }
+  if (lesson === 'phao') {
+    return shown(`lesson-${gameNumber}`, <PhaoLesson onLeave={leaveLesson} onPlay={() => lessonToBots('phao')} />);
+  }
+  if (phao) {
+    return shown(`phao-${gameNumber}`, <PhaoScreen initial={phao} onLeave={leavePhao} />);
+  }
   if (lesson === 'maume') {
     return shown(`lesson-${gameNumber}`, <MauMeLesson onLeave={leaveLesson} onPlay={() => lessonToBots('maume')} />);
   }
@@ -331,6 +359,7 @@ function Screens() {
             onTienLen={() => go('tienlen')}
             onEights={() => go('eights')}
             onMauMe={() => go('maume')}
+            onPhao={() => go('phao')}
             onSettings={() => go('settings')}
             onBack={toTitle}
           />
@@ -354,6 +383,26 @@ function Screens() {
             onTutorial={() => startLesson('eights')}
             onBack={toHub}
           />
+        );
+      case 'phao':
+        return (
+          <CardGameMenu
+            text={PHAO_TEXT[uiLang]}
+            onBots={() => go('phaoBots')}
+            onOnline={() => go('phaoOnline')}
+            onTutorial={() => startLesson('phao')}
+            onBack={toHub}
+          />
+        );
+      case 'phaoBots':
+        return <TienLenSetup title={PHAO_TEXT[uiLang].name} onStart={startPhao} onBack={back} />;
+      case 'phaoOnline':
+        return (
+          <main className="setup">
+            <ScreenTop title={`${PHAO_TEXT[uiLang].name} · ${PHAO_TEXT[uiLang].online}`} onBack={back} />
+            <OnlineCard onCreateRoom={() => openRoom(newRoomCode(), true, 'phao')} onJoinRoom={(code) => openRoom(code, false)} />
+            <RoomList onOpen={(code) => openRoom(code, false)} />
+          </main>
         );
       case 'maume':
         return (

@@ -3,6 +3,8 @@ import { EIGHTS_LESSON } from '../src/games/eights/lesson';
 import { playableCards } from '../src/games/eights/game';
 import type { Lesson } from '../src/games/lesson';
 import { MAUME_LESSON } from '../src/games/maume/lesson';
+import { PHAO_LESSON } from '../src/games/phao/lesson';
+import { canPlay as phaoCanPlay, foodPairs } from '../src/games/phao/game';
 import { playableCards as mauMePlayable } from '../src/games/maume/game';
 import { TIENLEN_LESSON } from '../src/games/tienlen/lesson';
 import { legalPlays } from '../src/games/tienlen/game';
@@ -80,6 +82,38 @@ describe('the card game lessons', () => {
     const wild = MAUME_LESSON.steps.at(-2)!.expect!;
     if (wild.type !== 'PLAY') throw new Error('not a play');
     expect(MAUME_LESSON.same({ type: 'PLAY', card: wild.card, color: 2 }, wild)).toBe(true);
+  });
+
+  it('Pháo Tết: every step is a legal move, it points at the cards to play, and Cu Đơ blows up', () => {
+    let s = PHAO_LESSON.start('en');
+    expect(s.players[0].name).toBe('You');
+    for (const step of PHAO_LESSON.steps) {
+      const move = step.expect;
+      if (move?.type === 'PLAY') {
+        expect(phaoCanPlay(s, move.card)).toBe(true);
+        expect(step.glow).toEqual([move.card]);
+      }
+      if (move?.type === 'PAIR') {
+        expect(foodPairs(s).some((p) => [...p].sort().join() === [...move.cards].sort().join())).toBe(true);
+        expect([...(step.glow ?? [])].sort()).toEqual([...move.cards].sort());
+      }
+      if (move) {
+        expect(s.current).toBe(0);
+        s = PHAO_LESSON.apply(s, move);
+      }
+      for (const reply of step.replies ?? []) {
+        expect(s.current).toBe(1);
+        s = PHAO_LESSON.apply(s, reply);
+      }
+    }
+    expect(s.phase).toEqual({ kind: 'over', winner: 0 });
+    expect(s.log.some((e) => e.type === 'putOut' && e.player === 1)).toBe(true);
+    expect(s.log.at(-2)).toEqual({ type: 'exploded', player: 1 });
+    // A pair matches in either order.
+    const pair = PHAO_LESSON.steps.find((st) => st.expect?.type === 'PAIR')!.expect!;
+    if (pair.type !== 'PAIR') throw new Error('not a pair');
+    expect(PHAO_LESSON.same({ type: 'PAIR', cards: [pair.cards[1], pair.cards[0]], target: 1 }, pair)).toBe(true);
+    expect(PHAO_LESSON.same({ type: 'PAIR', cards: pair.cards, target: 0 }, pair)).toBe(false);
   });
 
   it('a move is matched to the step: the same cards in any order; an 8 with any suit', () => {
